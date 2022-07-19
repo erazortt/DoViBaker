@@ -14,7 +14,7 @@ template<bool chromaSubsampling>
 class DoViBaker : public GenericVideoFilter
 {
 public:
-  DoViBaker(PClip _blChild, PClip _elChild, const char* rpuPath, bool halfResolutionEl, IScriptEnvironment* env);
+  DoViBaker(PClip _blChild, PClip _elChild, const char* rpuPath, bool quarterResolutionEl, IScriptEnvironment* env);
   virtual ~DoViBaker();
   PVideoFrame GetFrame(int n, IScriptEnvironment* env) override;
 
@@ -29,7 +29,7 @@ private:
   PClip elChild;
   int CPU_FLAG;
   DoViProcessor* doviProc;
-  bool halfResolutionEl;
+  bool quarterResolutionEl;
 };
 
 #endif

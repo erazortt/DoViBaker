@@ -10,8 +10,8 @@
 //////////////////////////////
 
 template<bool chromaSubsampling>
-DoViBaker<chromaSubsampling>::DoViBaker(PClip _blChild, PClip _elChild, const char* rpuPath, bool _halfResolutionEl, IScriptEnvironment* env)
-  : GenericVideoFilter(_blChild), elChild(_elChild), halfResolutionEl(_halfResolutionEl)
+DoViBaker<chromaSubsampling>::DoViBaker(PClip _blChild, PClip _elChild, const char* rpuPath, bool _quarterResolutionEl, IScriptEnvironment* env)
+  : GenericVideoFilter(_blChild), elChild(_elChild), quarterResolutionEl(_quarterResolutionEl)
 {
 	int bits_per_pixel = vi.BitsPerComponent();
 	if (bits_per_pixel != 16) {
@@ -302,7 +302,7 @@ PVideoFrame DoViBaker<chromaSubsampling>::GetFrame(int n, IScriptEnvironment* en
 
 	doviProc->intializeFrame(n, env);
 
-	if (halfResolutionEl) {
+	if (quarterResolutionEl) {
 		upsampleEl(elUpSrc, elSrc, env);
 		applyDovi(dst, blSrc, elUpSrc, env);
 	}

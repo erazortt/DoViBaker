@@ -29,22 +29,22 @@ AVSValue __cdecl Create_RealDoViBaker(PClip blclip, PClip elclip, const char* rp
     env->ThrowError("DoViBaker: Base Layer and Enhancement Layer clips must have both the same chroma subsampling, either 444 or 420");
   }
 
-  int halfResolutionEl = -1;
+  int quarterResolutionEl = -1;
   if ((blclip->GetVideoInfo().width == elclip->GetVideoInfo().width) && (blclip->GetVideoInfo().height == elclip->GetVideoInfo().height)) {
-    halfResolutionEl = 0;
+    quarterResolutionEl = 0;
   }
   if ((blclip->GetVideoInfo().width == 2*elclip->GetVideoInfo().width) && (blclip->GetVideoInfo().height == 2*elclip->GetVideoInfo().height)) {
-    halfResolutionEl = 1;
+    quarterResolutionEl = 1;
   }
-  if (halfResolutionEl < 0) {
+  if (quarterResolutionEl < 0) {
     env->ThrowError("DoViBaker: Enhancement Layer must either be same size or quarter size as Base Layer");
   }
 
   if (chromaSubSampling == 0) {
-    return new DoViBaker<false>(blclip, elclip, rpuPath, halfResolutionEl, env);
+    return new DoViBaker<false>(blclip, elclip, rpuPath, quarterResolutionEl, env);
   }
   if (chromaSubSampling == 1) {
-    return new DoViBaker<true>(blclip, elclip, rpuPath, halfResolutionEl, env);
+    return new DoViBaker<true>(blclip, elclip, rpuPath, quarterResolutionEl, env);
   }
 }
 
