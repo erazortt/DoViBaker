@@ -19,12 +19,15 @@ public:
   PVideoFrame GetFrame(int n, IScriptEnvironment* env) override;
 
 private:
-  void upsampleEl(PVideoFrame& dst, const PVideoFrame& el, IScriptEnvironment* env);
+  void upsampleEl(PVideoFrame& dst, const PVideoFrame& el, VideoInfo dstVi, IScriptEnvironment* env);
+  void to444(PVideoFrame& dst, const PVideoFrame& el, VideoInfo dstVi, IScriptEnvironment* env);
   void applyDovi(PVideoFrame& dst, const PVideoFrame& blSrc, const PVideoFrame& elSrc, IScriptEnvironment* env);
+  void convert2rgb(PVideoFrame& rgb, const PVideoFrame& y, const PVideoFrame& uv);
 
-  template<int vertLen>
-  void upsampleElVert(PVideoFrame& dst, const PVideoFrame& src, const std::array<int, vertLen>& pD, const std::array<int, vertLen>& nD, int plane, IScriptEnvironment* env);
-  void upsampleElHorz(PVideoFrame& dst, const PVideoFrame& src, int plane, IScriptEnvironment* env);
+  typedef uint16_t(*upscaler_t)(const uint16_t* srcSamples, int idx0);
+  template<int vertLen, int nD>
+  void upsampleVert(PVideoFrame& dst, const PVideoFrame& src, int plane, const std::array<int, vertLen>& Dn0p, const upscaler_t evenUpscaler, const upscaler_t oddUpscaler, IScriptEnvironment* env);
+  void upsampleHorz(PVideoFrame& dst, const PVideoFrame& src, int plane, IScriptEnvironment* env);
 
   PClip elChild;
   int CPU_FLAG;

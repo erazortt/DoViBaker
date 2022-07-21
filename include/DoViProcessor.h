@@ -27,14 +27,18 @@ public:
   virtual ~DoViProcessor();
   void intializeFrame(int frame, IScriptEnvironment* env);
   uint16_t getMaxContentLightLevel() const { return max_content_light_level; }
-  float getYcc2RgbCoef(int i) const { return ycc_to_rgb_coef[i]; }
-  float getYcc2RgbOff(int i) const { return ycc_to_rgb_offset[i]; }
+  const int16_t* getYcc2RgbCoef() const { return ycc_to_rgb_coef; }
+  const uint32_t* getYcc2RgbOff() const { return ycc_to_rgb_offset; }
+  uint16_t getYcc2RgbCoefScale() const { return 1 << 13; }
+  uint32_t getYcc2RgbOffScale() const { return 1 << 28; }
 
   static inline constexpr uint16_t Clip3(uint16_t lower, uint16_t upper, int value);
   static inline constexpr uint16_t upsampleHorzEven(const uint16_t* srcSamples, int idx0);
   static inline constexpr uint16_t upsampleHorzOdd(const uint16_t* srcSamples, int idx0);
-  static inline constexpr uint16_t upsampleElYvertEven(const uint16_t *srcSamples, int idx0);
-  static inline constexpr uint16_t upsampleElYvertOdd(const uint16_t *srcSamples, int idx0);
+  static inline constexpr uint16_t upsampleBlVertEven(const uint16_t* srcSamples, int idx0);
+  static inline constexpr uint16_t upsampleBlVertOdd(const uint16_t* srcSamples, int idx0);
+  static inline constexpr uint16_t upsampleElYvertEven(const uint16_t* srcSamples, int idx0);
+  static inline constexpr uint16_t upsampleElYvertOdd(const uint16_t* srcSamples, int idx0);
   static inline constexpr uint16_t upsampleElUVvertEven(const uint16_t* srcSamples, int idx0);
   static inline constexpr uint16_t upsampleElUVvertOdd(const uint16_t* srcSamples, int idx0);
 
@@ -110,6 +114,18 @@ constexpr uint16_t DoViProcessor::upsampleHorzOdd(const uint16_t* y, int n)
 {
   auto val = (22 * y[n - 3] + 94 * y[n - 2] - 524 * y[n - 1] + 2456 * y[n] + 2456 * y[n + 1] - 524 * y[n + 2] +
     94 * y[n + 3] + 22 * y[n + 4] + 2048) >> 12;
+  return Clip3(0, 0xFFFF, val);
+}
+
+constexpr uint16_t DoViProcessor::upsampleBlVertEven(const uint16_t* y, int n)
+{
+  auto val = (2 * y[n - 3] - 12 * y[n - 2] + 65 * y[n - 1] + 222 * y[n] - 25 * y[n + 1] + 4 * y[n + 2] + 128) >> 8;
+  return Clip3(0, 0xFFFF, val);
+}
+
+constexpr uint16_t DoViProcessor::upsampleBlVertOdd(const uint16_t* y, int n)
+{
+  auto val = (4 * y[n - 2] - 25 * y[n - 1] + 222 * y[n] + 65 * y[n + 1] - 12 * y[n + 2] + 2 * y[n + 3] + 128) >> 8;
   return Clip3(0, 0xFFFF, val);
 }
 
