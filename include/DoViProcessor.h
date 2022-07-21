@@ -18,12 +18,17 @@ typedef const DoviRpuDataNlq* (*f_dovi_rpu_get_data_nlq)(const DoviRpuOpaque* pt
 typedef void (*f_dovi_rpu_free_data_nlq)(const DoviRpuDataNlq* ptr);
 typedef const DoviRpuDataMapping* (*f_dovi_rpu_get_data_mapping)(const DoviRpuOpaque* ptr);
 typedef void (*f_dovi_rpu_free_data_mapping)(const DoviRpuDataMapping* ptr);
+typedef const DoviVdrDmData* (*f_dovi_rpu_get_vdr_dm_data)(const DoviRpuOpaque* ptr);
+typedef void (*f_dovi_rpu_free_vdr_dm_data)(const DoviVdrDmData* ptr);
 
 class DoViProcessor {
 public:
   DoViProcessor(const char* rpuPath, IScriptEnvironment* env);
   virtual ~DoViProcessor();
   void intializeFrame(int frame, IScriptEnvironment* env);
+  uint16_t getMaxContentLightLevel() const { return max_content_light_level; }
+  float getYcc2RgbCoef(int i) const { return ycc_to_rgb_coef[i]; }
+  float getYcc2RgbOff(int i) const { return ycc_to_rgb_offset[i]; }
 
   static inline constexpr uint16_t Clip3(uint16_t lower, uint16_t upper, int value);
   static inline constexpr uint16_t upsampleHorzEven(const uint16_t* srcSamples, int idx0);
@@ -56,6 +61,8 @@ private:
   f_dovi_rpu_free_header dovi_rpu_free_header;
   f_dovi_rpu_get_data_nlq dovi_rpu_get_data_nlq;
   f_dovi_rpu_free_data_nlq dovi_rpu_free_data_nlq;
+  f_dovi_rpu_get_vdr_dm_data dovi_rpu_get_vdr_dm_data;
+  f_dovi_rpu_free_vdr_dm_data dovi_rpu_free_vdr_dm_data;
   f_dovi_rpu_get_data_mapping dovi_rpu_get_data_mapping;
   f_dovi_rpu_free_data_mapping dovi_rpu_free_data_mapping;
   f_dovi_rpu_get_error dovi_rpu_get_error;
@@ -66,6 +73,10 @@ private:
   uint8_t coeff_log2_denom;
   bool disable_residual_flag;
   uint8_t nlq_method_idc;
+
+  uint16_t max_content_light_level;
+  int16_t ycc_to_rgb_coef[8];
+  uint32_t ycc_to_rgb_offset[3];
 
   uint8_t num_pivots_minus1[3];
   std::vector<std::vector<uint16_t>> pivot_value;

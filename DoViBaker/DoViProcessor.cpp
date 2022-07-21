@@ -2,6 +2,7 @@
 #include <array>
 
 DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env)
+	: max_content_light_level(1000)
 {
 	doviLib = ::LoadLibrary(L"dovi.dll"); // delayed loading, original name
 	if (doviLib == NULL) {
@@ -19,6 +20,8 @@ DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env)
 	dovi_rpu_free_header = (f_dovi_rpu_free_header)GetProcAddress(doviLib, "dovi_rpu_free_header");
 	dovi_rpu_get_data_nlq = (f_dovi_rpu_get_data_nlq)GetProcAddress(doviLib, "dovi_rpu_get_data_nlq");
 	dovi_rpu_free_data_nlq = (f_dovi_rpu_free_data_nlq)GetProcAddress(doviLib, "dovi_rpu_free_data_nlq");
+	dovi_rpu_get_vdr_dm_data = (f_dovi_rpu_get_vdr_dm_data)GetProcAddress(doviLib, "dovi_rpu_get_vdr_dm_data");
+	dovi_rpu_free_vdr_dm_data = (f_dovi_rpu_free_vdr_dm_data)GetProcAddress(doviLib, "dovi_rpu_free_vdr_dm_data");
 	dovi_rpu_get_data_mapping = (f_dovi_rpu_get_data_mapping)GetProcAddress(doviLib, "dovi_rpu_get_data_mapping");
 	dovi_rpu_free_data_mapping = (f_dovi_rpu_free_data_mapping)GetProcAddress(doviLib, "dovi_rpu_free_data_mapping");
 
@@ -148,6 +151,36 @@ void DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 		fp_hdr_in_max[cmp] = (vdr_in_max_int->data[cmp] << coeff_log2_denom) + vdr_in_max->data[cmp];
 		fp_linear_deadzone_slope[cmp] = (linear_deadzone_slope_int->data[cmp] << coeff_log2_denom) + linear_deadzone_slope->data[cmp];
 		fp_linear_deadzone_threshold[cmp] = (linear_deadzone_threshold_int->data[cmp] << coeff_log2_denom) + linear_deadzone_threshold->data[cmp];
+	}
+
+	if (header->vdr_dm_metadata_present_flag) {
+		const DoviVdrDmData* vdr_dm_data = dovi_rpu_get_vdr_dm_data(rpu);
+
+		//max_content_light_level = vdr_dm_data->dm_data.level6->max_content_light_level;
+		max_content_light_level = vdr_dm_data->dm_data.level1->max_pq;
+
+		//https://github.com/test-full-band/tfb-video/blob/master/core/src/main/java/band/full/video/dolby/VdrDmDataPayload.java
+	  //https://ffmpeg.org/doxygen/trunk/dovi__rpu_8c_source.html
+		static const uint16_t ycc2rgb_coef_scale = 1 << 13;
+		static const uint32_t ycc2rgb_off_scale = 1 << 28;
+		static const uint16_t rgb2lms_coef_scale = 1 << 14;
+
+		ycc_to_rgb_coef[0] = vdr_dm_data->ycc_to_rgb_coef0;
+		ycc_to_rgb_coef[1] = vdr_dm_data->ycc_to_rgb_coef1;
+		ycc_to_rgb_coef[2] = vdr_dm_data->ycc_to_rgb_coef2;
+		ycc_to_rgb_coef[3] = vdr_dm_data->ycc_to_rgb_coef3;
+		ycc_to_rgb_coef[4] = vdr_dm_data->ycc_to_rgb_coef4;
+		ycc_to_rgb_coef[5] = vdr_dm_data->ycc_to_rgb_coef5;
+		ycc_to_rgb_coef[6] = vdr_dm_data->ycc_to_rgb_coef6;
+		ycc_to_rgb_coef[7] = vdr_dm_data->ycc_to_rgb_coef7;
+		ycc_to_rgb_coef[8] = vdr_dm_data->ycc_to_rgb_coef8;
+
+	  //https://code.videolan.org/videolan/libplacebo/-/blob/775a9325a23e26443b562b104c1fe949b99aa3c8/src/colorspace.c
+		ycc_to_rgb_offset[0] = vdr_dm_data->ycc_to_rgb_offset0;
+		ycc_to_rgb_offset[1] = vdr_dm_data->ycc_to_rgb_offset1;
+		ycc_to_rgb_offset[2] = vdr_dm_data->ycc_to_rgb_offset2;
+
+		dovi_rpu_free_vdr_dm_data(vdr_dm_data);
 	}
 
 	dovi_rpu_free_data_mapping(mapping_data);

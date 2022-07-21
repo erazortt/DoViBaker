@@ -297,10 +297,19 @@ PVideoFrame DoViBaker<chromaSubsampling>::GetFrame(int n, IScriptEnvironment* en
 {
 	PVideoFrame blSrc = child->GetFrame(n, env);
 	PVideoFrame elSrc = elChild->GetFrame(n, env);
-	PVideoFrame elUpSrc = env->NewVideoFrame(vi);
-	PVideoFrame dst = env->NewVideoFrame(vi);
+	PVideoFrame elUpSrc = env->NewVideoFrame(child->GetVideoInfo());
+	PVideoFrame dst = env->NewVideoFrameP(vi, &blSrc);
 
 	doviProc->intializeFrame(n, env);
+	env->propSetInt(env->getFramePropsRW(dst), "_dovi_max_content_light_level", doviProc->getMaxContentLightLevel(), 0);
+	std::string propBaseYcc2rgbCoef = "_dovi_ycc_to_rgb_coef";
+	for (int i = 0; i < 9; i++) {
+		env->propSetFloat(env->getFramePropsRW(dst), propBaseYcc2rgbCoef.append(std::to_string(i)).c_str() , doviProc->getYcc2RgbCoef(i), 0);
+	}
+	std::string propBaseYcc2rgbOff = "_dovi_ycc_to_rgb_offset";
+	for (int i = 0; i < 3; i++) {
+		env->propSetFloat(env->getFramePropsRW(dst), propBaseYcc2rgbOff.append(std::to_string(i)).c_str(), doviProc->getYcc2RgbOff(i), 0);
+	}
 
 	if (quarterResolutionEl) {
 		upsampleEl(elUpSrc, elSrc, env);
