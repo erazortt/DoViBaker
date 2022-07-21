@@ -27,10 +27,6 @@ public:
   virtual ~DoViProcessor();
   void intializeFrame(int frame, IScriptEnvironment* env);
   uint16_t getMaxContentLightLevel() const { return max_content_light_level; }
-  const int16_t* getYcc2RgbCoef() const { return ycc_to_rgb_coef; }
-  const uint32_t* getYcc2RgbOff() const { return ycc_to_rgb_offset; }
-  uint16_t getYcc2RgbCoefScale() const { return 1 << 13; }
-  uint32_t getYcc2RgbOffScale() const { return 1 << 28; }
 
   static inline constexpr uint16_t Clip3(uint16_t lower, uint16_t upper, int value);
   static inline constexpr uint16_t upsampleHorzEven(const uint16_t* srcSamples, int idx0);
@@ -46,6 +42,7 @@ public:
   inline uint16_t processSampleU(uint16_t bl, uint16_t el, uint16_t mmrBlY, uint16_t mmrBlU, uint16_t mmrBlV) const;
   inline uint16_t processSampleV(uint16_t bl, uint16_t el, uint16_t mmrBlY, uint16_t mmrBlU, uint16_t mmrBlV) const;
 
+  inline void sample2rgb(uint16_t& r, uint16_t& g, uint16_t& b, const uint16_t& y, const uint16_t& u, const uint16_t& v) const;
 
 private:
   void showMessage(const char* message, IScriptEnvironment* env);
@@ -81,6 +78,12 @@ private:
   uint16_t max_content_light_level;
   int16_t ycc_to_rgb_coef[8];
   uint32_t ycc_to_rgb_offset[3];
+
+  //https://github.com/test-full-band/tfb-video/blob/master/core/src/main/java/band/full/video/dolby/VdrDmDataPayload.java
+  //https://ffmpeg.org/doxygen/trunk/dovi__rpu_8c_source.html
+  static const uint16_t ycc_to_rgb_coef_scale_shifts = 13;
+  static const uint32_t ycc_to_rgb_offset_scale_shifts = (28-16);
+  static const uint16_t rgb_to_lms_coef_scale_shifts = 14;
 
   uint8_t num_pivots_minus1[3];
   std::vector<std::vector<uint16_t>> pivot_value;
@@ -163,4 +166,17 @@ uint16_t DoViProcessor::processSampleU(uint16_t bl, uint16_t el, uint16_t mmrBlY
 
 uint16_t DoViProcessor::processSampleV(uint16_t bl, uint16_t el, uint16_t mmrBlY, uint16_t mmrBlU, uint16_t mmrBlV) const {
   return processSample(2, bl, el, mmrBlY, mmrBlU, mmrBlV);
+}
+
+inline void DoViProcessor::sample2rgb(uint16_t& r, uint16_t& g, uint16_t& b, const uint16_t& y, const uint16_t& u, const uint16_t& v) const
+{
+  //why is this implementations different..?
+  //https://code.videolan.org/videolan/libplacebo/-/blob/775a9325a23e26443b562b104c1fe949b99aa3c8/src/colorspace.c
+
+  uint16_t yf = max(0, y - (ycc_to_rgb_offset[0] >> ycc_to_rgb_offset_scale_shifts));
+  int16_t uf = u - (ycc_to_rgb_offset[1] >> ycc_to_rgb_offset_scale_shifts);
+  int16_t vf = v - (ycc_to_rgb_offset[2] >> ycc_to_rgb_offset_scale_shifts);
+  r = Clip3(0, 0xFFFF, (ycc_to_rgb_coef[0] * yf + ycc_to_rgb_coef[1] * uf + ycc_to_rgb_coef[2] * vf) >> ycc_to_rgb_coef_scale_shifts);
+  g = Clip3(0, 0xFFFF, (ycc_to_rgb_coef[3] * yf + ycc_to_rgb_coef[4] * uf + ycc_to_rgb_coef[5] * vf) >> ycc_to_rgb_coef_scale_shifts);
+  b = Clip3(0, 0xFFFF, (ycc_to_rgb_coef[6] * yf + ycc_to_rgb_coef[7] * uf + ycc_to_rgb_coef[8] * vf) >> ycc_to_rgb_coef_scale_shifts);
 }

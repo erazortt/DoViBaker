@@ -4,6 +4,16 @@
 DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env)
 	: max_content_light_level(1000)
 {
+	ycc_to_rgb_coef[0] = 8192;
+	ycc_to_rgb_coef[1] = 0;
+	ycc_to_rgb_coef[2] = 12900;
+	ycc_to_rgb_coef[3] = 8192;
+	ycc_to_rgb_coef[4] = -1534;
+	ycc_to_rgb_coef[5] = -3836;
+	ycc_to_rgb_coef[6] = 8192;
+	ycc_to_rgb_coef[7] = 15201;
+	ycc_to_rgb_coef[8] = 0;
+
 	doviLib = ::LoadLibrary(L"dovi.dll"); // delayed loading, original name
 	if (doviLib == NULL) {
 		showMessage("DoViBaker: Can not load dovi.dll!", env);
@@ -159,12 +169,6 @@ void DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 		//max_content_light_level = vdr_dm_data->dm_data.level6->max_content_light_level;
 		max_content_light_level = vdr_dm_data->dm_data.level1->max_pq;
 
-		//https://github.com/test-full-band/tfb-video/blob/master/core/src/main/java/band/full/video/dolby/VdrDmDataPayload.java
-	  //https://ffmpeg.org/doxygen/trunk/dovi__rpu_8c_source.html
-		static const uint16_t ycc2rgb_coef_scale = 1 << 13;
-		static const uint32_t ycc2rgb_off_scale = 1 << 28;
-		static const uint16_t rgb2lms_coef_scale = 1 << 14;
-
 		ycc_to_rgb_coef[0] = vdr_dm_data->ycc_to_rgb_coef0;
 		ycc_to_rgb_coef[1] = vdr_dm_data->ycc_to_rgb_coef1;
 		ycc_to_rgb_coef[2] = vdr_dm_data->ycc_to_rgb_coef2;
@@ -175,7 +179,6 @@ void DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 		ycc_to_rgb_coef[7] = vdr_dm_data->ycc_to_rgb_coef7;
 		ycc_to_rgb_coef[8] = vdr_dm_data->ycc_to_rgb_coef8;
 
-	  //https://code.videolan.org/videolan/libplacebo/-/blob/775a9325a23e26443b562b104c1fe949b99aa3c8/src/colorspace.c
 		ycc_to_rgb_offset[0] = vdr_dm_data->ycc_to_rgb_offset0;
 		ycc_to_rgb_offset[1] = vdr_dm_data->ycc_to_rgb_offset1;
 		ycc_to_rgb_offset[2] = vdr_dm_data->ycc_to_rgb_offset2;

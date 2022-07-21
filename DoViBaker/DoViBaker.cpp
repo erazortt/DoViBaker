@@ -17,7 +17,7 @@ DoViBaker<chromaSubsampling>::DoViBaker(PClip _blChild, PClip _elChild, const ch
 	if (bits_per_pixel != 16) {
 		env->ThrowError("DoViBaker: Video must be 16bit!");
 	}
-	//vi.pixel_type = VideoInfo::CS_RGBAP16;
+	vi.pixel_type = VideoInfo::CS_RGBP16;
 
 	doviProc = new DoViProcessor(rpuPath, env);
 
@@ -362,9 +362,9 @@ void DoViBaker<chromaSubsampling>::upsampleElAndApplyDoviAndConvert2rgb(PVideoFr
 template<bool chromaSubsampling>
 void DoViBaker<chromaSubsampling>::convert2rgb(PVideoFrame& dst, const PVideoFrame& srcY, const PVideoFrame& srcUV)
 {
-	const int blSrcHeightY = srcY->GetHeight(PLANAR_Y);
-	const int blSrcWidthY = srcY->GetRowSize(PLANAR_Y) / sizeof(uint16_t);
-	const int blSrcPitchY = srcY->GetPitch(PLANAR_Y) / sizeof(uint16_t);
+	const int srcHeightY = srcY->GetHeight(PLANAR_Y);
+	const int srcWidthY = srcY->GetRowSize(PLANAR_Y) / sizeof(uint16_t);
+	const int srcPitchY = srcY->GetPitch(PLANAR_Y) / sizeof(uint16_t);
 
 	const int dstHeight = dst->GetHeight(PLANAR_R);
 	const int dstWidth = dst->GetRowSize(PLANAR_R) / sizeof(uint16_t);
@@ -373,9 +373,9 @@ void DoViBaker<chromaSubsampling>::convert2rgb(PVideoFrame& dst, const PVideoFra
 	const uint16_t* srcYp = (const uint16_t*)srcY->GetReadPtr(PLANAR_Y);
 	uint16_t* dstRp = (uint16_t*)dst->GetWritePtr(PLANAR_R);
 
-	const int blSrcHeightUV = srcUV->GetHeight(PLANAR_U);
-	const int blSrcWidthUV = srcUV->GetRowSize(PLANAR_U) / sizeof(uint16_t);
-	const int blSrcPitchUV = srcUV->GetPitch(PLANAR_U) / sizeof(uint16_t);
+	const int srcHeightUV = srcUV->GetHeight(PLANAR_U);
+	const int srcWidthUV = srcUV->GetRowSize(PLANAR_U) / sizeof(uint16_t);
+	const int srcPitchUV = srcUV->GetPitch(PLANAR_U) / sizeof(uint16_t);
 
 	const uint16_t* srcUp = (const uint16_t*)srcUV->GetReadPtr(PLANAR_U);
 	uint16_t* dstGp = (uint16_t*)dst->GetWritePtr(PLANAR_G);
@@ -383,19 +383,14 @@ void DoViBaker<chromaSubsampling>::convert2rgb(PVideoFrame& dst, const PVideoFra
 	const uint16_t* srcVp = (const uint16_t*)srcUV->GetReadPtr(PLANAR_V);
 	uint16_t* dstBp = (uint16_t*)dst->GetWritePtr(PLANAR_B);
 
-	const int16_t* matrix = doviProc->getYcc2RgbCoef();
-	const uint16_t mDenom = doviProc->getYcc2RgbCoefScale();
-
-	for (int huv = 0; huv < blSrcHeightUV; huv++) {
-		for (int wuv = 0; wuv < blSrcWidthUV; wuv++) {
-			dstRp[wuv] = doviProc->Clip3(0, 0xFFFF, (matrix[0] * srcYp[wuv] + matrix[1] * srcUp[wuv] + matrix[2] * srcVp[wuv]) / mDenom);
-			dstGp[wuv] = doviProc->Clip3(0, 0xFFFF, (matrix[3] * srcYp[wuv] + matrix[4] * srcUp[wuv] + matrix[5] * srcVp[wuv]) / mDenom);
-			dstBp[wuv] = doviProc->Clip3(0, 0xFFFF, (matrix[6] * srcYp[wuv] + matrix[7] * srcUp[wuv] + matrix[8] * srcVp[wuv]) / mDenom);
+	for (int huv = 0; huv < srcHeightUV; huv++) {
+		for (int wuv = 0; wuv < srcWidthUV; wuv++) {
+			doviProc->sample2rgb(dstRp[wuv], dstGp[wuv], dstBp[wuv], srcYp[wuv], srcUp[wuv], srcVp[wuv]);
 		}
 
-		srcYp += blSrcPitchY;
-		srcUp += blSrcPitchUV;
-		srcVp += blSrcPitchUV;
+		srcYp += srcPitchY;
+		srcUp += srcPitchUV;
+		srcVp += srcPitchUV;
 
 		dstRp += dstPitch;
 		dstGp += dstPitch;
@@ -422,7 +417,7 @@ PVideoFrame DoViBaker<chromaSubsampling>::GetFrame(int n, IScriptEnvironment* en
 	else {
 		applyDovi(mez, blSrc, elSrc, env);
 	}
-	/*if (chromaSubsampling) {
+	if (chromaSubsampling) {
 		VideoInfo vi444 = child->GetVideoInfo();
 		vi444.pixel_type = VideoInfo::CS_YUV444P16;
 		PVideoFrame mez444 = env->NewVideoFrame(vi444);
@@ -431,7 +426,7 @@ PVideoFrame DoViBaker<chromaSubsampling>::GetFrame(int n, IScriptEnvironment* en
 	}
 	else {
 		convert2rgb(dst, mez, mez);
-	}*/
+	}
 	return dst;
 }
 
