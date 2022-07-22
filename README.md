@@ -1,5 +1,5 @@
 # DoViBaker
-Bake-in the DoVi into your clip
+Bake the DoVi into your clip
 
 This avisynth plugin reads the Base Layer, Enhancement Layer and RPU data from a profile 7 DolbyVision stream to create a clip with the DolbyVision data baked in.
 
