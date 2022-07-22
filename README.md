@@ -18,4 +18,4 @@ el=DGSource("elclip.dgi")
 DoViBaker(bl,el,"RPU.bin")
 ```
 
-Currently the speed is pretty bad. Even though the plugin does support the typical quarter size el clip, it is suggested to equalize the sizes of the el clip and the bl clip prior to handing them to the plugin to improve the performance. Either by downsizeing the bl clip to the el clip size or upsizing the el clip size to the bl clip size.
+ Tonemapping needs to be taken care of externally, which can be done using the exported frame property: "_dovi_max_content_light_level".
