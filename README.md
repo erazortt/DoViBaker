@@ -18,4 +18,10 @@ el=DGSource("elclip.dgi")
 DoViBaker(bl,el,"RPU.bin")
 ```
 
- Tonemapping needs to be taken care of externally, which can be done using the exported frame property: "_dovi_max_content_light_level".
+Tonemapping needs to be taken care of externally, which can be done using the exported frame property "_dovi_max_content_light_level":
+ScriptClip("""
+mcll=propGetInt("_dovi_max_content_light_level")
+nits=mcll <= 1000 ? "1000" : mcll <= 1400 ? "1400" : mcll <= 2000 ? "2000" : mcll <= 2800 ? "2800" : "4000"
+Cube("Z:\lut_"+nits+".cube",fullrange=true)
+subtitle("maxcll = " + string(mcll))
+""")
