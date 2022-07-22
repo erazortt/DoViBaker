@@ -173,9 +173,9 @@ inline void DoViProcessor::sample2rgb(uint16_t& r, uint16_t& g, uint16_t& b, con
   //why is this implementations different..?
   //https://code.videolan.org/videolan/libplacebo/-/blob/775a9325a23e26443b562b104c1fe949b99aa3c8/src/colorspace.c
 
-  uint16_t yf = max(0, y - (ycc_to_rgb_offset[0] >> ycc_to_rgb_offset_scale_shifts));
-  int16_t uf = u - (ycc_to_rgb_offset[1] >> ycc_to_rgb_offset_scale_shifts);
-  int16_t vf = v - (ycc_to_rgb_offset[2] >> ycc_to_rgb_offset_scale_shifts);
+  int yf = max(0, y - (ycc_to_rgb_offset[0] >> ycc_to_rgb_offset_scale_shifts));
+  int uf = u - (ycc_to_rgb_offset[1] >> ycc_to_rgb_offset_scale_shifts);
+  int vf = v - (ycc_to_rgb_offset[2] >> ycc_to_rgb_offset_scale_shifts);
   r = Clip3(0, 0xFFFF, (ycc_to_rgb_coef[0] * yf + ycc_to_rgb_coef[1] * uf + ycc_to_rgb_coef[2] * vf) >> ycc_to_rgb_coef_scale_shifts);
   g = Clip3(0, 0xFFFF, (ycc_to_rgb_coef[3] * yf + ycc_to_rgb_coef[4] * uf + ycc_to_rgb_coef[5] * vf) >> ycc_to_rgb_coef_scale_shifts);
   b = Clip3(0, 0xFFFF, (ycc_to_rgb_coef[6] * yf + ycc_to_rgb_coef[7] * uf + ycc_to_rgb_coef[8] * vf) >> ycc_to_rgb_coef_scale_shifts);

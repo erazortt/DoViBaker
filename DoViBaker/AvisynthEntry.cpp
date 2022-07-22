@@ -8,7 +8,7 @@
 #include "DoViBaker.h"
 #include <vector>
 
-AVSValue __cdecl Create_RealDoViBaker(PClip blclip, PClip elclip, const char* rpuPath, const AVSValue* args, IScriptEnvironment* env)
+AVSValue __cdecl Create_RealDoViBaker(PClip blclip, PClip elclip, const char* rpuPath, bool qnd, const AVSValue* args, IScriptEnvironment* env)
 {
   if (!blclip->GetVideoInfo().HasVideo() || !elclip->GetVideoInfo().HasVideo()) {
     env->ThrowError("DoViBaker: Clip not available");
@@ -40,18 +40,25 @@ AVSValue __cdecl Create_RealDoViBaker(PClip blclip, PClip elclip, const char* rp
     env->ThrowError("DoViBaker: Enhancement Layer must either be same size or quarter size as Base Layer");
   }
 
-  if (chromaSubSampling == 0) {
-    return new DoViBaker<false>(blclip, elclip, rpuPath, quarterResolutionEl, env);
+  if (chromaSubSampling == 0 && quarterResolutionEl == 0) {
+    return new DoViBaker<false, false>(blclip, elclip, rpuPath, qnd, env);
   }
-  if (chromaSubSampling == 1) {
-    return new DoViBaker<true>(blclip, elclip, rpuPath, quarterResolutionEl, env);
+  if (chromaSubSampling == 0 && quarterResolutionEl == 1) {
+    return new DoViBaker<false, true>(blclip, elclip, rpuPath, qnd, env);
   }
+  if (chromaSubSampling == 1 && quarterResolutionEl == 0) {
+    return new DoViBaker<true, false>(blclip, elclip, rpuPath, qnd, env);
+  }
+  if (chromaSubSampling == 1 && quarterResolutionEl == 1) {
+    return new DoViBaker<true, true>(blclip, elclip, rpuPath, qnd, env);
+  }
+  
 }
 
 AVSValue __cdecl Create_DoViBaker(AVSValue args, void* user_data, IScriptEnvironment* env)
 {
 
-  return Create_RealDoViBaker(args[0].AsClip(), args[1].AsClip(), args[2].AsString(), &args, env);
+  return Create_RealDoViBaker(args[0].AsClip(), args[1].AsClip(), args[2].AsString(), args[3].AsBool(false), &args, env);
 }
 
 const AVS_Linkage *AVS_linkage = nullptr;
@@ -60,7 +67,7 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScri
 {
   AVS_linkage = vectors;
 
-  env->AddFunction("DoViBaker", "c[el]c[rpu]s", Create_DoViBaker, 0);
+  env->AddFunction("DoViBaker", "c[el]c[rpu]s[qnd]b", Create_DoViBaker, 0);
 
   return "Hey it is just a spectrogram!";
 }

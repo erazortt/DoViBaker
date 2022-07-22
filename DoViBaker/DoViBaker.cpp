@@ -9,9 +9,9 @@
 // Code
 //////////////////////////////
 
-template<bool chromaSubsampling>
-DoViBaker<chromaSubsampling>::DoViBaker(PClip _blChild, PClip _elChild, const char* rpuPath, bool _quarterResolutionEl, IScriptEnvironment* env)
-  : GenericVideoFilter(_blChild), elChild(_elChild), quarterResolutionEl(_quarterResolutionEl)
+template<bool chromaSubsampling, bool quarterResolutionEl>
+DoViBaker<chromaSubsampling, quarterResolutionEl>::DoViBaker(PClip _blChild, PClip _elChild, const char* rpuPath, bool _qnd, IScriptEnvironment* env)
+  : GenericVideoFilter(_blChild), elChild(_elChild), qnd(_qnd)
 {
 	int bits_per_pixel = vi.BitsPerComponent();
 	if (bits_per_pixel != 16) {
@@ -24,14 +24,14 @@ DoViBaker<chromaSubsampling>::DoViBaker(PClip _blChild, PClip _elChild, const ch
   CPU_FLAG = env->GetCPUFlags();
 }
 
-template<bool chromaSubsampling>
-DoViBaker<chromaSubsampling>::~DoViBaker()
+template<bool chromaSubsampling, bool quarterResolutionEl>
+DoViBaker<chromaSubsampling, quarterResolutionEl>::~DoViBaker()
 {
 }
 
-template<bool chromaSubsampling>
+template<bool chromaSubsampling, bool quarterResolutionEl>
 template<int vertLen, int nD>
-inline void DoViBaker<chromaSubsampling>::upsampleVert(PVideoFrame& mez, const PVideoFrame& src, const int plane, const std::array<int, vertLen>& Dn0p, const upscaler_t evenUpscaler, const upscaler_t oddUpscaler, IScriptEnvironment* env)
+inline void DoViBaker<chromaSubsampling, quarterResolutionEl>::upsampleVert(PVideoFrame& mez, const PVideoFrame& src, const int plane, const std::array<int, vertLen>& Dn0p, const upscaler_t evenUpscaler, const upscaler_t oddUpscaler, IScriptEnvironment* env)
 {
 	const int srcHeight = src->GetHeight(plane);
 	const int srcWidth = src->GetRowSize(plane) / sizeof(uint16_t);
@@ -72,8 +72,8 @@ inline void DoViBaker<chromaSubsampling>::upsampleVert(PVideoFrame& mez, const P
 	}
 }
 
-template<bool chromaSubsampling>
-void DoViBaker<chromaSubsampling>::upsampleHorz(PVideoFrame& dst, const PVideoFrame& mez, int plane, IScriptEnvironment* env)
+template<bool chromaSubsampling, bool quarterResolutionEl>
+void DoViBaker<chromaSubsampling, quarterResolutionEl>::upsampleHorz(PVideoFrame& dst, const PVideoFrame& mez, int plane, IScriptEnvironment* env)
 {
 	const int srcHeight = mez->GetHeight(plane);
 	const int srcWidth = mez->GetRowSize(plane) / sizeof(uint16_t);
@@ -118,8 +118,8 @@ void DoViBaker<chromaSubsampling>::upsampleHorz(PVideoFrame& dst, const PVideoFr
 	}
 }
 
-template<bool chromaSubsampling>
-void DoViBaker<chromaSubsampling>::upsampleEl(PVideoFrame& dst, const PVideoFrame& src, VideoInfo dstVi, IScriptEnvironment* env)
+template<bool chromaSubsampling, bool quarterResolutionEl>
+void DoViBaker<chromaSubsampling, quarterResolutionEl>::upsampleEl(PVideoFrame& dst, const PVideoFrame& src, VideoInfo dstVi, IScriptEnvironment* env)
 {
 	dstVi.width /= 2;
 	PVideoFrame mez = env->NewVideoFrame(dstVi);
@@ -133,8 +133,8 @@ void DoViBaker<chromaSubsampling>::upsampleEl(PVideoFrame& dst, const PVideoFram
 	upsampleHorz(dst, mez, PLANAR_V, env);
 }
 
-template<bool chromaSubsampling>
-void DoViBaker<chromaSubsampling>::to444(PVideoFrame& dst, const PVideoFrame& src, VideoInfo dstVi, IScriptEnvironment* env)
+template<bool chromaSubsampling, bool quarterResolutionEl>
+void DoViBaker<chromaSubsampling, quarterResolutionEl>::to444(PVideoFrame& dst, const PVideoFrame& src, VideoInfo dstVi, IScriptEnvironment* env)
 {
 	dstVi.width /= 2;
 	PVideoFrame mez = env->NewVideoFrame(dstVi);
@@ -178,8 +178,8 @@ void DoViBaker<chromaSubsampling>::to444(PVideoFrame& dst, const PVideoFrame& sr
 	}
 }*/
 
-template<bool chromaSubsampling>
-void DoViBaker<chromaSubsampling>::applyDovi(PVideoFrame& dst, const PVideoFrame& blSrc, const PVideoFrame& elSrc, IScriptEnvironment* env) {
+template<bool chromaSubsampling, bool quarterResolutionEl>
+void DoViBaker<chromaSubsampling, quarterResolutionEl>::applyDovi(PVideoFrame& dst, const PVideoFrame& blSrc, const PVideoFrame& elSrc, IScriptEnvironment* env) {
 
 	const int blSrcHeightY = blSrc->GetHeight();
 	const int blSrcWidthY = blSrc->GetRowSize() / sizeof(uint16_t);
@@ -293,8 +293,8 @@ void DoViBaker<chromaSubsampling>::applyDovi(PVideoFrame& dst, const PVideoFrame
 	}
 }
 
-/*template<bool chromaSubsampling>
-void DoViBaker<chromaSubsampling>::upsampleElAndApplyDoviAndConvert2rgb(PVideoFrame& dst, const PVideoFrame& blSrc, const PVideoFrame& elSrc, IScriptEnvironment* env) {
+template<bool chromaSubsampling, bool quarterResolutionEl>
+void DoViBaker<chromaSubsampling, quarterResolutionEl>::doAllQuickAndDirty(PVideoFrame& dst, const PVideoFrame& blSrc, const PVideoFrame& elSrc, IScriptEnvironment* env) {
 	const int blSrcHeightY = blSrc->GetHeight(PLANAR_Y);
 	const int blSrcWidthY = blSrc->GetRowSize(PLANAR_Y) / sizeof(uint16_t);
 	const int blSrcPitchY = blSrc->GetPitch(PLANAR_Y) / sizeof(uint16_t);
@@ -307,10 +307,6 @@ void DoViBaker<chromaSubsampling>::upsampleElAndApplyDoviAndConvert2rgb(PVideoFr
 	const int dstWidth = dst->GetRowSize(PLANAR_R) / sizeof(uint16_t);
 	const int dstPitch = dst->GetPitch(PLANAR_R) / sizeof(uint16_t);
 
-	const uint16_t* blSrcYp = (const uint16_t*)blSrc->GetReadPtr(PLANAR_Y);
-	const uint16_t* elSrcYp = (const uint16_t*)elSrc->GetReadPtr(PLANAR_Y);
-	uint16_t* dstRp = (uint16_t*)dst->GetWritePtr(PLANAR_R);
-	
 	const int blSrcHeightUV = blSrc->GetHeight(PLANAR_U);
 	const int blSrcWidthUV = blSrc->GetRowSize(PLANAR_U) / sizeof(uint16_t);
 	const int blSrcPitchUV = blSrc->GetPitch(PLANAR_U) / sizeof(uint16_t);
@@ -319,48 +315,108 @@ void DoViBaker<chromaSubsampling>::upsampleElAndApplyDoviAndConvert2rgb(PVideoFr
 	const int elSrcWidthUV = elSrc->GetRowSize(PLANAR_U) / sizeof(uint16_t);
 	const int elSrcPitchUV = elSrc->GetPitch(PLANAR_U) / sizeof(uint16_t);
 
-	const uint16_t* blSrcUp = (const uint16_t*)blSrc->GetReadPtr(PLANAR_U);
-	const uint16_t* elSrcUp = (const uint16_t*)elSrc->GetReadPtr(PLANAR_U);
-	uint16_t* dstGp = (uint16_t*)dst->GetWritePtr(PLANAR_G);
 
-	const uint16_t* blSrcVp = (const uint16_t*)blSrc->GetReadPtr(PLANAR_V);
-	const uint16_t* elSrcVp = (const uint16_t*)elSrc->GetReadPtr(PLANAR_V);
-	uint16_t* dstBp = (uint16_t*)dst->GetWritePtr(PLANAR_B);
+	std::array<const uint16_t*, (chromaSubsampling + 1) * (quarterResolutionEl + 1)> blSrcYp;
+	std::array<const uint16_t*, chromaSubsampling + 1> elSrcYp;
+	std::array<uint16_t*, (chromaSubsampling + 1)* (quarterResolutionEl + 1)> dstRp;
+	blSrcYp[0] = (const uint16_t*)blSrc->GetReadPtr(PLANAR_Y);
+	elSrcYp[0] = (const uint16_t*)elSrc->GetReadPtr(PLANAR_Y);
+	dstRp[0] = (uint16_t*)dst->GetWritePtr(PLANAR_R);
 
-	const int16_t* matrix = doviProc->getYcc2RgbCoef();
-	const uint16_t mDenom = doviProc->getYcc2RgbCoefScale();
+	std::array<const uint16_t*, quarterResolutionEl + 1> blSrcUp;
+	std::array<const uint16_t*, 1> elSrcUp;
+	std::array<uint16_t*, (chromaSubsampling + 1)* (quarterResolutionEl + 1)> dstGp;
+	blSrcUp[0] = (const uint16_t*)blSrc->GetReadPtr(PLANAR_U);
+	elSrcUp[0] = (const uint16_t*)elSrc->GetReadPtr(PLANAR_U);
+	dstGp[0] = (uint16_t*)dst->GetWritePtr(PLANAR_G);
 
-	for (int huv = 0; huv < blSrcHeightUV; huv++) {
-		for (int wuv = 0; wuv < blSrcWidthUV; wuv++) {
-			uint16_t y = doviProc->processSampleY(blSrcYp[wuv], elSrcYp[wuv]);
-			uint16_t mmrBlY = blSrcYp[wuv];
-			uint16_t u = doviProc->processSampleU(blSrcUp[wuv], elSrcUp[wuv], mmrBlY, blSrcUp[wuv], blSrcVp[wuv]);
-			uint16_t v = doviProc->processSampleV(blSrcVp[wuv], elSrcVp[wuv], mmrBlY, blSrcUp[wuv], blSrcVp[wuv]);
+	std::array<const uint16_t*, quarterResolutionEl + 1> blSrcVp;
+	std::array<const uint16_t*, 1> elSrcVp;
+	std::array<uint16_t*, (chromaSubsampling + 1)* (quarterResolutionEl + 1)> dstBp;
+	blSrcVp[0] = (const uint16_t*)blSrc->GetReadPtr(PLANAR_V);
+	elSrcVp[0] = (const uint16_t*)elSrc->GetReadPtr(PLANAR_V);
+	dstBp[0] = (uint16_t*)dst->GetWritePtr(PLANAR_B);
 
-			int32_t r = (matrix[0] * y + matrix[1] * u + matrix[2] * v) / mDenom;
-			int32_t g = (matrix[3] * y + matrix[4] * u + matrix[5] * v) / mDenom;
-			int32_t b = (matrix[6] * y + matrix[7] * u + matrix[8] * v) / mDenom;
 
-			dstRp[wuv] = r;
-			dstGp[wuv] = g;
-			dstBp[wuv] = b;
+	for (int i = 1; i < elSrcVp.size(); i++) {
+		elSrcUp[i] = elSrcUp[i - 1] + elSrcPitchUV;
+		elSrcVp[i] = elSrcVp[i - 1] + elSrcPitchUV;
+	}
+	for (int i = 1; i < elSrcYp.size(); i++) {
+		elSrcYp[i] = elSrcYp[i - 1] + elSrcPitchY;
+	}
+	for (int i = 1; i < blSrcVp.size(); i++) {
+		blSrcUp[i] = blSrcUp[i - 1] + blSrcPitchUV;
+		blSrcVp[i] = blSrcVp[i - 1] + blSrcPitchUV;
+	}
+	for (int i = 1; i < dstBp.size(); i++) {
+		blSrcYp[i] = blSrcYp[i - 1] + blSrcPitchY;
+		dstRp[i] = dstRp[i - 1] + dstPitch;
+		dstGp[i] = dstGp[i - 1] + dstPitch;
+		dstBp[i] = dstBp[i - 1] + dstPitch;
+	}
+
+	for (int heluv = 0; heluv < elSrcHeightUV; heluv++) {
+		for (int weluv = 0; weluv < elSrcWidthUV; weluv++) {
+
+			const uint16_t& elu = elSrcUp[0][weluv];
+			const uint16_t& elv = elSrcVp[0][weluv];
+
+			for (int hDbluv = 0; hDbluv < quarterResolutionEl + 1; hDbluv++) {
+				for (int wDbluv = 0; wDbluv < quarterResolutionEl + 1; wDbluv++) {
+
+					int wbluv = (weluv << quarterResolutionEl) + wDbluv;
+					const uint16_t& blu = blSrcUp[hDbluv][wbluv];
+					const uint16_t& blv = blSrcVp[hDbluv][wbluv];
+
+					int hDbluvy = hDbluv << chromaSubsampling;
+					int wbluvy = wbluv << chromaSubsampling;
+					const uint16_t& mmrbly = blSrcYp[hDbluvy][wbluvy];
+
+					const uint16_t& u = doviProc->processSampleU(blu, elu, mmrbly, blu, blv);
+					const uint16_t& v = doviProc->processSampleV(blv, elv, mmrbly, blu, blv);
+
+					for (int hDbly = 0; hDbly < chromaSubsampling + 1; hDbly++) {
+						for (int wDbly = 0; wDbly < chromaSubsampling + 1; wDbly++) {
+
+							int hDDbly = hDbluvy + hDbly;
+							int wbly = wbluvy + wDbly;
+							const uint16_t& bly = blSrcYp[hDDbly][wbly];
+
+							int hDely = hDDbly >> quarterResolutionEl;
+							int wely = wbly >> quarterResolutionEl;
+							const uint16_t& ely = elSrcYp[hDely][wely];
+
+							const uint16_t& y = doviProc->processSampleY(bly, ely);
+							doviProc->sample2rgb(dstRp[hDDbly][wbly], dstGp[hDDbly][wbly], dstBp[hDDbly][wbly], y, u, v);
+						}
+					}
+				}
+			}
 		}
 
-		blSrcYp += blSrcPitchY;
-		elSrcYp += elSrcPitchY;
-		blSrcUp += blSrcPitchUV;
-		blSrcVp += blSrcPitchUV;
-		elSrcUp += elSrcPitchUV;
-		elSrcVp += elSrcPitchUV;
-
-		dstRp += dstPitch;
-		dstGp += dstPitch;
-		dstBp += dstPitch;
+		for (int i = 0; i < elSrcVp.size(); i++) {
+			elSrcVp[i] += elSrcPitchUV;
+			elSrcUp[i] += elSrcPitchUV;
+		}
+		for (int i = 0; i < chromaSubsampling + 1; i++) {
+			elSrcYp[i] += elSrcPitchY * (chromaSubsampling + 1);
+		}
+		for (int i = 0; i < quarterResolutionEl + 1; i++) {
+			blSrcVp[i] += blSrcPitchUV * (quarterResolutionEl + 1);
+			blSrcUp[i] += blSrcPitchUV * (quarterResolutionEl + 1);
+		}
+		for (int i = 0; i < (quarterResolutionEl + 1) * (chromaSubsampling + 1); i++) {
+			blSrcYp[i] += blSrcPitchY * (quarterResolutionEl + 1) * (chromaSubsampling + 1);
+			dstRp[i] += dstPitch * (quarterResolutionEl + 1) * (chromaSubsampling + 1);
+			dstGp[i] += dstPitch * (quarterResolutionEl + 1) * (chromaSubsampling + 1);
+			dstBp[i] += dstPitch * (quarterResolutionEl + 1) * (chromaSubsampling + 1);
+		}
 	}
-}*/
+}
 
-template<bool chromaSubsampling>
-void DoViBaker<chromaSubsampling>::convert2rgb(PVideoFrame& dst, const PVideoFrame& srcY, const PVideoFrame& srcUV)
+template<bool chromaSubsampling, bool quarterResolutionEl>
+void DoViBaker<chromaSubsampling, quarterResolutionEl>::convert2rgb(PVideoFrame& dst, const PVideoFrame& srcY, const PVideoFrame& srcUV)
 {
 	const int srcHeightY = srcY->GetHeight(PLANAR_Y);
 	const int srcWidthY = srcY->GetRowSize(PLANAR_Y) / sizeof(uint16_t);
@@ -398,38 +454,45 @@ void DoViBaker<chromaSubsampling>::convert2rgb(PVideoFrame& dst, const PVideoFra
 	}
 }
 
-template<bool chromaSubsampling>
-PVideoFrame DoViBaker<chromaSubsampling>::GetFrame(int n, IScriptEnvironment* env)
+template<bool chromaSubsampling, bool quarterResolutionEl>
+PVideoFrame DoViBaker<chromaSubsampling, quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* env)
 {
 	PVideoFrame blSrc = child->GetFrame(n, env);
 	PVideoFrame elSrc = elChild->GetFrame(n, env);
-	PVideoFrame mez = env->NewVideoFrame(child->GetVideoInfo());
 	PVideoFrame dst = env->NewVideoFrameP(vi, &blSrc);
 
 	doviProc->intializeFrame(n, env);
 	env->propSetInt(env->getFramePropsRW(dst), "_dovi_max_content_light_level", doviProc->getMaxContentLightLevel(), 0);
 
-	if (quarterResolutionEl) {
-		PVideoFrame elUpSrc = env->NewVideoFrame(child->GetVideoInfo());
-		upsampleEl(elUpSrc, elSrc, child->GetVideoInfo(), env);
-		applyDovi(mez, blSrc, elUpSrc, env);
+	if (qnd) {
+		doAllQuickAndDirty(dst, blSrc, elSrc, env);
 	}
 	else {
-		applyDovi(mez, blSrc, elSrc, env);
-	}
-	if (chromaSubsampling) {
-		VideoInfo vi444 = child->GetVideoInfo();
-		vi444.pixel_type = VideoInfo::CS_YUV444P16;
-		PVideoFrame mez444 = env->NewVideoFrame(vi444);
-		to444(mez444, mez, vi444, env);
-		convert2rgb(dst, mez, mez444);
-	}
-	else {
-		convert2rgb(dst, mez, mez);
+		PVideoFrame mez = env->NewVideoFrame(child->GetVideoInfo());
+		if (quarterResolutionEl) {
+			PVideoFrame elUpSrc = env->NewVideoFrame(child->GetVideoInfo());
+			upsampleEl(elUpSrc, elSrc, child->GetVideoInfo(), env);
+			applyDovi(mez, blSrc, elUpSrc, env);
+		}
+		else {
+			applyDovi(mez, blSrc, elSrc, env);
+		}
+		if (chromaSubsampling) {
+			VideoInfo vi444 = child->GetVideoInfo();
+			vi444.pixel_type = VideoInfo::CS_YUV444P16;
+			PVideoFrame mez444 = env->NewVideoFrame(vi444);
+			to444(mez444, mez, vi444, env);
+			convert2rgb(dst, mez, mez444);
+		}
+		else {
+			convert2rgb(dst, mez, mez);
+		}
 	}
 	return dst;
 }
 
 // explicitly instantiate the template for the linker
-template class DoViBaker<0>;
-template class DoViBaker<1>;
+template class DoViBaker<0, 0>;
+template class DoViBaker<0, 1>;
+template class DoViBaker<1, 0>;
+template class DoViBaker<1, 1>;

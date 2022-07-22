@@ -10,11 +10,11 @@
 //#include <stdint.h>
 #include "DoViProcessor.h"
 
-template<bool chromaSubsampling>
+template<bool chromaSubsampling, bool quarterResolutionEl>
 class DoViBaker : public GenericVideoFilter
 {
 public:
-  DoViBaker(PClip _blChild, PClip _elChild, const char* rpuPath, bool quarterResolutionEl, IScriptEnvironment* env);
+  DoViBaker(PClip _blChild, PClip _elChild, const char* rpuPath, bool qnd, IScriptEnvironment* env);
   virtual ~DoViBaker();
   PVideoFrame GetFrame(int n, IScriptEnvironment* env) override;
 
@@ -23,6 +23,7 @@ private:
   void to444(PVideoFrame& dst, const PVideoFrame& el, VideoInfo dstVi, IScriptEnvironment* env);
   void applyDovi(PVideoFrame& dst, const PVideoFrame& blSrc, const PVideoFrame& elSrc, IScriptEnvironment* env);
   void convert2rgb(PVideoFrame& rgb, const PVideoFrame& y, const PVideoFrame& uv);
+  void doAllQuickAndDirty(PVideoFrame& rgb, const PVideoFrame& blSrc, const PVideoFrame& elSrc, IScriptEnvironment* env);
 
   typedef uint16_t(*upscaler_t)(const uint16_t* srcSamples, int idx0);
   template<int vertLen, int nD>
@@ -32,7 +33,7 @@ private:
   PClip elChild;
   int CPU_FLAG;
   DoViProcessor* doviProc;
-  bool quarterResolutionEl;
+  bool qnd;
 };
 
 #endif
