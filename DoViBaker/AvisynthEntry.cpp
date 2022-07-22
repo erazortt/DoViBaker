@@ -10,34 +10,37 @@
 
 AVSValue __cdecl Create_RealDoViBaker(PClip blclip, PClip elclip, const char* rpuPath, bool qnd, const AVSValue* args, IScriptEnvironment* env)
 {
-  if (!blclip->GetVideoInfo().HasVideo() || !elclip->GetVideoInfo().HasVideo()) {
+  if (!blclip->GetVideoInfo().HasVideo() || (elclip && !elclip->GetVideoInfo().HasVideo())) {
     env->ThrowError("DoViBaker: Clip not available");
   }
 
-  if (!blclip->GetVideoInfo().IsYUV() || !elclip->GetVideoInfo().IsYUV()) {
+  if (!blclip->GetVideoInfo().IsYUV() || (elclip && !elclip->GetVideoInfo().IsYUV())) {
     env->ThrowError("DoViBaker: Clip must be in YUV format");
   }
 
   int chromaSubSampling = -1;
-  if (blclip->GetVideoInfo().Is420() && elclip->GetVideoInfo().Is420()) {
+  if (blclip->GetVideoInfo().Is420() && (!elclip || elclip->GetVideoInfo().Is420())) {
     chromaSubSampling = 1;
   }
-  if (blclip->GetVideoInfo().Is444() && elclip->GetVideoInfo().Is444()) {
+  if (blclip->GetVideoInfo().Is444() && (!elclip || elclip->GetVideoInfo().Is444())) {
     chromaSubSampling = 0;
   }
   if (chromaSubSampling<0) {
     env->ThrowError("DoViBaker: Base Layer and Enhancement Layer clips must have both the same chroma subsampling, either 444 or 420");
   }
 
-  int quarterResolutionEl = -1;
-  if ((blclip->GetVideoInfo().width == elclip->GetVideoInfo().width) && (blclip->GetVideoInfo().height == elclip->GetVideoInfo().height)) {
-    quarterResolutionEl = 0;
-  }
-  if ((blclip->GetVideoInfo().width == 2*elclip->GetVideoInfo().width) && (blclip->GetVideoInfo().height == 2*elclip->GetVideoInfo().height)) {
-    quarterResolutionEl = 1;
-  }
-  if (quarterResolutionEl < 0) {
-    env->ThrowError("DoViBaker: Enhancement Layer must either be same size or quarter size as Base Layer");
+  int quarterResolutionEl = 0;
+  if (elclip) {
+    quarterResolutionEl = -1;
+    if ((blclip->GetVideoInfo().width == elclip->GetVideoInfo().width) && (blclip->GetVideoInfo().height == elclip->GetVideoInfo().height)) {
+      quarterResolutionEl = 0;
+    }
+    if ((blclip->GetVideoInfo().width == 2 * elclip->GetVideoInfo().width) && (blclip->GetVideoInfo().height == 2 * elclip->GetVideoInfo().height)) {
+      quarterResolutionEl = 1;
+    }
+    if (quarterResolutionEl < 0) {
+      env->ThrowError("DoViBaker: Enhancement Layer must either be same size or quarter size as Base Layer");
+    }
   }
 
   if (chromaSubSampling == 0 && quarterResolutionEl == 0) {

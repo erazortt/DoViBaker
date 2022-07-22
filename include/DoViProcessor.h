@@ -26,7 +26,10 @@ public:
   DoViProcessor(const char* rpuPath, IScriptEnvironment* env);
   virtual ~DoViProcessor();
   void intializeFrame(int frame, IScriptEnvironment* env);
-  uint16_t getMaxContentLightLevel() const { return max_content_light_level; }
+  
+  inline bool isFEL() const { return is_fel; }
+  void forceDisableElProcessing(bool force = true) { force_disable_residual_flag = force; }
+  inline uint16_t getMaxContentLightLevel() const { return max_content_light_level; }
 
   static inline constexpr uint16_t Clip3(uint16_t lower, uint16_t upper, int value);
   static inline constexpr uint16_t upsampleHorzEven(const uint16_t* srcSamples, int idx0);
@@ -72,7 +75,9 @@ private:
   uint8_t el_bit_depth;
   uint8_t out_bit_depth;
   uint8_t coeff_log2_denom;
+  bool is_fel;
   bool disable_residual_flag;
+  bool force_disable_residual_flag;
   uint8_t nlq_method_idc;
 
   uint16_t max_content_light_level;

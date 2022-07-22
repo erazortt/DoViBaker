@@ -21,8 +21,8 @@ public:
 private:
   void upsampleEl(PVideoFrame& dst, const PVideoFrame& el, VideoInfo dstVi, IScriptEnvironment* env);
   void to444(PVideoFrame& dst, const PVideoFrame& el, VideoInfo dstVi, IScriptEnvironment* env);
-  void applyDovi(PVideoFrame& dst, const PVideoFrame& blSrc, const PVideoFrame& elSrc, IScriptEnvironment* env);
   void convert2rgb(PVideoFrame& rgb, const PVideoFrame& y, const PVideoFrame& uv);
+  void applyDovi(PVideoFrame& dst, const PVideoFrame& blSrc, const PVideoFrame& elSrc, IScriptEnvironment* env);
   void doAllQuickAndDirty(PVideoFrame& rgb, const PVideoFrame& blSrc, const PVideoFrame& elSrc, IScriptEnvironment* env);
 
   typedef uint16_t(*upscaler_t)(const uint16_t* srcSamples, int idx0);
@@ -33,7 +33,7 @@ private:
   PClip elChild;
   int CPU_FLAG;
   DoViProcessor* doviProc;
-  bool qnd;
+  const bool qnd;
 };
 
 #endif

@@ -458,18 +458,24 @@ template<bool chromaSubsampling, bool quarterResolutionEl>
 PVideoFrame DoViBaker<chromaSubsampling, quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* env)
 {
 	PVideoFrame blSrc = child->GetFrame(n, env);
-	PVideoFrame elSrc = elChild->GetFrame(n, env);
+	PVideoFrame elSrc = elChild ? elChild->GetFrame(n, env) : blSrc;
 	PVideoFrame dst = env->NewVideoFrameP(vi, &blSrc);
 
 	doviProc->intializeFrame(n, env);
 	env->propSetInt(env->getFramePropsRW(dst), "_dovi_max_content_light_level", doviProc->getMaxContentLightLevel(), 0);
+
+	bool skipElProcessing = false;
+	if (!elChild || !doviProc->isFEL()) {
+		skipElProcessing = true;
+		doviProc->forceDisableElProcessing();
+	}
 
 	if (qnd) {
 		doAllQuickAndDirty(dst, blSrc, elSrc, env);
 	}
 	else {
 		PVideoFrame mez = env->NewVideoFrame(child->GetVideoInfo());
-		if (quarterResolutionEl) {
+		if (quarterResolutionEl && !skipElProcessing) {
 			PVideoFrame elUpSrc = env->NewVideoFrame(child->GetVideoInfo());
 			upsampleEl(elUpSrc, elSrc, child->GetVideoInfo(), env);
 			applyDovi(mez, blSrc, elUpSrc, env);

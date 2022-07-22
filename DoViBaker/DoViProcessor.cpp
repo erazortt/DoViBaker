@@ -1,8 +1,9 @@
 #include "DoViProcessor.h"
 #include <array>
+#include <algorithm>
 
 DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env)
-	: max_content_light_level(1000)
+	: force_disable_residual_flag(false), max_content_light_level(1000)
 {
 	ycc_to_rgb_coef[0] = 8192;
 	ycc_to_rgb_coef[1] = 0;
@@ -13,6 +14,10 @@ DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env)
 	ycc_to_rgb_coef[6] = 8192;
 	ycc_to_rgb_coef[7] = 15201;
 	ycc_to_rgb_coef[8] = 0;
+
+	ycc_to_rgb_offset[0] = 0;
+	ycc_to_rgb_offset[1] = (1 << 15) << ycc_to_rgb_offset_scale_shifts;
+	ycc_to_rgb_offset[2] = (1 << 15) << ycc_to_rgb_offset_scale_shifts;
 
 	doviLib = ::LoadLibrary(L"dovi.dll"); // delayed loading, original name
 	if (doviLib == NULL) {
@@ -74,6 +79,11 @@ void DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 		showMessage("DoViBaker: Expecting profile 7 rpu data.", env);
 		return;
 	}
+	
+	std::string subprofile(header->subprofile);
+	std::transform(subprofile.begin(), subprofile.end(), subprofile.begin(),
+		[](unsigned char c) { return std::toupper(c); });
+	is_fel = (subprofile.compare("FEL")==0);
 
 	auto num_pivots_minus2 = header->num_pivots_minus_2;
 	auto pred_pivot_value = header->pred_pivot_value;
@@ -90,7 +100,7 @@ void DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 	bl_bit_depth = header->bl_bit_depth_minus8 + 8;
 	el_bit_depth = header->el_bit_depth_minus8 + 8;
 	coeff_log2_denom = header->coefficient_log2_denom;
-	disable_residual_flag = header->disable_residual_flag;
+	disable_residual_flag = force_disable_residual_flag || header->disable_residual_flag;
 	nlq_method_idc = header->nlq_method_idc;
 
 	const DoviRpuDataMapping* mapping_data = dovi_rpu_get_data_mapping(rpu);
@@ -166,8 +176,9 @@ void DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 	if (header->vdr_dm_metadata_present_flag) {
 		const DoviVdrDmData* vdr_dm_data = dovi_rpu_get_vdr_dm_data(rpu);
 
-		//max_content_light_level = vdr_dm_data->dm_data.level6->max_content_light_level;
+		//max_content_light_level = vdr_dm_data->source_max_pq
 		max_content_light_level = vdr_dm_data->dm_data.level1->max_pq;
+		//max_content_light_level = vdr_dm_data->dm_data.level6->max_content_light_level;
 
 		ycc_to_rgb_coef[0] = vdr_dm_data->ycc_to_rgb_coef0;
 		ycc_to_rgb_coef[1] = vdr_dm_data->ycc_to_rgb_coef1;
