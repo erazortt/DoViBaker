@@ -3,7 +3,7 @@
 #include <algorithm>
 
 DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env)
-	: force_disable_residual_flag(false), max_content_light_level(1000)
+	: max_content_light_level(1000)
 {
 	ycc_to_rgb_coef[0] = 8192;
 	ycc_to_rgb_coef[1] = 0;
@@ -100,8 +100,19 @@ void DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 	bl_bit_depth = header->bl_bit_depth_minus8 + 8;
 	el_bit_depth = header->el_bit_depth_minus8 + 8;
 	coeff_log2_denom = header->coefficient_log2_denom;
-	disable_residual_flag = force_disable_residual_flag || header->disable_residual_flag;
-	nlq_method_idc = header->nlq_method_idc;
+	disable_residual_flag = header->disable_residual_flag;
+
+	if (header->nlq_method_idc != 0) {
+		//https://ffmpeg.org/doxygen/trunk/dovi__rpu_8c_source.html
+		showMessage("DoViBaker: Only method NLQ_LINEAR_DZ can be applied, NLQ_MU_LAW is not documented.", env);
+		return;
+		//alternativlely we could just gracefully disable the nlq processing with disable_residual_flag=true
+	}
+	if (header->nlq_num_pivots_minus2 != 0) {
+		showMessage("DoViBaker: Expecting nlq_num_pivots_minus2 to be 0.", env);
+		return;
+		//alternativlely we could just gracefully disable the nlq processing with disable_residual_flag=true
+	}
 
 	const DoviRpuDataMapping* mapping_data = dovi_rpu_get_data_mapping(rpu);
 	auto poly_order_minus1 = mapping_data->poly_order_minus1;
@@ -150,11 +161,6 @@ void DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 				}
 			}
 		}
-	}
-
-	if (header->nlq_num_pivots_minus2 != 0) {
-		showMessage("DoViBaker: Expecting nlq_num_pivots_minus2 to be 0.", env);
-		return;
 	}
 
 	const DoviRpuDataNlq* nlq_data = dovi_rpu_get_data_nlq(rpu);
