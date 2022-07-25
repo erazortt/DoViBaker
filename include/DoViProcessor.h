@@ -83,6 +83,7 @@ private:
   uint32_t ycc_to_rgb_offset[3];
 
   //https://github.com/test-full-band/tfb-video/blob/master/core/src/main/java/band/full/video/dolby/VdrDmDataPayload.java
+  //https://ffmpeg.org/doxygen/trunk/dovi__meta_8h_source.html
   //https://ffmpeg.org/doxygen/trunk/dovi__rpu_8c_source.html
   static const uint16_t ycc_to_rgb_coef_scale_shifts = 13;
   static const uint32_t ycc_to_rgb_offset_scale_shifts = (28-16);

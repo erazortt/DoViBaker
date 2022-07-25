@@ -7,8 +7,10 @@
 
 #include "DoViBaker.h"
 #include <vector>
+#include <string>
+#include <sstream>
 
-AVSValue __cdecl Create_RealDoViBaker(PClip blclip, PClip elclip, const char* rpuPath, bool qnd, const AVSValue* args, IScriptEnvironment* env)
+AVSValue __cdecl Create_RealDoViBaker(PClip blclip, PClip elclip, const char* rpuPath, bool qnd, std::string cubeFiles, std::string nits, std::string cubesBasePath, const AVSValue* args, IScriptEnvironment* env)
 {
   if (!blclip->GetVideoInfo().HasVideo() || (elclip && !elclip->GetVideoInfo().HasVideo())) {
     env->ThrowError("DoViBaker: Clip not available");
@@ -42,26 +44,49 @@ AVSValue __cdecl Create_RealDoViBaker(PClip blclip, PClip elclip, const char* rp
       env->ThrowError("DoViBaker: Enhancement Layer must either be same size or quarter size as Base Layer");
     }
   }
-
-  if (chromaSubSampling == 0 && quarterResolutionEl == 0) {
-    return new DoViBaker<false, false>(blclip, elclip, rpuPath, qnd, env);
+  std::stringstream ssCubeFiles(cubeFiles);
+  std::vector<std::string> cubesList;
+  std::string segment;
+  while (std::getline(ssCubeFiles, segment, ';'))
+  {
+    segment.insert(0, cubesBasePath);
+    cubesList.push_back(segment);
   }
-  if (chromaSubSampling == 0 && quarterResolutionEl == 1) {
-    return new DoViBaker<false, true>(blclip, elclip, rpuPath, qnd, env);
+  std::stringstream ssNits(nits);
+  std::vector<uint16_t> nitsList;
+  while (std::getline(ssNits, segment, ';'))
+  {    
+    nitsList.push_back(std::atoi(segment.c_str()));
   }
-  if (chromaSubSampling == 1 && quarterResolutionEl == 0) {
-    return new DoViBaker<true, false>(blclip, elclip, rpuPath, qnd, env);
-  }
-  if (chromaSubSampling == 1 && quarterResolutionEl == 1) {
-    return new DoViBaker<true, true>(blclip, elclip, rpuPath, qnd, env);
+  std::vector<std::pair<uint16_t, std::string>> cubeNitsPairs;
+  if (cubesList.size() > 0) {
+    if (cubesList.size() <= nitsList.size()) {
+      env->ThrowError("DoViBaker: List of LUTs must be one entry longer then the list of nits.");
+    }
+    cubeNitsPairs.push_back(std::pair(0, cubesList[0]));
+    for (int i = 0; i < nitsList.size(); i++) {
+      cubeNitsPairs.push_back(std::pair(nitsList[i], cubesList[i + 1]));
+    }
   }
   
+  if (chromaSubSampling == 0 && quarterResolutionEl == 0) {
+    return new DoViBaker<false, false>(blclip, elclip, rpuPath, qnd, cubeNitsPairs, env);
+  }
+  if (chromaSubSampling == 0 && quarterResolutionEl == 1) {
+    return new DoViBaker<false, true>(blclip, elclip, rpuPath, qnd, cubeNitsPairs, env);
+  }
+  if (chromaSubSampling == 1 && quarterResolutionEl == 0) {
+    return new DoViBaker<true, false>(blclip, elclip, rpuPath, qnd, cubeNitsPairs, env);
+  }
+  if (chromaSubSampling == 1 && quarterResolutionEl == 1) {
+    return new DoViBaker<true, true>(blclip, elclip, rpuPath, qnd, cubeNitsPairs, env);
+  }
 }
 
 AVSValue __cdecl Create_DoViBaker(AVSValue args, void* user_data, IScriptEnvironment* env)
 {
-
-  return Create_RealDoViBaker(args[0].AsClip(), args[1].AsClip(), args[2].AsString(), args[3].AsBool(false), &args, env);
+  //args.ArraySize()
+  return Create_RealDoViBaker(args[0].AsClip(), args[1].AsClip(), args[2].AsString(), args[3].AsBool(false), args[4].AsString(""), args[5].AsString(""), args[6].AsString(""), &args, env);
 }
 
 const AVS_Linkage *AVS_linkage = nullptr;
@@ -70,7 +95,7 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScri
 {
   AVS_linkage = vectors;
 
-  env->AddFunction("DoViBaker", "c[el]c[rpu]s[qnd]b", Create_DoViBaker, 0);
+  env->AddFunction("DoViBaker", "c[el]c[rpu]s[qnd]b[cubes]s[mclls]s[cubes_basepath]s", Create_DoViBaker, 0);
 
   return "Hey it is just a spectrogram!";
 }
