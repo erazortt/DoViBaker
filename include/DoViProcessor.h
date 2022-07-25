@@ -31,7 +31,9 @@ public:
   void forceDisableElProcessing(bool force = true) { disable_residual_flag = force; }
   inline uint16_t getMaxContentLightLevel() const { return max_content_light_level; }
 
+  static inline uint16_t pq2nits(uint16_t pq);
   static inline constexpr uint16_t Clip3(uint16_t lower, uint16_t upper, int value);
+
   static inline constexpr uint16_t upsampleHorzEven(const uint16_t* srcSamples, int idx0);
   static inline constexpr uint16_t upsampleHorzOdd(const uint16_t* srcSamples, int idx0);
   static inline constexpr uint16_t upsampleBlVertEven(const uint16_t* srcSamples, int idx0);
@@ -106,6 +108,19 @@ private:
   uint32_t fp_linear_deadzone_threshold[3];
 };
 
+uint16_t DoViProcessor::pq2nits(uint16_t pq)
+{
+  static const float m1 = 2610.0 / 4096 / 4;
+  static const float m2 = 2523.0 / 4096 * 128;
+  static const float c3 = 2392.0 / 4096 * 32;
+  static const float c2 = 2413.0 / 4096 * 32;
+  static const float c1 = c3 - c2 + 1;
+  const float relPq = pq / 4095.0;
+  const float epower = powf(relPq, 1 / m2);
+  const float num = max(epower - c1, 0);
+  const float denom = c2 - c3 * epower;
+  return powf(num / denom, 1 / m1) * 10000;
+}
 
 constexpr uint16_t DoViProcessor::Clip3(uint16_t lower, uint16_t upper, int value)
 {

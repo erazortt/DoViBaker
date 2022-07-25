@@ -182,8 +182,8 @@ void DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 	if (header->vdr_dm_metadata_present_flag) {
 		const DoviVdrDmData* vdr_dm_data = dovi_rpu_get_vdr_dm_data(rpu);
 
-		//max_content_light_level = vdr_dm_data->source_max_pq
-		max_content_light_level = vdr_dm_data->dm_data.level1->max_pq;
+		//max_content_light_level = pq2nits(vdr_dm_data->source_max_pq);
+		max_content_light_level = pq2nits(vdr_dm_data->dm_data.level1->max_pq);
 		//max_content_light_level = vdr_dm_data->dm_data.level6->max_content_light_level;
 
 		ycc_to_rgb_coef[0] = vdr_dm_data->ycc_to_rgb_coef0;

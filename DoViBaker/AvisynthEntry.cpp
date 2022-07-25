@@ -105,4 +105,11 @@ int main()
 	DoViProcessor dovi("Z:/rpu.bin", NULL);
   dovi.intializeFrame(1, NULL);
 
+  for (int i = 0; i < 100; i += 10) {
+    std::string out(std::to_string(i));
+    out += "%:";
+    out += std::to_string(DoViProcessor::pq2nits(4095 * i * 0.01));
+    out += "\n";
+    printf(out.c_str());
+  }
 }
