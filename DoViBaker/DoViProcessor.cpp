@@ -196,9 +196,9 @@ void DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 		ycc_to_rgb_coef[7] = vdr_dm_data->ycc_to_rgb_coef7;
 		ycc_to_rgb_coef[8] = vdr_dm_data->ycc_to_rgb_coef8;
 
-		ycc_to_rgb_offset[0] = vdr_dm_data->ycc_to_rgb_offset0;
-		ycc_to_rgb_offset[1] = vdr_dm_data->ycc_to_rgb_offset1;
-		ycc_to_rgb_offset[2] = vdr_dm_data->ycc_to_rgb_offset2;
+		ycc_to_rgb_offset[0] = vdr_dm_data->ycc_to_rgb_offset0 >> ycc_to_rgb_offset_scale_shifts;
+		ycc_to_rgb_offset[1] = vdr_dm_data->ycc_to_rgb_offset1 >> ycc_to_rgb_offset_scale_shifts;
+		ycc_to_rgb_offset[2] = vdr_dm_data->ycc_to_rgb_offset2 >> ycc_to_rgb_offset_scale_shifts;
 
 		dovi_rpu_free_vdr_dm_data(vdr_dm_data);
 	}

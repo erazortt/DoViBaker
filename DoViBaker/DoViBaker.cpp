@@ -133,7 +133,7 @@ void DoViBaker<chromaSubsampling, quarterResolutionEl>::upsampleHorz(PVideoFrame
 }
 
 template<bool chromaSubsampling, bool quarterResolutionEl>
-void DoViBaker<chromaSubsampling, quarterResolutionEl>::upsampleEl(PVideoFrame& dst, const PVideoFrame& src, VideoInfo dstVi, IScriptEnvironment* env)
+void DoViBaker<chromaSubsampling, quarterResolutionEl>::upscaleEl(PVideoFrame& dst, const PVideoFrame& src, VideoInfo dstVi, IScriptEnvironment* env)
 {
 	dstVi.width /= 2;
 	PVideoFrame mez = env->NewVideoFrame(dstVi);
@@ -148,7 +148,7 @@ void DoViBaker<chromaSubsampling, quarterResolutionEl>::upsampleEl(PVideoFrame& 
 }
 
 template<bool chromaSubsampling, bool quarterResolutionEl>
-void DoViBaker<chromaSubsampling, quarterResolutionEl>::to444(PVideoFrame& dst, const PVideoFrame& src, VideoInfo dstVi, IScriptEnvironment* env)
+void DoViBaker<chromaSubsampling, quarterResolutionEl>::upsample(PVideoFrame& dst, const PVideoFrame& src, VideoInfo dstVi, IScriptEnvironment* env)
 {
 	dstVi.width /= 2;
 	PVideoFrame mez = env->NewVideoFrame(dstVi);
@@ -550,15 +550,14 @@ PVideoFrame DoViBaker<chromaSubsampling, quarterResolutionEl>::GetFrame(int n, I
 		doviProc->forceDisableElProcessing();
 	}
 
-	PVideoFrame forLut = env->NewVideoFrame(vi);
 	if (qnd) {
-		skipLut ? doAllQuickAndDirty(dst, blSrc, elSrc, env) : doAllQuickAndDirty(forLut, blSrc, elSrc, env);
+		doAllQuickAndDirty(dst, blSrc, elSrc, env);
 	}
 	else {
 		PVideoFrame mez = env->NewVideoFrame(child->GetVideoInfo());
 		if (quarterResolutionEl && !skipElProcessing) {
 			PVideoFrame elUpSrc = env->NewVideoFrame(child->GetVideoInfo());
-			upsampleEl(elUpSrc, elSrc, child->GetVideoInfo(), env);
+			upscaleEl(elUpSrc, elSrc, child->GetVideoInfo(), env);
 			applyDovi(mez, blSrc, elUpSrc, env);
 		}
 		else {
@@ -568,18 +567,17 @@ PVideoFrame DoViBaker<chromaSubsampling, quarterResolutionEl>::GetFrame(int n, I
 			VideoInfo vi444 = child->GetVideoInfo();
 			vi444.pixel_type = VideoInfo::CS_YUV444P16;
 			PVideoFrame mez444 = env->NewVideoFrame(vi444);
-			to444(mez444, mez, vi444, env);
-			skipLut ? convert2rgb(dst, mez, mez444) : convert2rgb(forLut, mez, mez444);
+			upsample(mez444, mez, vi444, env);
+			convert2rgb(dst, mez, mez444);
 		}
 		else {
-			skipLut ? convert2rgb(dst, mez, mez) : convert2rgb(forLut, mez, mez);
+			convert2rgb(dst, mez, mez);
 		}
 	}
 	if (!skipLut) {
-		applyLut(dst, forLut);
+		applyLut(dst, dst);
 	}
 	return dst;
-
 }
 
 // explicitly instantiate the template for the linker

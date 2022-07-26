@@ -88,7 +88,7 @@ private:
   //https://ffmpeg.org/doxygen/trunk/dovi__meta_8h_source.html
   //https://ffmpeg.org/doxygen/trunk/dovi__rpu_8c_source.html
   static const uint16_t ycc_to_rgb_coef_scale_shifts = 13;
-  static const uint32_t ycc_to_rgb_offset_scale_shifts = (28-16);
+  static const uint16_t ycc_to_rgb_offset_scale_shifts = (28-16);
   static const uint16_t rgb_to_lms_coef_scale_shifts = 14;
 
   uint8_t num_pivots_minus1[3];
@@ -192,9 +192,9 @@ inline void DoViProcessor::sample2rgb(uint16_t& r, uint16_t& g, uint16_t& b, con
   //why is this implementations different..?
   //https://code.videolan.org/videolan/libplacebo/-/blob/775a9325a23e26443b562b104c1fe949b99aa3c8/src/colorspace.c
 
-  int yf = max(0, y - (ycc_to_rgb_offset[0] >> ycc_to_rgb_offset_scale_shifts));
-  int uf = u - (ycc_to_rgb_offset[1] >> ycc_to_rgb_offset_scale_shifts);
-  int vf = v - (ycc_to_rgb_offset[2] >> ycc_to_rgb_offset_scale_shifts);
+  int yf = y - ycc_to_rgb_offset[0];
+  int uf = u - ycc_to_rgb_offset[1];
+  int vf = v - ycc_to_rgb_offset[2];
   r = Clip3(0, 0xFFFF, (ycc_to_rgb_coef[0] * yf + ycc_to_rgb_coef[1] * uf + ycc_to_rgb_coef[2] * vf) >> ycc_to_rgb_coef_scale_shifts);
   g = Clip3(0, 0xFFFF, (ycc_to_rgb_coef[3] * yf + ycc_to_rgb_coef[4] * uf + ycc_to_rgb_coef[5] * vf) >> ycc_to_rgb_coef_scale_shifts);
   b = Clip3(0, 0xFFFF, (ycc_to_rgb_coef[6] * yf + ycc_to_rgb_coef[7] * uf + ycc_to_rgb_coef[8] * vf) >> ycc_to_rgb_coef_scale_shifts);
