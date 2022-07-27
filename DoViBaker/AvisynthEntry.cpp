@@ -20,15 +20,26 @@ AVSValue __cdecl Create_RealDoViBaker(PClip blclip, PClip elclip, const char* rp
     env->ThrowError("DoViBaker: Clip must be in YUV format");
   }
 
-  int chromaSubSampling = -1;
-  if (blclip->GetVideoInfo().Is420() && (!elclip || elclip->GetVideoInfo().Is420())) {
-    chromaSubSampling = 1;
+  int blClipChromaSubSampled = -1;
+  if (blclip->GetVideoInfo().Is420()) {
+    blClipChromaSubSampled = 1;
   }
-  if (blclip->GetVideoInfo().Is444() && (!elclip || elclip->GetVideoInfo().Is444())) {
-    chromaSubSampling = 0;
+  if (blclip->GetVideoInfo().Is444()) {
+    blClipChromaSubSampled = 0;
   }
-  if (chromaSubSampling<0) {
-    env->ThrowError("DoViBaker: Base Layer and Enhancement Layer clips must have both the same chroma subsampling, either 444 or 420");
+  if (blClipChromaSubSampled < 0) {
+    env->ThrowError("DoViBaker: Only 444 and 420 subsampling allowed");
+  }
+
+  int elClipChromaSubSampled = -1;
+  if (elclip && elclip->GetVideoInfo().Is420()) {
+    elClipChromaSubSampled = 1;
+  }
+  if (elclip && elclip->GetVideoInfo().Is444()) {
+    elClipChromaSubSampled = 0;
+  }
+  if (elClipChromaSubSampled <0) {
+    env->ThrowError("DoViBaker: Only 444 and 420 subsampling allowed");
   }
 
   int quarterResolutionEl = 0;
@@ -69,17 +80,11 @@ AVSValue __cdecl Create_RealDoViBaker(PClip blclip, PClip elclip, const char* rp
     }
   }
   
-  if (chromaSubSampling == 0 && quarterResolutionEl == 0) {
-    return new DoViBaker<false, false>(blclip, elclip, rpuPath, qnd, cubeNitsPairs, env);
+  if (quarterResolutionEl == 0) {
+    return new DoViBaker<false>(blclip, elclip, rpuPath, qnd, blClipChromaSubSampled, elClipChromaSubSampled, cubeNitsPairs, env);
   }
-  if (chromaSubSampling == 0 && quarterResolutionEl == 1) {
-    return new DoViBaker<false, true>(blclip, elclip, rpuPath, qnd, cubeNitsPairs, env);
-  }
-  if (chromaSubSampling == 1 && quarterResolutionEl == 0) {
-    return new DoViBaker<true, false>(blclip, elclip, rpuPath, qnd, cubeNitsPairs, env);
-  }
-  if (chromaSubSampling == 1 && quarterResolutionEl == 1) {
-    return new DoViBaker<true, true>(blclip, elclip, rpuPath, qnd, cubeNitsPairs, env);
+  if (quarterResolutionEl == 1) {
+    return new DoViBaker<true>(blclip, elclip, rpuPath, qnd, blClipChromaSubSampled, elClipChromaSubSampled, cubeNitsPairs, env);
   }
 }
 

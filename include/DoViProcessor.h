@@ -29,6 +29,7 @@ public:
   
   inline bool isFEL() const { return is_fel; }
   void forceDisableElProcessing(bool force = true) { disable_residual_flag = force; }
+  bool elProcessingDisabled() { return disable_residual_flag; }
   inline uint16_t getMaxContentLightLevel() const { return max_content_light_level; }
 
   static inline uint16_t pq2nits(uint16_t pq);
@@ -49,6 +50,7 @@ public:
 
   inline void sample2rgb(uint16_t& r, uint16_t& g, uint16_t& b, const uint16_t& y, const uint16_t& u, const uint16_t& v) const;
 
+  static const uint16_t containerBitDepth = 16;
 private:
   void showMessage(const char* message, IScriptEnvironment* env);
   uint16_t processSample(int cmp, uint16_t bl, uint16_t el, uint16_t mmrBlY, uint16_t mmrBlU, uint16_t mmrBlV) const;
@@ -88,7 +90,7 @@ private:
   //https://ffmpeg.org/doxygen/trunk/dovi__meta_8h_source.html
   //https://ffmpeg.org/doxygen/trunk/dovi__rpu_8c_source.html
   static const uint16_t ycc_to_rgb_coef_scale_shifts = 13;
-  static const uint16_t ycc_to_rgb_offset_scale_shifts = (28-16);
+  static const uint16_t ycc_to_rgb_offset_scale_shifts = (28-containerBitDepth);
   static const uint16_t rgb_to_lms_coef_scale_shifts = 14;
 
   uint8_t num_pivots_minus1[3];
@@ -187,7 +189,7 @@ uint16_t DoViProcessor::processSampleV(uint16_t bl, uint16_t el, uint16_t mmrBlY
   return processSample(2, bl, el, mmrBlY, mmrBlU, mmrBlV);
 }
 
-inline void DoViProcessor::sample2rgb(uint16_t& r, uint16_t& g, uint16_t& b, const uint16_t& y, const uint16_t& u, const uint16_t& v) const
+void DoViProcessor::sample2rgb(uint16_t& r, uint16_t& g, uint16_t& b, const uint16_t& y, const uint16_t& u, const uint16_t& v) const
 {
   //why is this implementations different..?
   //https://code.videolan.org/videolan/libplacebo/-/blob/775a9325a23e26443b562b104c1fe949b99aa3c8/src/colorspace.c

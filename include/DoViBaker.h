@@ -8,25 +8,26 @@
 #include "DoViProcessor.h"
 #include "lut.h"
 
-template<bool chromaSubsampling, bool quarterResolutionEl>
+template<int quarterResolutionEl>
 class DoViBaker : public GenericVideoFilter
 {
 public:
-  DoViBaker(PClip _blChild, PClip _elChild, const char* rpuPath, bool qnd, std::vector<std::pair<uint16_t, std::string>> &cubes, IScriptEnvironment* env);
+  DoViBaker(PClip _blChild, PClip _elChild, const char* rpuPath, bool qnd, bool blClipChromaSubSampled, bool elClipChromaSubSampled, std::vector<std::pair<uint16_t, std::string>> &cubes, IScriptEnvironment* env);
   virtual ~DoViBaker();
   PVideoFrame GetFrame(int n, IScriptEnvironment* env) override;
 
 private:
   void upscaleEl(PVideoFrame& dst, const PVideoFrame& el, VideoInfo dstVi, IScriptEnvironment* env);
-  void upsample(PVideoFrame& dst, const PVideoFrame& el, VideoInfo dstVi, IScriptEnvironment* env);
-  void applyDovi(PVideoFrame& dst, const PVideoFrame& blSrc, const PVideoFrame& elSrc, IScriptEnvironment* env);
-  void applyLut(PVideoFrame& dst, const PVideoFrame& src);
+  void upsampleElChroma(PVideoFrame& dst, const PVideoFrame& el, VideoInfo dstVi, IScriptEnvironment* env);
+  void upsampleBlChroma(PVideoFrame& dst, const PVideoFrame& el, VideoInfo dstVi, IScriptEnvironment* env);
 
-  inline float toFloat(uint16_t in) const { return float(in) / ((1UL << 16) - 1); }
-  inline uint16_t fromFloat(float in) const { return in * ((1UL << 16) - 1); }
-  inline void sample2rgb(uint16_t& r, uint16_t& g, uint16_t& b, const uint16_t& y, const uint16_t& u, const uint16_t& v) const;
-  void convert2rgb(PVideoFrame& rgb, const PVideoFrame& y, const PVideoFrame& uv) const;
+  template<int blChromaSubsampling, int elChromaSubsampling>
   void doAllQuickAndDirty(PVideoFrame& rgb, const PVideoFrame& blSrc, const PVideoFrame& elSrc, IScriptEnvironment* env) const;
+
+  template<int chromaSubsampling>
+  void applyDovi(PVideoFrame& dst, const PVideoFrame& blSrcY, const PVideoFrame& blSrcUV, const PVideoFrame& elSrcY, const PVideoFrame& elSrcUV, IScriptEnvironment* env) const;
+  void convert2rgb(PVideoFrame& rgb, const PVideoFrame& y, const PVideoFrame& uv) const;
+  void applyLut(PVideoFrame& dst, const PVideoFrame& src) const;
 
   typedef uint16_t(*upscaler_t)(const uint16_t* srcSamples, int idx0);
   template<int vertLen, int nD>
@@ -37,6 +38,8 @@ private:
   int CPU_FLAG;
   DoViProcessor* doviProc;
   const bool qnd;
+  const bool blClipChromaSubSampled;
+  const bool elClipChromaSubSampled;
   std::vector<std::pair<uint16_t, std::unique_ptr<timecube::Lut>>> luts;
   const timecube::Lut* current_frame_lut;
 };

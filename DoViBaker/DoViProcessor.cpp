@@ -16,8 +16,8 @@ DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env)
 	ycc_to_rgb_coef[8] = 0;
 
 	ycc_to_rgb_offset[0] = 0;
-	ycc_to_rgb_offset[1] = (1 << 15) << ycc_to_rgb_offset_scale_shifts;
-	ycc_to_rgb_offset[2] = (1 << 15) << ycc_to_rgb_offset_scale_shifts;
+	ycc_to_rgb_offset[1] = (1 << (containerBitDepth - 1)) << ycc_to_rgb_offset_scale_shifts;
+	ycc_to_rgb_offset[2] = (1 << (containerBitDepth - 1)) << ycc_to_rgb_offset_scale_shifts;
 
 	doviLib = ::LoadLibrary(L"dovi.dll"); // delayed loading, original name
 	if (doviLib == NULL) {
@@ -209,25 +209,25 @@ void DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 }
 
 uint16_t DoViProcessor::processSample(int cmp, uint16_t bl, uint16_t el, uint16_t mmrBlY, uint16_t mmrBlU, uint16_t mmrBlV) const {
-	bl >>= (16 - bl_bit_depth);
+	bl >>= (containerBitDepth - bl_bit_depth);
 	int pivot_idx = getPivotIndex(cmp, bl);
 	int v;
 	if (cmp == 0 || mapping_idc[cmp][pivot_idx] == 0) {
 		v = polynompialMapping(cmp, pivot_idx, bl);
 	}
 	else {
-		mmrBlY >>= (16 - bl_bit_depth);
-		mmrBlU >>= (16 - bl_bit_depth);
-		mmrBlV >>= (16 - bl_bit_depth);
+		mmrBlY >>= (containerBitDepth - bl_bit_depth);
+		mmrBlU >>= (containerBitDepth - bl_bit_depth);
+		mmrBlV >>= (containerBitDepth - bl_bit_depth);
 		v = mmrMapping(cmp, pivot_idx, mmrBlY, mmrBlU, mmrBlV);
 	}
 	int r = 0;
 	if (!disable_residual_flag) {
-		el >>= (16 - bl_bit_depth);
+		el >>= (containerBitDepth - el_bit_depth);
 		r = nonLinearInverseQuantization(cmp, el);
 	}
 	uint16_t h = signalReconstruction(v, r);
-	h <<= (16 - out_bit_depth);
+	h <<= (containerBitDepth - out_bit_depth);
 	return h;
 }
 
