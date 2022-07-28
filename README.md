@@ -17,7 +17,7 @@ el=DGSource("elclip.dgi")
 DoViBaker(bl,el,rpu="RPU.bin")
 ```
 
-Dynamic tonemapping can be done by providing a collection of LUTs and limits of validity measured in nits of max-content-light-level. This will then be processed internally. (The LUT processing implentation is based on: https://github.com/sekrit-twc/timecube).
+This plugin uses the metadata from the RPU file to compose the DolbyVision HDR picture out of the Base Layer (BL) and Enhancement Layer (EL). Display Management (DM) metadata will not be processed. It is however possible to use level 1 maximal pixel brightness data from DM by providing a collection of LUTs and limits of validity measured in nits of max-content-light-level. These will then be processed internally. (The LUT processing implentation is based on: https://github.com/sekrit-twc/timecube).
 ```
 bl=DGSource("blclip.dgi")
 el=DGSource("elclip.dgi")

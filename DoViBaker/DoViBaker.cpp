@@ -18,11 +18,14 @@ DoViBaker<quarterResolutionEl>::DoViBaker(PClip _blChild, PClip _elChild, const 
 {
 	int bits_per_pixel = vi.BitsPerComponent();
 	if (bits_per_pixel != DoViProcessor::containerBitDepth) {
-		env->ThrowError("DoViBaker: Video must be 16bit.");
+		env->ThrowError("DoViBaker: Video must be 16bit");
 	}
 	vi.pixel_type = VideoInfo::CS_RGBP16;
 
 	doviProc = new DoViProcessor(rpuPath, env);
+	if (!doviProc->creationSuccessful()) {
+		env->ThrowError("DoViBaker: Cannot create object");
+	}
 
   CPU_FLAG = env->GetCPUFlags();
 	int lutMaxCpuCaps = INT_MAX;
@@ -514,16 +517,21 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 	PVideoFrame elSrc = elChild ? elChild->GetFrame(n, env) : blSrc;
 	PVideoFrame dst = env->NewVideoFrameP(vi, &blSrc);
 
-	doviProc->intializeFrame(n, env);
+	bool doviInitialized = doviProc->intializeFrame(n, env);
+	if (!doviInitialized) {
+		env->ThrowError("DoViBaker: Frame initialization failed");
+		return dst;
+	}
+	env->propSetInt(env->getFramePropsRW(dst), "_dovi_max_pq", doviProc->getMaxPq(), 0);
 	env->propSetInt(env->getFramePropsRW(dst), "_dovi_max_content_light_level", doviProc->getMaxContentLightLevel(), 0);
 
-	doviProc->getMaxContentLightLevel();
 	bool skipLut = luts.size() == 0;
 	if (!skipLut) {
 		current_frame_lut = luts[luts.size() - 1].second.get();
 		for (int i = 1; i < luts.size(); i++) {
 			if (doviProc->getMaxContentLightLevel() <= luts[i].first) {
 				current_frame_lut = luts[i - 1].second.get();
+				break;
 			}
 		}
 	}
@@ -532,6 +540,10 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 	if (!elChild || !doviProc->isFEL() || doviProc->elProcessingDisabled()) {
 		skipElProcessing = true;
 		doviProc->forceDisableElProcessing();
+	}
+	if (doviProc->isFEL() && !elChild) {
+		env->ThrowError("DoViBaker: Expecting EL clip");
+		return dst;
 	}
 
 	if (qnd) {

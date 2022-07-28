@@ -25,11 +25,13 @@ class DoViProcessor {
 public:
   DoViProcessor(const char* rpuPath, IScriptEnvironment* env);
   virtual ~DoViProcessor();
-  void intializeFrame(int frame, IScriptEnvironment* env);
+  bool creationSuccessful() { return !creationError; }
+  bool intializeFrame(int frame, IScriptEnvironment* env);
   
   inline bool isFEL() const { return is_fel; }
   void forceDisableElProcessing(bool force = true) { disable_residual_flag = force; }
   bool elProcessingDisabled() { return disable_residual_flag; }
+  inline uint16_t getMaxPq() const { return max_pq; }
   inline uint16_t getMaxContentLightLevel() const { return max_content_light_level; }
 
   static inline uint16_t pq2nits(uint16_t pq);
@@ -75,6 +77,8 @@ private:
   f_dovi_rpu_free_data_mapping dovi_rpu_free_data_mapping;
   f_dovi_rpu_get_error dovi_rpu_get_error;
 
+  bool creationError;
+
   uint8_t bl_bit_depth;
   uint8_t el_bit_depth;
   uint8_t out_bit_depth;
@@ -82,6 +86,7 @@ private:
   bool is_fel;
   bool disable_residual_flag;
 
+  uint16_t max_pq;
   uint16_t max_content_light_level;
   int16_t ycc_to_rgb_coef[8];
   uint32_t ycc_to_rgb_offset[3];

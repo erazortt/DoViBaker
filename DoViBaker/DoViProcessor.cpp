@@ -3,7 +3,7 @@
 #include <algorithm>
 
 DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env)
-	: max_content_light_level(1000)
+	: max_content_light_level(1000), creationError(true)
 {
 	ycc_to_rgb_coef[0] = 8192;
 	ycc_to_rgb_coef[1] = 0;
@@ -21,13 +21,13 @@ DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env)
 
 	doviLib = ::LoadLibrary(L"dovi.dll"); // delayed loading, original name
 	if (doviLib == NULL) {
-		showMessage("DoViBaker: Can not load dovi.dll!", env);
+		showMessage("DoViBaker: Cannot load dovi.dll", env);
 		return;
 	}
 
 	dovi_parse_rpu_bin_file = (f_dovi_parse_rpu_bin_file)GetProcAddress(doviLib, "dovi_parse_rpu_bin_file");
 	if (dovi_parse_rpu_bin_file == NULL) {
-		showMessage("DoViBaker: Can not load function dovi_parse_rpu_bin_file!", env);
+		showMessage("DoViBaker: Cannot load function dovi_parse_rpu_bin_file", env);
 		return;
 	}
 	dovi_rpu_list_free = (f_dovi_rpu_list_free)GetProcAddress(doviLib, "dovi_rpu_list_free");
@@ -41,6 +41,10 @@ DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env)
 	dovi_rpu_free_data_mapping = (f_dovi_rpu_free_data_mapping)GetProcAddress(doviLib, "dovi_rpu_free_data_mapping");
 
 	rpus = dovi_parse_rpu_bin_file(rpuPath);
+	if (rpus->error) {
+		showMessage((std::string("DoViBaker: ")+rpus->error).c_str(), env);
+		return;
+	}
 
 	pivot_value.resize(3);
 
@@ -51,6 +55,8 @@ DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env)
 	mmr_order.resize(3);
 	fp_mmr_const.resize(3);
 	fp_mmr_coef.resize(3);
+
+	creationError = false;
 }
 
 DoViProcessor::~DoViProcessor()
@@ -66,18 +72,18 @@ void DoViProcessor::showMessage(const char* message, IScriptEnvironment* env)
 		printf(message);
 }
 
-void DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
+bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 	DoviRpuOpaque* rpu = rpus->list[frame];
 	const DoviRpuDataHeader* header = dovi_rpu_get_header(rpu);
 	if (!header) {
 		const char* error = dovi_rpu_get_error(rpu);
-		showMessage("DoViBaker: Header cannot be read.", env);
-		return;
+		showMessage((std::string("DoViBaker: ") + error).c_str(), env);
+		return false;
 	}
 
 	if (header->guessed_profile != 7) {
 		showMessage("DoViBaker: Expecting profile 7 rpu data.", env);
-		return;
+		return false;
 	}
 	
 	std::string subprofile(header->subprofile);
@@ -105,12 +111,12 @@ void DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 	if (header->nlq_method_idc != 0) {
 		//https://ffmpeg.org/doxygen/trunk/dovi__rpu_8c_source.html
 		showMessage("DoViBaker: Only method NLQ_LINEAR_DZ can be applied, NLQ_MU_LAW is not documented.", env);
-		return;
+		return false;
 		//alternativlely we could just gracefully disable the nlq processing with disable_residual_flag=true
 	}
 	if (header->nlq_num_pivots_minus2 != 0) {
 		showMessage("DoViBaker: Expecting nlq_num_pivots_minus2 to be 0.", env);
-		return;
+		return false;
 		//alternativlely we could just gracefully disable the nlq processing with disable_residual_flag=true
 	}
 
@@ -182,9 +188,11 @@ void DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 	if (header->vdr_dm_metadata_present_flag) {
 		const DoviVdrDmData* vdr_dm_data = dovi_rpu_get_vdr_dm_data(rpu);
 
+		max_pq = vdr_dm_data->dm_data.level1->max_pq;
 		//max_content_light_level = pq2nits(vdr_dm_data->source_max_pq);
-		max_content_light_level = pq2nits(vdr_dm_data->dm_data.level1->max_pq);
+
 		//max_content_light_level = vdr_dm_data->dm_data.level6->max_content_light_level;
+		max_content_light_level = pq2nits(max_pq);
 
 		ycc_to_rgb_coef[0] = vdr_dm_data->ycc_to_rgb_coef0;
 		ycc_to_rgb_coef[1] = vdr_dm_data->ycc_to_rgb_coef1;
@@ -206,6 +214,7 @@ void DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 	dovi_rpu_free_data_mapping(mapping_data);
 	dovi_rpu_free_data_nlq(nlq_data);
 	dovi_rpu_free_header(header);
+	return true;
 }
 
 uint16_t DoViProcessor::processSample(int cmp, uint16_t bl, uint16_t el, uint16_t mmrBlY, uint16_t mmrBlU, uint16_t mmrBlV) const {

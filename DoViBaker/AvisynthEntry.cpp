@@ -31,15 +31,18 @@ AVSValue __cdecl Create_RealDoViBaker(PClip blclip, PClip elclip, const char* rp
     env->ThrowError("DoViBaker: Only 444 and 420 subsampling allowed");
   }
 
-  int elClipChromaSubSampled = -1;
-  if (elclip && elclip->GetVideoInfo().Is420()) {
-    elClipChromaSubSampled = 1;
-  }
-  if (elclip && elclip->GetVideoInfo().Is444()) {
-    elClipChromaSubSampled = 0;
-  }
-  if (elClipChromaSubSampled <0) {
-    env->ThrowError("DoViBaker: Only 444 and 420 subsampling allowed");
+  int elClipChromaSubSampled = blClipChromaSubSampled;
+  if (elclip) {
+    elClipChromaSubSampled = -1;
+    if (elclip && elclip->GetVideoInfo().Is420()) {
+      elClipChromaSubSampled = 1;
+    }
+    if (elclip && elclip->GetVideoInfo().Is444()) {
+      elClipChromaSubSampled = 0;
+    }
+    if (elclip && elClipChromaSubSampled < 0) {
+      env->ThrowError("DoViBaker: Only 444 and 420 subsampling allowed");
+    }
   }
 
   int quarterResolutionEl = 0;
@@ -110,9 +113,10 @@ int main()
 	DoViProcessor dovi("Z:/rpu.bin", NULL);
   dovi.intializeFrame(1, NULL);
 
+  printf((std::string("2081 pq = ") + std::to_string(DoViProcessor::pq2nits(2081))).c_str());
   for (int i = 0; i < 100; i += 10) {
     std::string out(std::to_string(i));
-    out += "%:";
+    out += "%: ";
     out += std::to_string(DoViProcessor::pq2nits(4095 * i * 0.01));
     out += "\n";
     printf(out.c_str());
