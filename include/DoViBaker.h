@@ -12,7 +12,17 @@ template<int quarterResolutionEl>
 class DoViBaker : public GenericVideoFilter
 {
 public:
-  DoViBaker(PClip _blChild, PClip _elChild, const char* rpuPath, bool qnd, bool blClipChromaSubSampled, bool elClipChromaSubSampled, std::vector<std::pair<uint16_t, std::string>> &cubes, IScriptEnvironment* env);
+  DoViBaker(
+    PClip _blChild, 
+    PClip _elChild, 
+    const char* rpuPath, 
+    bool blClipChromaSubSampled, 
+    bool elClipChromaSubSampled, 
+    std::vector<std::pair<uint16_t, std::string>> &cubes, 
+    bool qnd, 
+    bool rgbProof, 
+    bool nlqProof, 
+    IScriptEnvironment* env);
   virtual ~DoViBaker();
   PVideoFrame GetFrame(int n, IScriptEnvironment* env) override;
 

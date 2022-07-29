@@ -3,7 +3,7 @@
 #include <algorithm>
 
 DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env)
-	: max_content_light_level(1000), creationError(true)
+	: max_content_light_level(1000), successfulCreation(false), rgbProof(false), nlqProof(false)
 {
 	ycc_to_rgb_coef[0] = 8192;
 	ycc_to_rgb_coef[1] = 0;
@@ -56,7 +56,7 @@ DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env)
 	fp_mmr_const.resize(3);
 	fp_mmr_coef.resize(3);
 
-	creationError = false;
+	successfulCreation = true;
 }
 
 DoViProcessor::~DoViProcessor()
@@ -184,6 +184,9 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 		fp_linear_deadzone_slope[cmp] = (linear_deadzone_slope_int->data[cmp] << coeff_log2_denom) + linear_deadzone_slope->data[cmp];
 		fp_linear_deadzone_threshold[cmp] = (linear_deadzone_threshold_int->data[cmp] << coeff_log2_denom) + linear_deadzone_threshold->data[cmp];
 	}
+	if (nlqProof) {
+		fp_linear_deadzone_slope[0] *= 4;
+	}
 
 	if (header->vdr_dm_metadata_present_flag) {
 		const DoviVdrDmData* vdr_dm_data = dovi_rpu_get_vdr_dm_data(rpu);
@@ -208,13 +211,17 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 		ycc_to_rgb_offset[1] = vdr_dm_data->ycc_to_rgb_offset1 >> ycc_to_rgb_offset_scale_shifts;
 		ycc_to_rgb_offset[2] = vdr_dm_data->ycc_to_rgb_offset2 >> ycc_to_rgb_offset_scale_shifts;
 
+		if (rgbProof) {
+			ycc_to_rgb_coef[0] *= 2;
+		}
+
 		dovi_rpu_free_vdr_dm_data(vdr_dm_data);
 	}
 
 	dovi_rpu_free_data_mapping(mapping_data);
 	dovi_rpu_free_data_nlq(nlq_data);
 	dovi_rpu_free_header(header);
-	return true;
+	return successfulCreation;
 }
 
 uint16_t DoViProcessor::processSample(int cmp, uint16_t bl, uint16_t el, uint16_t mmrBlY, uint16_t mmrBlU, uint16_t mmrBlV) const {

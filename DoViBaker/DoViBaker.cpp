@@ -13,7 +13,17 @@
 //////////////////////////////
 
 template<int quarterResolutionEl>
-DoViBaker<quarterResolutionEl>::DoViBaker(PClip _blChild, PClip _elChild, const char* rpuPath, bool _qnd, bool _blChromaSubSampled, bool _elChromaSubSampled, std::vector<std::pair<uint16_t, std::string>>& _cubes, IScriptEnvironment* env)
+DoViBaker<quarterResolutionEl>::DoViBaker(
+	PClip _blChild, 
+	PClip _elChild, 
+	const char* rpuPath, 
+	bool _blChromaSubSampled, 
+	bool _elChromaSubSampled,
+	std::vector<std::pair<uint16_t, std::string>>& _cubes,
+	bool _qnd,
+	bool _rgbProof,
+	bool _nlqProof,
+	IScriptEnvironment* env)
   : GenericVideoFilter(_blChild), elChild(_elChild), qnd(_qnd), blClipChromaSubSampled(_blChromaSubSampled), elClipChromaSubSampled(_elChromaSubSampled)
 {
 	int bits_per_pixel = vi.BitsPerComponent();
@@ -23,9 +33,11 @@ DoViBaker<quarterResolutionEl>::DoViBaker(PClip _blChild, PClip _elChild, const 
 	vi.pixel_type = VideoInfo::CS_RGBP16;
 
 	doviProc = new DoViProcessor(rpuPath, env);
-	if (!doviProc->creationSuccessful()) {
+	if (!doviProc->wasCreationSuccessful()) {
 		env->ThrowError("DoViBaker: Cannot create object");
 	}
+	doviProc->setRgbProof(_rgbProof);
+	doviProc->setNlqProof(_nlqProof);
 
   CPU_FLAG = env->GetCPUFlags();
 	int lutMaxCpuCaps = INT_MAX;

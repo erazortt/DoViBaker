@@ -25,9 +25,11 @@ class DoViProcessor {
 public:
   DoViProcessor(const char* rpuPath, IScriptEnvironment* env);
   virtual ~DoViProcessor();
-  bool creationSuccessful() { return !creationError; }
+  bool wasCreationSuccessful() { return successfulCreation; }
+  void setRgbProof(bool set = true) { rgbProof = set; }
+  void setNlqProof(bool set = true) { nlqProof = set; }
+
   bool intializeFrame(int frame, IScriptEnvironment* env);
-  
   inline bool isFEL() const { return is_fel; }
   void forceDisableElProcessing(bool force = true) { disable_residual_flag = force; }
   bool elProcessingDisabled() { return disable_residual_flag; }
@@ -77,7 +79,9 @@ private:
   f_dovi_rpu_free_data_mapping dovi_rpu_free_data_mapping;
   f_dovi_rpu_get_error dovi_rpu_get_error;
 
-  bool creationError;
+  bool successfulCreation;
+  bool rgbProof;
+  bool nlqProof;
 
   uint8_t bl_bit_depth;
   uint8_t el_bit_depth;

@@ -10,7 +10,18 @@
 #include <string>
 #include <sstream>
 
-AVSValue __cdecl Create_RealDoViBaker(PClip blclip, PClip elclip, const char* rpuPath, bool qnd, std::string cubeFiles, std::string nits, std::string cubesBasePath, const AVSValue* args, IScriptEnvironment* env)
+AVSValue __cdecl Create_RealDoViBaker(
+  PClip blclip, 
+  PClip elclip, 
+  const char* rpuPath, 
+  std::string cubeFiles, 
+  std::string nits, 
+  std::string cubesBasePath,
+  bool qnd,
+  bool rgbProof,
+  bool nlqProof,
+  const AVSValue* args, 
+  IScriptEnvironment* env)
 {
   if (!blclip->GetVideoInfo().HasVideo() || (elclip && !elclip->GetVideoInfo().HasVideo())) {
     env->ThrowError("DoViBaker: Clip not available");
@@ -84,17 +95,27 @@ AVSValue __cdecl Create_RealDoViBaker(PClip blclip, PClip elclip, const char* rp
   }
   
   if (quarterResolutionEl == 0) {
-    return new DoViBaker<false>(blclip, elclip, rpuPath, qnd, blClipChromaSubSampled, elClipChromaSubSampled, cubeNitsPairs, env);
+    return new DoViBaker<false>(blclip, elclip, rpuPath, blClipChromaSubSampled, elClipChromaSubSampled, cubeNitsPairs, qnd, rgbProof, nlqProof, env);
   }
   if (quarterResolutionEl == 1) {
-    return new DoViBaker<true>(blclip, elclip, rpuPath, qnd, blClipChromaSubSampled, elClipChromaSubSampled, cubeNitsPairs, env);
+    return new DoViBaker<true>(blclip, elclip, rpuPath, blClipChromaSubSampled, elClipChromaSubSampled, cubeNitsPairs, qnd, rgbProof, nlqProof, env);
   }
 }
 
 AVSValue __cdecl Create_DoViBaker(AVSValue args, void* user_data, IScriptEnvironment* env)
 {
   //args.ArraySize()
-  return Create_RealDoViBaker(args[0].AsClip(), args[1].AsClip(), args[2].AsString(), args[3].AsBool(false), args[4].AsString(""), args[5].AsString(""), args[6].AsString(""), &args, env);
+  return Create_RealDoViBaker(
+    args[0].AsClip(), 
+    args[1].AsClip(), 
+    args[2].AsString(), 
+    args[3].AsString(""), 
+    args[4].AsString(""), 
+    args[5].AsString(""),
+    args[6].AsBool(false),
+    args[7].AsBool(false),
+    args[8].AsBool(false),
+    &args, env);
 }
 
 const AVS_Linkage *AVS_linkage = nullptr;
@@ -103,7 +124,7 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScri
 {
   AVS_linkage = vectors;
 
-  env->AddFunction("DoViBaker", "c[el]c[rpu]s[qnd]b[cubes]s[mclls]s[cubes_basepath]s", Create_DoViBaker, 0);
+  env->AddFunction("DoViBaker", "c[el]c[rpu]s[cubes]s[mclls]s[cubes_basepath]s[qnd]b[rgbProof]b[nlqProof]b", Create_DoViBaker, 0);
 
   return "Hey it is just a spectrogram!";
 }
