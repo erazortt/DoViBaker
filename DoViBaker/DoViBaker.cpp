@@ -528,11 +528,14 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 	PVideoFrame blSrc = child->GetFrame(n, env);
 	PVideoFrame elSrc = elChild ? elChild->GetFrame(n, env) : blSrc;
 	PVideoFrame dst = env->NewVideoFrameP(vi, &blSrc);
-
+	
 	bool doviInitialized = doviProc->intializeFrame(n, env);
 	if (!doviInitialized) {
 		return dst;
 	}
+	env->propSetInt(env->getFramePropsRW(dst), "_Matrix", 0, 0);      //we are outputting RGB
+	env->propSetInt(env->getFramePropsRW(dst), "_ColorRange", 0, 0);  //we are outputting full range RGB
+	env->propDeleteKey(env->getFramePropsRW(dst), "_ChromaLocation"); //we are outputting RGB, which has no chroma location defined
 	env->propSetInt(env->getFramePropsRW(dst), "_dovi_max_pq", doviProc->getMaxPq(), 0);
 	env->propSetInt(env->getFramePropsRW(dst), "_dovi_max_content_light_level", doviProc->getMaxContentLightLevel(), 0);
 
