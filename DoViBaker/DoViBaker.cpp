@@ -531,7 +531,6 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 
 	bool doviInitialized = doviProc->intializeFrame(n, env);
 	if (!doviInitialized) {
-		env->ThrowError("DoViBaker: Frame initialization failed");
 		return dst;
 	}
 	env->propSetInt(env->getFramePropsRW(dst), "_dovi_max_pq", doviProc->getMaxPq(), 0);

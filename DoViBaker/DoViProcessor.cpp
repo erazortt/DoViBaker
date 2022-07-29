@@ -121,6 +121,11 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 	}
 
 	const DoviRpuDataMapping* mapping_data = dovi_rpu_get_data_mapping(rpu);
+	if (!mapping_data) {
+		const char* error = dovi_rpu_get_error(rpu);
+		showMessage((std::string("DoViBaker: ") + error).c_str(), env);
+		return false;
+	}
 	auto poly_order_minus1 = mapping_data->poly_order_minus1;
 	auto poly_coef_int = mapping_data->poly_coef_int;
 	auto poly_coef = mapping_data->poly_coef;
@@ -170,6 +175,11 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 	}
 
 	const DoviRpuDataNlq* nlq_data = dovi_rpu_get_data_nlq(rpu);
+	if (!nlq_data) {
+		const char* error = dovi_rpu_get_error(rpu);
+		showMessage((std::string("DoViBaker: ") + error).c_str(), env);
+		return false;
+	}
 	auto nlq_offsets = nlq_data->nlq_offset.list[0];
 	auto vdr_in_max_int = nlq_data->vdr_in_max_int.list[0];
 	auto vdr_in_max = nlq_data->vdr_in_max.list[0];
@@ -190,6 +200,11 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 
 	if (header->vdr_dm_metadata_present_flag) {
 		const DoviVdrDmData* vdr_dm_data = dovi_rpu_get_vdr_dm_data(rpu);
+		if (!vdr_dm_data) {
+			const char* error = dovi_rpu_get_error(rpu);
+			showMessage((std::string("DoViBaker: ") + error).c_str(), env);
+			return false;
+		}
 
 		max_pq = vdr_dm_data->dm_data.level1->max_pq;
 		//max_content_light_level = pq2nits(vdr_dm_data->source_max_pq);
