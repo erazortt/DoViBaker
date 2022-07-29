@@ -1,12 +1,8 @@
 #include "DoViBaker.h"
 #include "cube.h"
 
-//#include <stdlib.h>
-//#include <math.h>
-//#include <strstream>
 #include <array>
 #include <io.h>
-#include <stdlib.h>
 
 //////////////////////////////
 // Code
@@ -533,9 +529,9 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 	if (!doviInitialized) {
 		return dst;
 	}
-	env->propSetInt(env->getFramePropsRW(dst), "_Matrix", 0, 0);      //we are outputting RGB
-	env->propSetInt(env->getFramePropsRW(dst), "_ColorRange", 0, 0);  //we are outputting full range RGB
-	env->propDeleteKey(env->getFramePropsRW(dst), "_ChromaLocation"); //we are outputting RGB, which has no chroma location defined
+	env->propSetInt(env->getFramePropsRW(dst), "_Matrix", 0, 0);      //output is RGB
+	env->propSetInt(env->getFramePropsRW(dst), "_ColorRange", 0, 0);  //output is full range RGB
+	env->propDeleteKey(env->getFramePropsRW(dst), "_ChromaLocation"); //RGB has no chroma location defined
 	env->propSetInt(env->getFramePropsRW(dst), "_dovi_max_pq", doviProc->getMaxPq(), 0);
 	env->propSetInt(env->getFramePropsRW(dst), "_dovi_max_content_light_level", doviProc->getMaxContentLightLevel(), 0);
 

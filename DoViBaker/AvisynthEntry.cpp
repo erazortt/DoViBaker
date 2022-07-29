@@ -1,5 +1,3 @@
-#include <windows.h>
-
 #pragma warning(push)
 #pragma warning(disable: 4512 4244 4100 693)
 #include "avisynth.h"

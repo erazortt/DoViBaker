@@ -1,6 +1,7 @@
 #include "DoViProcessor.h"
 #include <array>
 #include <algorithm>
+#include <string>
 
 DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env)
 	: max_content_light_level(1000), successfulCreation(false), rgbProof(false), nlqProof(false)
@@ -62,6 +63,7 @@ DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env)
 DoViProcessor::~DoViProcessor()
 {
 	dovi_rpu_list_free(rpus);
+	::FreeLibrary(doviLib);
 }
 
 void DoViProcessor::showMessage(const char* message, IScriptEnvironment* env)

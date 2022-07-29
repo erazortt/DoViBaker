@@ -4,9 +4,10 @@
 #include "avisynth.h"
 #pragma warning(pop)
 
-//#include <stdint.h>
 #include "DoViProcessor.h"
 #include "lut.h"
+
+#include <string>
 
 template<int quarterResolutionEl>
 class DoViBaker : public GenericVideoFilter

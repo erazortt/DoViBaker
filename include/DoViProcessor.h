@@ -7,7 +7,6 @@
 #include "rpu_parser.h"
 #include <vector>
 #include <windows.h>
-#include <string>
 
 typedef DoviRpuOpaqueList* (*f_dovi_parse_rpu_bin_file)(const char* path);
 typedef void (*f_dovi_rpu_list_free)(DoviRpuOpaqueList* ptr);
