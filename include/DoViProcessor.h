@@ -29,15 +29,16 @@ public:
   void setNlqProof(bool set = true) { nlqProof = set; }
 
   bool intializeFrame(int frame, IScriptEnvironment* env);
+  inline int getClipLength() { return rpus->len; }
   inline bool isFEL() const { return is_fel; }
-  void forceDisableElProcessing(bool force = true) { disable_residual_flag = force; }
-  bool elProcessingDisabled() { return disable_residual_flag; }
+  inline bool elProcessingDisabled() { return disable_residual_flag; }
+  inline void forceDisableElProcessing(bool force = true) { disable_residual_flag = force; }
+  inline uint16_t getNlqOffset(int cmp) const { return nlq_offset[cmp] << (containerBitDepth - el_bit_depth); }
   inline uint16_t getMaxPq() const { return max_pq; }
   inline uint16_t getMaxContentLightLevel() const { return max_content_light_level; }
 
   static inline uint16_t pq2nits(uint16_t pq);
-  static inline constexpr uint16_t Clip3(uint16_t lower, uint16_t upper, int value);
-
+  
   static inline constexpr uint16_t upsampleHorzEven(const uint16_t* srcSamples, int idx0);
   static inline constexpr uint16_t upsampleHorzOdd(const uint16_t* srcSamples, int idx0);
   static inline constexpr uint16_t upsampleBlVertEven(const uint16_t* srcSamples, int idx0);
@@ -55,6 +56,7 @@ public:
 
   static const uint16_t containerBitDepth = 16;
 private:
+  static inline constexpr uint16_t Clip3(uint16_t lower, uint16_t upper, int value);
   void showMessage(const char* message, IScriptEnvironment* env);
   uint16_t processSample(int cmp, uint16_t bl, uint16_t el, uint16_t mmrBlY, uint16_t mmrBlU, uint16_t mmrBlV) const;
   int getPivotIndex(int cmp, uint16_t sample) const;

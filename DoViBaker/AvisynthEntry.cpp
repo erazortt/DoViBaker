@@ -127,17 +127,168 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScri
   return "Hey it is just a spectrogram!";
 }
 
-int main()
-{
-	DoViProcessor dovi("Z:/rpu.bin", NULL);
-  dovi.intializeFrame(1, NULL);
+void ypp2ycc(uint16_t* ycc, float y, float u, float v) {
+  static const uint16_t scale = 1 << DoViProcessor::containerBitDepth;
+  static const uint16_t bias = 16 << (DoViProcessor::containerBitDepth - 8);
+  static const uint16_t ltop = scale - (21 << (DoViProcessor::containerBitDepth - 8));
+  static const uint16_t ctop = scale - (16 << (DoViProcessor::containerBitDepth - 8));
 
-  printf((std::string("2081 pq = ") + std::to_string(DoViProcessor::pq2nits(2081))).c_str());
-  for (int i = 0; i < 100; i += 10) {
+  ycc[0] = y * (ltop - bias) + bias;
+  ycc[1] = (u + 0.5) * (ctop - bias) + bias;
+  ycc[2] = (v + 0.5) * (ctop - bias) + bias;
+}
+
+void normalizeRgb(uint16_t* rgb) {
+  rgb[0] >>= (DoViProcessor::containerBitDepth - 8);
+  rgb[1] >>= (DoViProcessor::containerBitDepth - 8);
+  rgb[2] >>= (DoViProcessor::containerBitDepth - 8);
+}
+
+bool checkElProcessing(const DoViProcessor &dovi) {
+  uint16_t yuv[3];
+  ypp2ycc(yuv, 0.5000, 0.0000, 0.0000);
+  uint16_t inGrey = yuv[0];
+  ypp2ycc(yuv, 1.0000, 0.0000, 0.0000);
+  uint16_t elHi = yuv[0];
+  ypp2ycc(yuv, 0.0000, 0.0000, 0.0000);
+  uint16_t elLo = yuv[0];
+  uint16_t outHi = dovi.processSampleY(inGrey, elHi);
+  uint16_t outLo = dovi.processSampleY(inGrey, elLo);
+  return outHi != outLo;
+}
+
+bool checkMatrix(const DoViProcessor& dovi) {
+  uint16_t yuv[3];
+  uint16_t rgb[3];
+
+  ypp2ycc(yuv, 1.0000, 0.0000, 0.0000);
+  dovi.sample2rgb(rgb[0], rgb[1], rgb[2], yuv[0], yuv[1], yuv[2]);
+  normalizeRgb(rgb);
+  if (rgb[0] != 255 || rgb[1] != 255 || rgb[2] != 255) return true;
+  
+  ypp2ycc(yuv, 0.0000, 0.0000, 0.0000);
+  dovi.sample2rgb(rgb[0], rgb[1], rgb[2], yuv[0], yuv[1], yuv[2]);
+  normalizeRgb(rgb);
+  if (rgb[0] != 0 || rgb[1] != 0 || rgb[2] != 0) return true;
+
+  ypp2ycc(yuv, 0.5000, 0.0000, 0.0000);
+  dovi.sample2rgb(rgb[0], rgb[1], rgb[2], yuv[0], yuv[1], yuv[2]);
+  normalizeRgb(rgb);
+  if (rgb[0] != 127 || rgb[1] != 127 || rgb[2] != 127) return true;
+
+  ypp2ycc(yuv, 0.2627 / 2, -0.1396 / 2, 0.5000 / 2);
+  dovi.sample2rgb(rgb[0], rgb[1], rgb[2], yuv[0], yuv[1], yuv[2]);
+  normalizeRgb(rgb);
+  if (rgb[0] != 127 || rgb[1] != 0 || rgb[2] != 0) return true;
+
+  ypp2ycc(yuv, 0.6780 / 2, -0.3604 / 2, -0.4598 / 2);
+  dovi.sample2rgb(rgb[0], rgb[1], rgb[2], yuv[0], yuv[1], yuv[2]);
+  normalizeRgb(rgb);
+  if (rgb[0] != 0 || rgb[1] != 127 || rgb[2] != 0) return true;
+  
+  ypp2ycc(yuv, 0.0593 / 2, 0.5000 / 2, -0.0402 / 2);
+  dovi.sample2rgb(rgb[0], rgb[1], rgb[2], yuv[0], yuv[1], yuv[2]);
+  normalizeRgb(rgb);
+  if (rgb[0] != 0 || rgb[1] != 0 || rgb[2] != 127) return true;
+
+  return false;
+}
+
+bool checkNonLinearity(const DoViProcessor& dovi) {
+  uint16_t yuv[3];
+  uint16_t ely = dovi.getNlqOffset(0);
+  for (int i = 0; i <= 10; i++) {
+    ypp2ycc(yuv, float(i) / 10.0, 0.0000, 0.0000);
+    uint16_t bly = yuv[0];
+    uint16_t y = dovi.processSampleY(bly, ely);
+  }
+  return false;
+}
+
+int main(int argc, char** argv)
+{
+  if (argc < 2) {
+    printf("DoViAnalyzer: needing path to RPU.bin file\n");
+    return 1;
+  }
+  
+	DoViProcessor dovi(argv[1], NULL);
+
+  /*
+  printf("Self test\n");
+  printf("2081 pq = %i\n", DoViProcessor::pq2nits(2081));
+  for (int i = 0; i <= 100; i += 10) {
     std::string out(std::to_string(i));
     out += "%: ";
     out += std::to_string(DoViProcessor::pq2nits(4095 * i * 0.01));
     out += "\n";
     printf(out.c_str());
+  }*/
+
+  int length = dovi.getClipLength();
+  printf("clip length: %i\n", length);
+  int clip_max_pq = 0;
+  bool elMixing = false;
+  bool unusualMatrix = false;
+  bool nonLinearity = false;
+  for (int i = 0; i < length; i++) {
+    dovi.intializeFrame(i, NULL);
+    int frame_max_pq = dovi.getMaxPq();
+    if (frame_max_pq > clip_max_pq) {
+      clip_max_pq = frame_max_pq;
+    }
+    unusualMatrix |= checkMatrix(dovi);
+    nonLinearity |= checkNonLinearity(dovi);
+    elMixing |= checkElProcessing(dovi);
   }
+  //printf("clip max pq: %i\n", clip_max_pq);
+  printf("overall max cll: %i\n", DoViProcessor::pq2nits(clip_max_pq));
+  printf("unusual color matrix: %i\n", unusualMatrix);
+  printf("tone non-linearity: %i\n", nonLinearity);
+  printf("el-clip processing: %i\n", elMixing);
+
+  /*
+  uint16_t yuv[3];
+  uint16_t rgb[3];
+
+  ypp2ycc(yuv, 0.5000, 0.0000, 0.0000);
+  uint16_t inGrey = yuv[0];
+  ypp2ycc(yuv, 1.0000, 0.0000, 0.0000);
+  uint16_t elHi = yuv[0];
+  ypp2ycc(yuv, 0.0000, 0.0000, 0.0000);
+  uint16_t elLo = yuv[0];
+  uint16_t outHi = dovi.processSampleY(inGrey, elHi);
+  uint16_t outLo = dovi.processSampleY(inGrey, elLo);
+  printf("transfere: %f\n",float(outHi)/float(outLo));
+
+  ypp2ycc(yuv, 1.0000, 0.0000, 0.0000);
+  dovi.sample2rgb(rgb[0], rgb[1], rgb[2], yuv[0], yuv[1], yuv[2]);
+  normalizeRgb(rgb);
+  printf("white = %i %i %i\n", rgb[0], rgb[1], rgb[2]);
+
+  ypp2ycc(yuv, 0.0000, 0.0000, 0.0000);
+  dovi.sample2rgb(rgb[0], rgb[1], rgb[2], yuv[0], yuv[1], yuv[2]);
+  normalizeRgb(rgb);
+  printf("black = %i %i %i\n", rgb[0], rgb[1], rgb[2]);
+
+  ypp2ycc(yuv, 0.5000, 0.0000, 0.0000);
+  dovi.sample2rgb(rgb[0], rgb[1], rgb[2], yuv[0], yuv[1], yuv[2]);
+  normalizeRgb(rgb);
+  printf("50%% grey = %i %i %i\n", rgb[0], rgb[1], rgb[2]);
+
+  ypp2ycc(yuv, 0.2627/2, -0.1396/2, 0.5000/2);
+  dovi.sample2rgb(rgb[0], rgb[1], rgb[2], yuv[0], yuv[1], yuv[2]);
+  normalizeRgb(rgb);
+  printf("50%% red = %i %i %i\n", rgb[0], rgb[1], rgb[2]);
+
+  ypp2ycc(yuv, 0.6780/2, -0.3604/2, -0.4598/2);
+  dovi.sample2rgb(rgb[0], rgb[1], rgb[2], yuv[0], yuv[1], yuv[2]);
+  normalizeRgb(rgb);
+  printf("50%% green = %i %i %i\n", rgb[0], rgb[1], rgb[2]);
+
+  ypp2ycc(yuv, 0.0593/2, 0.5000/2, -0.0402/2);
+  dovi.sample2rgb(rgb[0], rgb[1], rgb[2], yuv[0], yuv[1], yuv[2]);
+  normalizeRgb(rgb);
+  printf("50%% blue = %i %i %i\n", rgb[0], rgb[1], rgb[2]);
+  */
 }

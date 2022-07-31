@@ -9,5 +9,6 @@ z_ConvertFormat(pixel_type="YUV420P16",colorspace_op="rgb:std-b67:2020:full=>202
 
 ScriptClip("""
 mcll=propGetInt("_dovi_max_content_light_level")
-subtitle("maxcll = " + string(mcll))
+mpq=propGetInt("_dovi_max_pq")
+subtitle("maxpq = " + string(mpq) + "; maxcll = " + string(mcll))
 """)
