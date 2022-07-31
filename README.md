@@ -43,7 +43,7 @@ The output will show the following attributes:
 * clip length
 * overall max-content-light-level
 * unusual color matrices defined by the RPU file
-* tone non-linearities introduced by the RPU file
+* mapping non-identity introduced by the RPU file
 * enabled processing of the Enhancement Layer
 
 The last three will indicate that the look of the clip will be different when DolbyVision is taken into account compared to just playing the Base Layer clip. This will mean that the processing using DoViBaker is necessary in order to get the DolbyVision look.

@@ -138,10 +138,15 @@ void ypp2ycc(uint16_t* ycc, float y, float u, float v) {
   ycc[2] = (v + 0.5) * (ctop - bias) + bias;
 }
 
+inline uint16_t normalizeSample(uint16_t &sample) {
+  // we just check for 8bit precicion deviations, assuming smaller differences to be not visible
+  return (sample >>= (DoViProcessor::containerBitDepth - 8));
+}
+
 void normalizeRgb(uint16_t* rgb) {
-  rgb[0] >>= (DoViProcessor::containerBitDepth - 8);
-  rgb[1] >>= (DoViProcessor::containerBitDepth - 8);
-  rgb[2] >>= (DoViProcessor::containerBitDepth - 8);
+  normalizeSample(rgb[0]);
+  normalizeSample(rgb[1]);
+  normalizeSample(rgb[2]);
 }
 
 bool checkElProcessing(const DoViProcessor &dovi) {
@@ -161,10 +166,13 @@ bool checkMatrix(const DoViProcessor& dovi) {
   uint16_t yuv[3];
   uint16_t rgb[3];
 
+  static const uint16_t maxNormRGB = 255;
+  static const uint16_t halfNormRGB = maxNormRGB >> 1;
+
   ypp2ycc(yuv, 1.0000, 0.0000, 0.0000);
   dovi.sample2rgb(rgb[0], rgb[1], rgb[2], yuv[0], yuv[1], yuv[2]);
   normalizeRgb(rgb);
-  if (rgb[0] != 255 || rgb[1] != 255 || rgb[2] != 255) return true;
+  if (rgb[0] != maxNormRGB || rgb[1] != maxNormRGB || rgb[2] != maxNormRGB) return true;
   
   ypp2ycc(yuv, 0.0000, 0.0000, 0.0000);
   dovi.sample2rgb(rgb[0], rgb[1], rgb[2], yuv[0], yuv[1], yuv[2]);
@@ -174,33 +182,36 @@ bool checkMatrix(const DoViProcessor& dovi) {
   ypp2ycc(yuv, 0.5000, 0.0000, 0.0000);
   dovi.sample2rgb(rgb[0], rgb[1], rgb[2], yuv[0], yuv[1], yuv[2]);
   normalizeRgb(rgb);
-  if (rgb[0] != 127 || rgb[1] != 127 || rgb[2] != 127) return true;
+  if (rgb[0] != halfNormRGB || rgb[1] != halfNormRGB || rgb[2] != halfNormRGB) return true;
 
   ypp2ycc(yuv, 0.2627 / 2, -0.1396 / 2, 0.5000 / 2);
   dovi.sample2rgb(rgb[0], rgb[1], rgb[2], yuv[0], yuv[1], yuv[2]);
   normalizeRgb(rgb);
-  if (rgb[0] != 127 || rgb[1] != 0 || rgb[2] != 0) return true;
+  if (rgb[0] != halfNormRGB || rgb[1] != 0 || rgb[2] != 0) return true;
 
   ypp2ycc(yuv, 0.6780 / 2, -0.3604 / 2, -0.4598 / 2);
   dovi.sample2rgb(rgb[0], rgb[1], rgb[2], yuv[0], yuv[1], yuv[2]);
   normalizeRgb(rgb);
-  if (rgb[0] != 0 || rgb[1] != 127 || rgb[2] != 0) return true;
+  if (rgb[0] != 0 || rgb[1] != halfNormRGB || rgb[2] != 0) return true;
   
   ypp2ycc(yuv, 0.0593 / 2, 0.5000 / 2, -0.0402 / 2);
   dovi.sample2rgb(rgb[0], rgb[1], rgb[2], yuv[0], yuv[1], yuv[2]);
   normalizeRgb(rgb);
-  if (rgb[0] != 0 || rgb[1] != 0 || rgb[2] != 127) return true;
+  if (rgb[0] != 0 || rgb[1] != 0 || rgb[2] != halfNormRGB) return true;
 
   return false;
 }
 
-bool checkNonLinearity(const DoViProcessor& dovi) {
+bool checkNonIdentityMapping(const DoViProcessor& dovi) {
   uint16_t yuv[3];
   uint16_t ely = dovi.getNlqOffset(0);
   for (int i = 0; i <= 10; i++) {
     ypp2ycc(yuv, float(i) / 10.0, 0.0000, 0.0000);
     uint16_t bly = yuv[0];
     uint16_t y = dovi.processSampleY(bly, ely);
+    if (normalizeSample(y) != normalizeSample(bly)) {
+      return true;
+    }
   }
   return false;
 }
@@ -212,7 +223,10 @@ int main(int argc, char** argv)
     return 1;
   }
   
-	DoViProcessor dovi(argv[1], NULL);
+  DoViProcessor dovi(argv[1], NULL);
+  if (!dovi.wasCreationSuccessful()) {
+    return 1;
+  }
 
   /*
   printf("Self test\n");
@@ -230,7 +244,7 @@ int main(int argc, char** argv)
   int clip_max_pq = 0;
   bool elMixing = false;
   bool unusualMatrix = false;
-  bool nonLinearity = false;
+  bool nonIdentityMapping = false;
   for (int i = 0; i < length; i++) {
     dovi.intializeFrame(i, NULL);
     int frame_max_pq = dovi.getMaxPq();
@@ -238,13 +252,13 @@ int main(int argc, char** argv)
       clip_max_pq = frame_max_pq;
     }
     unusualMatrix |= checkMatrix(dovi);
-    nonLinearity |= checkNonLinearity(dovi);
+    nonIdentityMapping |= checkNonIdentityMapping(dovi);
     elMixing |= checkElProcessing(dovi);
   }
   //printf("clip max pq: %i\n", clip_max_pq);
   printf("overall max cll: %i\n", DoViProcessor::pq2nits(clip_max_pq));
   printf("unusual color matrix: %i\n", unusualMatrix);
-  printf("tone non-linearity: %i\n", nonLinearity);
+  printf("mapping non-identity: %i\n", nonIdentityMapping);
   printf("el-clip processing: %i\n", elMixing);
 
   /*
