@@ -33,3 +33,17 @@ subtitle("maxcll = " + string(mcll))
 """)
 ```
 
+# DoViAnalyzer
+This application analyzes the RPU.bin file in order to show information relevant to deciding whether it is worth to use DoViBaker or if this can be skipped completly and the Base Layer can be used directly.
+
+```
+usage: DoViAnalyzer.exe <path_to_rpu.bin_file>
+```
+The output will show the following attributes:
+* clip length
+* overall max-content-light-level
+* unusual color matrices are defined by the RPU file
+* tone non-linearities are introduced by the RPU file
+* enabled processing of the Enhancement Layer
+
+The last three will indicate that the look of the clip will be different when DolbyVision is taken into account compared to just playing the Base Layer clip. This will mean that the processing using DoViBaker is necessary in order to get the DolbyVision look.
