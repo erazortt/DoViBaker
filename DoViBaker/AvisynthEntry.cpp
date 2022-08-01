@@ -138,15 +138,15 @@ void ypp2ycc(uint16_t* ycc, float y, float u, float v) {
   ycc[2] = (v + 0.5) * (ctop - bias) + bias;
 }
 
-inline uint16_t normalizeSample(uint16_t &sample) {
+inline uint16_t normalizeSample(uint16_t sample) {
   // we just check for 8bit precicion deviations, assuming smaller differences to be not visible
-  return (sample >>= (DoViProcessor::containerBitDepth - 8));
+  return (sample >> (DoViProcessor::containerBitDepth - 8));
 }
 
 void normalizeRgb(uint16_t* rgb) {
-  normalizeSample(rgb[0]);
-  normalizeSample(rgb[1]);
-  normalizeSample(rgb[2]);
+  rgb[0] = normalizeSample(rgb[0]);
+  rgb[1] = normalizeSample(rgb[1]);
+  rgb[2] = normalizeSample(rgb[2]);
 }
 
 bool checkElProcessing(const DoViProcessor &dovi) {
@@ -208,8 +208,8 @@ bool checkNonIdentityMapping(const DoViProcessor& dovi) {
   for (int i = 0; i <= 10; i++) {
     ypp2ycc(yuv, float(i) / 10.0, 0.0000, 0.0000);
     uint16_t bly = yuv[0];
-    uint16_t y = dovi.processSampleY(bly, ely);
-    if (normalizeSample(y) != normalizeSample(bly)) {
+    int y = dovi.processSampleY(bly, ely);
+    if (normalizeSample(std::abs(y - bly)) != 0) {
       return true;
     }
   }
