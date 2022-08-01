@@ -35,6 +35,10 @@ DoViBaker<quarterResolutionEl>::DoViBaker(
 	doviProc->setRgbProof(_rgbProof);
 	doviProc->setNlqProof(_nlqProof);
 
+	if (vi.num_frames != doviProc->getClipLength()) {
+		env->ThrowError("DoViBaker: Clip length does not match length indicated by RPU file");
+	}
+
   CPU_FLAG = env->GetCPUFlags();
 	int lutMaxCpuCaps = INT_MAX;
 
