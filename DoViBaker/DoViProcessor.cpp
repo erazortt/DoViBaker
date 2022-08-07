@@ -232,6 +232,8 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 			ycc_to_rgb_coef[0] *= 2;
 		}
 
+		scene_refresh_flag = vdr_dm_data->scene_refresh_flag;
+
 		dovi_rpu_free_vdr_dm_data(vdr_dm_data);
 	}
 

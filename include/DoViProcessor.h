@@ -31,6 +31,7 @@ public:
   bool intializeFrame(int frame, IScriptEnvironment* env);
   inline int getClipLength() { return rpus->len; }
   inline bool isFEL() const { return is_fel; }
+  inline bool isSceneChange() { return scene_refresh_flag; }
   inline bool elProcessingDisabled() { return disable_residual_flag; }
   inline void forceDisableElProcessing(bool force = true) { disable_residual_flag = force; }
   inline uint16_t getNlqOffset(int cmp) const { return nlq_offset[cmp] << (containerBitDepth - el_bit_depth); }
@@ -90,6 +91,7 @@ private:
   uint8_t coeff_log2_denom;
   bool is_fel;
   bool disable_residual_flag;
+  bool scene_refresh_flag;
 
   uint16_t max_pq;
   uint16_t max_content_light_level;

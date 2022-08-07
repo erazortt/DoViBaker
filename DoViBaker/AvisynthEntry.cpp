@@ -228,6 +228,11 @@ int main(int argc, char** argv)
     return 1;
   }
 
+  FILE* fp = NULL;
+  if (argc > 2) {
+    fp = fopen(argv[2], "w");
+  }
+
   /*
   printf("Self test\n");
   printf("2081 pq = %i\n", DoViProcessor::pq2nits(2081));
@@ -254,6 +259,13 @@ int main(int argc, char** argv)
     unusualMatrix |= checkMatrix(dovi);
     nonIdentityMapping |= checkNonIdentityMapping(dovi);
     elMixing |= checkElProcessing(dovi);
+    if(fp && dovi.isSceneChange()){
+      fputs((std::to_string(i)+" K\n").c_str(), fp);
+    }
+  }
+
+  if (fp) {
+    fclose(fp);
   }
 
   //printf("clip max pq: %i\n", clip_max_pq);
