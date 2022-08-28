@@ -705,15 +705,28 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 		bool frameChromaSubSampled = blClipChromaSubSampled;
 		if (!skipElProcessing) {
 			if (quarterResolutionEl) {
-				PVideoFrame elUpSrc = env->NewVideoFrame(child->GetVideoInfo());
-				upscaleEl(elUpSrc, elSrc, child->GetVideoInfo(), env);
+				PVideoFrame elUpSrc;
+				if (!blClipChromaSubSampled && elClipChromaSubSampled) {
+					VideoInfo vi420 = child->GetVideoInfo();
+					vi420.pixel_type = VideoInfo::CS_YUV420P16;
+					elUpSrc = env->NewVideoFrame(vi420);
+					upscaleEl(elUpSrc, elSrc, vi420, env);
+				}
+				else if (blClipChromaSubSampled && !elClipChromaSubSampled) {
+					VideoInfo vi444 = child->GetVideoInfo();
+					vi444.pixel_type = VideoInfo::CS_YUV444P16;
+					elUpSrc = env->NewVideoFrame(vi444);
+					upscaleEl(elUpSrc, elSrc, vi444, env);
+				}
+				else {
+					elUpSrc = env->NewVideoFrame(child->GetVideoInfo());
+					upscaleEl(elUpSrc, elSrc, child->GetVideoInfo(), env);
+				}
 				elSrc = elUpSrc;
 			}
 			if (!blClipChromaSubSampled && elClipChromaSubSampled) {
-				VideoInfo vi444 = elChild->GetVideoInfo();
-				vi444.pixel_type = VideoInfo::CS_YUV444P16;
-				elSrc444 = env->NewVideoFrame(vi444);
-				upsampleChroma(elSrc444, elSrc, vi444, env);
+				elSrc444 = env->NewVideoFrame(child->GetVideoInfo());
+				upsampleChroma(elSrc444, elSrc, child->GetVideoInfo(), env);
 				frameChromaSubSampled = false;
 			}
 			if (blClipChromaSubSampled && !elClipChromaSubSampled) {
@@ -726,7 +739,16 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 		}
 		else { elSrcR = blSrc; }
 
-		PVideoFrame mez = env->NewVideoFrame(child->GetVideoInfo());
+		PVideoFrame mez = [&]() {
+			if (blClipChromaSubSampled && !elClipChromaSubSampled) {
+				VideoInfo vi444 = child->GetVideoInfo();
+				vi444.pixel_type = VideoInfo::CS_YUV444P16;
+				return env->NewVideoFrame(vi444);
+			}
+			else {
+				return env->NewVideoFrame(child->GetVideoInfo());
+			}
+		}();
 		if (frameChromaSubSampled)
 			applyDovi<true>(mez, blSrc, (!blSrc444) ? blSrc : blSrc444, elSrcR, (!elSrc444) ? elSrcR : elSrc444, env);
 		else
