@@ -98,9 +98,6 @@ private:
   int16_t ycc_to_rgb_coef[8];
   uint32_t ycc_to_rgb_offset[3];
 
-  //https://github.com/test-full-band/tfb-video/blob/master/core/src/main/java/band/full/video/dolby/VdrDmDataPayload.java
-  //https://ffmpeg.org/doxygen/trunk/dovi__meta_8h_source.html
-  //https://ffmpeg.org/doxygen/trunk/dovi__rpu_8c_source.html
   static const uint16_t ycc_to_rgb_coef_scale_shifts = 13;
   static const uint16_t ycc_to_rgb_offset_scale_shifts = (28-containerBitDepth);
   static const uint16_t rgb_to_lms_coef_scale_shifts = 14;
@@ -203,9 +200,6 @@ uint16_t DoViProcessor::processSampleV(uint16_t bl, uint16_t el, uint16_t mmrBlY
 
 void DoViProcessor::sample2rgb(uint16_t& r, uint16_t& g, uint16_t& b, const uint16_t& y, const uint16_t& u, const uint16_t& v) const
 {
-  //why is this implementations different..?
-  //https://code.videolan.org/videolan/libplacebo/-/blob/775a9325a23e26443b562b104c1fe949b99aa3c8/src/colorspace.c
-
   int yf = y - ycc_to_rgb_offset[0];
   int uf = u - ycc_to_rgb_offset[1];
   int vf = v - ycc_to_rgb_offset[2];
@@ -213,3 +207,10 @@ void DoViProcessor::sample2rgb(uint16_t& r, uint16_t& g, uint16_t& b, const uint
   g = Clip3(0, 0xFFFF, (ycc_to_rgb_coef[3] * yf + ycc_to_rgb_coef[4] * uf + ycc_to_rgb_coef[5] * vf) >> ycc_to_rgb_coef_scale_shifts);
   b = Clip3(0, 0xFFFF, (ycc_to_rgb_coef[6] * yf + ycc_to_rgb_coef[7] * uf + ycc_to_rgb_coef[8] * vf) >> ycc_to_rgb_coef_scale_shifts);
 }
+
+
+// see also:
+// https://code.videolan.org/videolan/libplacebo/-/blob/775a9325a23e26443b562b104c1fe949b99aa3c8/src/colorspace.c
+// https://github.com/test-full-band/tfb-video/blob/master/core/src/main/java/band/full/video/dolby/VdrDmDataPayload.java
+// https://ffmpeg.org/doxygen/trunk/dovi__meta_8h_source.html
+// https://ffmpeg.org/doxygen/trunk/dovi__rpu_8c_source.html
