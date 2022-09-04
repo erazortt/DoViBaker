@@ -106,7 +106,7 @@ private:
 
   uint16_t max_pq;
   uint16_t max_content_light_level;
-  int16_t ycc_to_rgb_coef[8];
+  int16_t ycc_to_rgb_coef[9];
   uint32_t ycc_to_rgb_offset[3];
 
   static const uint16_t ycc_to_rgb_coef_scale_shifts = 13;

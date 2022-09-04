@@ -4,7 +4,7 @@
 #include <string>
 
 DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env)
-	: max_content_light_level(1000), successfulCreation(false), rgbProof(false), nlqProof(false)
+	: successfulCreation(false), rgbProof(false), nlqProof(false), max_content_light_level(1000)
 {
 	ycc_to_rgb_coef[0] = 8192;
 	ycc_to_rgb_coef[1] = 0;
