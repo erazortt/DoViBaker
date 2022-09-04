@@ -47,8 +47,6 @@ public:
   static inline constexpr uint16_t upsampleLumaOdd(const uint16_t* srcSamples, int idx0);
   static inline constexpr uint16_t upsampleChromaEven(const uint16_t* srcSamples, int idx0);
   static inline constexpr uint16_t upsampleChromaOdd(const uint16_t* srcSamples, int idx0);
-  static inline constexpr uint16_t upsampleElLumaEven(const uint16_t* srcSamples, int idx0);
-  static inline constexpr uint16_t upsampleElLumaOdd(const uint16_t* srcSamples, int idx0);
 
   /*
   * these are the original upsampling functions from the paper and seem to assume center-left chroma location which is actually incorrect for hdr sources
@@ -154,20 +152,6 @@ constexpr uint16_t DoViProcessor::Clip3(uint16_t lower, uint16_t upper, int valu
 /*
 *  these upsampling functions are not following the paper, but should be correct when assuming top-left chroma location
 */
-constexpr uint16_t DoViProcessor::upsampleLumaEven(const uint16_t* y, int n)
-{
-  // this matches quite exactly spline36 at positions -2.75, -1.75, -0.75, 0.25, 1.25, 2.25
-  auto val = (2 * y[n - 3] - 12 * y[n - 2] + 65 * y[n - 1] + 222 * y[n] - 25 * y[n + 1] + 4 * y[n + 2] + 128) >> 8;
-  return Clip3(0, 0xFFFF, val);
-}
-
-constexpr uint16_t DoViProcessor::upsampleLumaOdd(const uint16_t* y, int n)
-{
-  // this matches quite exactly spline36 at positions -2.25, -1.25, -0.25, 0.75, 1.75, 2.75
-  auto val = (4 * y[n - 2] - 25 * y[n - 1] + 222 * y[n] + 65 * y[n + 1] - 12 * y[n + 2] + 2 * y[n + 3] + 128) >> 8;
-  return Clip3(0, 0xFFFF, val);
-}
-
 constexpr uint16_t DoViProcessor::upsampleChromaEven(const uint16_t* y, int n)
 {
   return y[n];
@@ -180,14 +164,14 @@ constexpr uint16_t DoViProcessor::upsampleChromaOdd(const uint16_t* y, int n)
   return Clip3(0, 0xFFFF, val);
 }
 
-constexpr uint16_t DoViProcessor::upsampleElLumaEven(const uint16_t* y, int n)
+constexpr uint16_t DoViProcessor::upsampleLumaEven(const uint16_t* y, int n)
 {
   // this matches quite exactly spline16 at positions -1.75, -0.75, 0.25, 1.25
   auto val = (-3 * y[n - 2] + 29 * y[n - 1] + 111 * y[n] - 9 * y[n + 1] + 64) >> 7;
   return Clip3(0, 0xFFFF, val);
 }
 
-constexpr uint16_t DoViProcessor::upsampleElLumaOdd(const uint16_t* y, int n)
+constexpr uint16_t DoViProcessor::upsampleLumaOdd(const uint16_t* y, int n)
 {
   // this matches quite exactly spline16 at positions -1.25, -0.25, 0.75, 1.75
   auto val = (-9 * y[n - 1] + 111 * y[n] + 29 * y[n + 1] - 3 * y[n + 2] + 64) >> 7;
