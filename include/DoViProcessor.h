@@ -39,7 +39,19 @@ public:
   inline uint16_t getMaxContentLightLevel() const { return max_content_light_level; }
 
   static inline uint16_t pq2nits(uint16_t pq);
-  
+
+  /*
+  * these upsampling functions are not following the paper, but should be correct when assuming top-left chroma location
+  */
+  static inline constexpr uint16_t upsampleLumaEven(const uint16_t* srcSamples, int idx0);
+  static inline constexpr uint16_t upsampleLumaOdd(const uint16_t* srcSamples, int idx0);
+  static inline constexpr uint16_t upsampleChromaEven(const uint16_t* srcSamples, int idx0);
+  static inline constexpr uint16_t upsampleChromaOdd(const uint16_t* srcSamples, int idx0);
+  static inline constexpr uint16_t upsampleElLumaEven(const uint16_t* srcSamples, int idx0);
+  static inline constexpr uint16_t upsampleElLumaOdd(const uint16_t* srcSamples, int idx0);
+
+  /*
+  * these are the original upsampling functions from the paper and seem to assume center-left chroma location which is actually incorrect for hdr sources
   static inline constexpr uint16_t upsampleHorzEven(const uint16_t* srcSamples, int idx0);
   static inline constexpr uint16_t upsampleHorzOdd(const uint16_t* srcSamples, int idx0);
   static inline constexpr uint16_t upsampleBlVertEven(const uint16_t* srcSamples, int idx0);
@@ -48,6 +60,7 @@ public:
   static inline constexpr uint16_t upsampleElYvertOdd(const uint16_t* srcSamples, int idx0);
   static inline constexpr uint16_t upsampleElUVvertEven(const uint16_t* srcSamples, int idx0);
   static inline constexpr uint16_t upsampleElUVvertOdd(const uint16_t* srcSamples, int idx0);
+  */
 
   inline uint16_t processSampleY(uint16_t bl, uint16_t el) const;
   inline uint16_t processSampleU(uint16_t bl, uint16_t el, uint16_t mmrBlY, uint16_t mmrBlU, uint16_t mmrBlV) const;
@@ -138,6 +151,52 @@ constexpr uint16_t DoViProcessor::Clip3(uint16_t lower, uint16_t upper, int valu
   return max(min(value, upper), lower);
 }
 
+/*
+*  these upsampling functions are not following the paper, but should be correct when assuming top-left chroma location
+*/
+constexpr uint16_t DoViProcessor::upsampleLumaEven(const uint16_t* y, int n)
+{
+  // this matches quite exactly spline36 at positions -2.75, -1.75, -0.75, 0.25, 1.25, 2.25
+  auto val = (2 * y[n - 3] - 12 * y[n - 2] + 65 * y[n - 1] + 222 * y[n] - 25 * y[n + 1] + 4 * y[n + 2] + 128) >> 8;
+  return Clip3(0, 0xFFFF, val);
+}
+
+constexpr uint16_t DoViProcessor::upsampleLumaOdd(const uint16_t* y, int n)
+{
+  // this matches quite exactly spline36 at positions -2.25, -1.25, -0.25, 0.75, 1.75, 2.75
+  auto val = (4 * y[n - 2] - 25 * y[n - 1] + 222 * y[n] + 65 * y[n + 1] - 12 * y[n + 2] + 2 * y[n + 3] + 128) >> 8;
+  return Clip3(0, 0xFFFF, val);
+}
+
+constexpr uint16_t DoViProcessor::upsampleChromaEven(const uint16_t* y, int n)
+{
+  return y[n];
+}
+
+constexpr uint16_t DoViProcessor::upsampleChromaOdd(const uint16_t* y, int n)
+{
+  // this is spline16 at positions 0.5, 1.5
+  auto val = (-307 * y[n - 1] + 2355 * y[n] + 2355 * y[n + 1] - 307 * y[n + 2] + 2048) >> 12;
+  return Clip3(0, 0xFFFF, val);
+}
+
+constexpr uint16_t DoViProcessor::upsampleElLumaEven(const uint16_t* y, int n)
+{
+  // this matches quite exactly spline16 at positions -1.75, -0.75, 0.25, 1.25
+  auto val = (-3 * y[n - 2] + 29 * y[n - 1] + 111 * y[n] - 9 * y[n + 1] + 64) >> 7;
+  return Clip3(0, 0xFFFF, val);
+}
+
+constexpr uint16_t DoViProcessor::upsampleElLumaOdd(const uint16_t* y, int n)
+{
+  // this matches quite exactly spline16 at positions -1.25, -0.25, 0.75, 1.75
+  auto val = (-9 * y[n - 1] + 111 * y[n] + 29 * y[n + 1] - 3 * y[n + 2] + 64) >> 7;
+  return Clip3(0, 0xFFFF, val);
+}
+
+/*
+* these are the original upsampling functions from the paper and seem to assume center-left chroma location which is actually incorrect for hdr sources
+
 constexpr uint16_t DoViProcessor::upsampleHorzEven(const uint16_t* y, int n)
 {
   return y[n];
@@ -145,6 +204,7 @@ constexpr uint16_t DoViProcessor::upsampleHorzEven(const uint16_t* y, int n)
 
 constexpr uint16_t DoViProcessor::upsampleHorzOdd(const uint16_t* y, int n)
 {
+  // this matches quite exactly spline64 at positions 0.5, 1.5, 2.5, 3.5
   auto val = (22 * y[n - 3] + 94 * y[n - 2] - 524 * y[n - 1] + 2456 * y[n] + 2456 * y[n + 1] - 524 * y[n + 2] +
     94 * y[n + 3] + 22 * y[n + 4] + 2048) >> 12;
   return Clip3(0, 0xFFFF, val);
@@ -152,24 +212,28 @@ constexpr uint16_t DoViProcessor::upsampleHorzOdd(const uint16_t* y, int n)
 
 constexpr uint16_t DoViProcessor::upsampleBlVertEven(const uint16_t* y, int n)
 {
+  // this matches quite exactly spline36 at positions -2.75, -1.75, -0.75, 0.25, 1.25, 2.25
   auto val = (2 * y[n - 3] - 12 * y[n - 2] + 65 * y[n - 1] + 222 * y[n] - 25 * y[n + 1] + 4 * y[n + 2] + 128) >> 8;
   return Clip3(0, 0xFFFF, val);
 }
 
 constexpr uint16_t DoViProcessor::upsampleBlVertOdd(const uint16_t* y, int n)
 {
+  // this matches quite exactly spline36 at positions -2.25, -1.25, -0.25, 0.75, 1.75, 2.75
   auto val = (4 * y[n - 2] - 25 * y[n - 1] + 222 * y[n] + 65 * y[n + 1] - 12 * y[n + 2] + 2 * y[n + 3] + 128) >> 8;
   return Clip3(0, 0xFFFF, val);
 }
 
 constexpr uint16_t DoViProcessor::upsampleElYvertEven(const uint16_t* y, int n)
 {
+  // this matches quite exactly spline16 at positions -1.75, -0.75, 0.25, 1.25
   auto val = (-3 * y[n - 2] + 29 * y[n - 1] + 111 * y[n] - 9 * y[n + 1] + 64) >> 7;
   return Clip3(0, 0xFFFF, val);
 }
 
 constexpr uint16_t DoViProcessor::upsampleElYvertOdd(const uint16_t* y, int n)
 {
+  // this matches quite exactly spline16 at positions -1.25, -0.25, 0.75, 1.75
   auto val = (-9 * y[n - 1] + 111 * y[n] + 29 * y[n + 1] - 3 * y[n + 2] + 64) >> 7;
   return Clip3(0, 0xFFFF, val);
 }
@@ -185,6 +249,7 @@ constexpr uint16_t DoViProcessor::upsampleElUVvertOdd(const uint16_t* y, int n)
   auto val = (192 * y[n] + 64 * y[n + 1] + 128) >> 8;
   return min(0xFFFF, val);
 }
+*/
 
 uint16_t DoViProcessor::processSampleY(uint16_t bl, uint16_t el) const {
   return processSample(0, bl, el, 0, 0, 0);

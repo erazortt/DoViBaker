@@ -216,8 +216,85 @@ uint16_t checkNonIdentityMapping(const DoViProcessor& dovi) {
   return diffBits;
 }
 
+double Spline16Filter(double value) {
+  value = fabs(value);
+
+  if (value < 1.0) {
+    return ((value - 9.0 / 5.0) * value - 1.0 / 5.0) * value + 1.0;
+  }
+  else if (value < 2.0) {
+    return ((-1.0 / 3.0 * (value - 1.0) + 4.0 / 5.0) * (value - 1.0) - 7.0 / 15.0) * (value - 1.0);
+  }
+  return 0.0;
+}
+
+double Spline36Filter(double value) {
+  value = fabs(value);
+
+  if (value < 1.0) {
+    return ((13.0 / 11.0 * (value)-453.0 / 209.0) * (value)-3.0 / 209.0) * (value)+1.0;
+  }
+  else if (value < 2.0) {
+    return ((-6.0 / 11.0 * (value - 1.0) + 270.0 / 209.0) * (value - 1.0) - 156.0 / 209.0) * (value - 1.0);
+  }
+  else if (value < 3.0) {
+    return  ((1.0 / 11.0 * (value - 2.0) - 45.0 / 209.0) * (value - 2.0) + 26.0 / 209.0) * (value - 2.0);
+  }
+  return 0.0;
+}
+
+double Spline64Filter(double value) {
+  value = fabs(value);
+
+  if (value < 1.0) {
+    return ((49.0 / 41.0 * (value)-6387.0 / 2911.0) * (value)-3.0 / 2911.0) * (value)+1.0;
+  }
+  else if (value < 2.0) {
+    return ((-24.0 / 41.0 * (value - 1.0) + 4032.0 / 2911.0) * (value - 1.0) - 2328.0 / 2911.0) * (value - 1.0);
+  }
+  else if (value < 3.0) {
+    return ((6.0 / 41.0 * (value - 2.0) - 1008.0 / 2911.0) * (value - 2.0) + 582.0 / 2911.0) * (value - 2.0);
+  }
+  else if (value < 4.0) {
+    return ((-1.0 / 41.0 * (value - 3.0) + 168.0 / 2911.0) * (value - 3.0) - 97.0 / 2911.0) * (value - 3.0);
+  }
+  return 0.0;
+}
+
 int main(int argc, char** argv)
 {
+  /*
+  printf("Spline64 coefficients\n");
+  for (int i = 0; i < 4; i++) {
+    float val = i + 0.5;
+    printf("%f %i\n", val, int(Spline64Filter(val) * (1 << 12)));
+  }
+  printf("Spline16 coefficients\n");
+  for (int i = 0; i < 2; i++) {
+    float val = i + 0.5;
+    printf("%f %i\n", val, int(Spline16Filter(val) * (1 << 12)));
+  }
+  printf("Spline36 coefficients\n");
+  for (int i = -2; i < 4; i++) {
+    float val = i - 0.25;
+    printf("%f %i\n", val, int(Spline36Filter(val) * (1 << 8)));
+  }
+  printf("Spline16 coefficients\n");
+  for (int i = -1; i < 3; i++) {
+    float val = i - 0.25;
+    printf("%f %i\n", val, int(Spline16Filter(val) * (1 << 7)));
+  }
+
+  printf("Self test\n");
+  printf("2081 pq = %i\n", DoViProcessor::pq2nits(2081));
+  for (int i = 0; i <= 100; i += 10) {
+    std::string out(std::to_string(i));
+    out += "%: ";
+    out += std::to_string(DoViProcessor::pq2nits(4095 * i * 0.01));
+    out += "\n";
+    printf(out.c_str());
+  }*/
+
   if (argc < 2) {
     printf("DoViAnalyzer: provide path to RPU.bin file\n");
     return 1;
@@ -232,17 +309,6 @@ int main(int argc, char** argv)
   if (argc > 2) {
     fp = fopen(argv[2], "w");
   }
-
-  /*
-  printf("Self test\n");
-  printf("2081 pq = %i\n", DoViProcessor::pq2nits(2081));
-  for (int i = 0; i <= 100; i += 10) {
-    std::string out(std::to_string(i));
-    out += "%: ";
-    out += std::to_string(DoViProcessor::pq2nits(4095 * i * 0.01));
-    out += "\n";
-    printf(out.c_str());
-  }*/
 
   int length = dovi.getClipLength();
   printf("clip length: %i\n", length);
