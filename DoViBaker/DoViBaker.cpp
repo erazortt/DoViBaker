@@ -79,8 +79,6 @@ inline void DoViBaker<quarterResolutionEl>::upsampleVert(PVideoFrame& dst, const
 	const int srcPitch = src->GetPitch(plane) / sizeof(uint16_t);
 	const uint16_t* srcPb = (const uint16_t*)src->GetReadPtr(plane);
 
-	const int dstHeight = dst->GetHeight(plane);
-	const int dstWidth = dst->GetRowSize(plane) / sizeof(uint16_t);
 	const int dstPitch = dst->GetPitch(plane) / sizeof(uint16_t);
 	uint16_t* dstPeven = (uint16_t*)dst->GetWritePtr(plane);
 	uint16_t* dstPodd = dstPeven + dstPitch;
@@ -122,8 +120,6 @@ void DoViBaker<quarterResolutionEl>::upsampleHorz(PVideoFrame& dst, const PVideo
 	const int srcPitch = src->GetPitch(plane) / sizeof(uint16_t);
 	const uint16_t* srcP = (const uint16_t*)src->GetReadPtr(plane);
 
-	const int dstHeight = dst->GetHeight(plane);
-	const int dstWidth = dst->GetRowSize(plane) / sizeof(uint16_t);
 	const int dstPitch = dst->GetPitch(plane) / sizeof(uint16_t);
 	uint16_t* dstP = (uint16_t*)dst->GetWritePtr(plane);
 
@@ -281,16 +277,10 @@ template<int quarterResolutionEl>
 template<int chromaSubsampling>
 void DoViBaker<quarterResolutionEl>::applyDovi(PVideoFrame& dst, const PVideoFrame& blSrcY, const PVideoFrame& blSrcUV, const PVideoFrame& elSrcY, const PVideoFrame& elSrcUV, IScriptEnvironment* env) const {
 
-	const int blSrcHeightY = blSrcY->GetHeight(PLANAR_Y);
-	const int blSrcWidthY = blSrcY->GetRowSize(PLANAR_Y) / sizeof(uint16_t);
 	const int blSrcPitchY = blSrcY->GetPitch(PLANAR_Y) / sizeof(uint16_t);
 
-	const int elSrcHeightY = elSrcY->GetHeight(PLANAR_Y);
-	const int elSrcWidthY = elSrcY->GetRowSize(PLANAR_Y) / sizeof(uint16_t);
 	const int elSrcPitchY = elSrcY->GetPitch(PLANAR_Y) / sizeof(uint16_t);
 
-	const int dstHeightY = dst->GetHeight(PLANAR_Y);
-	const int dstWidthY = dst->GetRowSize(PLANAR_Y) / sizeof(uint16_t);
 	const int dstPitchY = dst->GetPitch(PLANAR_Y) / sizeof(uint16_t);
 
 	std::array<const uint16_t*, chromaSubsampling + 1> blSrcYp;
@@ -310,12 +300,8 @@ void DoViBaker<quarterResolutionEl>::applyDovi(PVideoFrame& dst, const PVideoFra
 	const int blSrcWidthUV = blSrcUV->GetRowSize(PLANAR_U) / sizeof(uint16_t);
 	const int blSrcPitchUV = blSrcUV->GetPitch(PLANAR_U) / sizeof(uint16_t);
 
-	const int elSrcHeightUV = elSrcUV->GetHeight(PLANAR_U);
-	const int elSrcWidthUV = elSrcUV->GetRowSize(PLANAR_U) / sizeof(uint16_t);
 	const int elSrcPitchUV = elSrcUV->GetPitch(PLANAR_U) / sizeof(uint16_t);
 
-	const int dstHeightUV = dst->GetHeight(PLANAR_U);
-	const int dstWidthUV = dst->GetRowSize(PLANAR_U) / sizeof(uint16_t);
 	const int dstPitchUV = dst->GetPitch(PLANAR_U) / sizeof(uint16_t);
 
 	const uint16_t* blSrcUp = (const uint16_t*)blSrcUV->GetReadPtr(PLANAR_U);
@@ -396,20 +382,12 @@ void DoViBaker<quarterResolutionEl>::applyDovi(PVideoFrame& dst, const PVideoFra
 template<int quarterResolutionEl>
 template<int blChromaSubsampling, int elChromaSubsampling>
 void DoViBaker<quarterResolutionEl>::doAllQuickAndDirty(PVideoFrame& dst, const PVideoFrame& blSrc, const PVideoFrame& elSrc, IScriptEnvironment* env) const {
-	const int blSrcHeightY = blSrc->GetHeight(PLANAR_Y);
-	const int blSrcWidthY = blSrc->GetRowSize(PLANAR_Y) / sizeof(uint16_t);
 	const int blSrcPitchY = blSrc->GetPitch(PLANAR_Y) / sizeof(uint16_t);
 
-	const int elSrcHeightY = elSrc->GetHeight(PLANAR_Y);
-	const int elSrcWidthY = elSrc->GetRowSize(PLANAR_Y) / sizeof(uint16_t);
 	const int elSrcPitchY = elSrc->GetPitch(PLANAR_Y) / sizeof(uint16_t);
 
-	const int dstHeight = dst->GetHeight(PLANAR_R);
-	const int dstWidth = dst->GetRowSize(PLANAR_R) / sizeof(uint16_t);
 	const int dstPitch = dst->GetPitch(PLANAR_R) / sizeof(uint16_t);
 
-	const int blSrcHeightUV = blSrc->GetHeight(PLANAR_U);
-	const int blSrcWidthUV = blSrc->GetRowSize(PLANAR_U) / sizeof(uint16_t);
 	const int blSrcPitchUV = blSrc->GetPitch(PLANAR_U) / sizeof(uint16_t);
 
 	const int elSrcHeightUV = elSrc->GetHeight(PLANAR_U);
@@ -519,12 +497,8 @@ void DoViBaker<quarterResolutionEl>::doAllQuickAndDirty(PVideoFrame& dst, const 
 template<int quarterResolutionEl>
 void DoViBaker<quarterResolutionEl>::convert2rgb(PVideoFrame& dst, const PVideoFrame& srcY, const PVideoFrame& srcUV) const
 {
-	const int srcHeightY = srcY->GetHeight(PLANAR_Y);
-	const int srcWidthY = srcY->GetRowSize(PLANAR_Y) / sizeof(uint16_t);
 	const int srcPitchY = srcY->GetPitch(PLANAR_Y) / sizeof(uint16_t);
 
-	const int dstHeight = dst->GetHeight(PLANAR_R);
-	const int dstWidth = dst->GetRowSize(PLANAR_R) / sizeof(uint16_t);
 	const int dstPitch = dst->GetPitch(PLANAR_R) / sizeof(uint16_t);
 
 	const uint16_t* srcYp = (const uint16_t*)srcY->GetReadPtr(PLANAR_Y);
