@@ -412,7 +412,7 @@ void DoViBaker<quarterResolutionEl>::doAllQuickAndDirty(PVideoFrame& dst, const 
 	elSrcYp[0] = (const uint16_t*)elSrc->GetReadPtr(PLANAR_Y);
 	dstRp[0] = (uint16_t*)dst->GetWritePtr(PLANAR_R);
 
-	const int blUVvsElUVshifts = quarterResolutionEl + elChromaSubsampling - blChromaSubsampling;
+	const int blUVvsElUVshifts = max(quarterResolutionEl + elChromaSubsampling - blChromaSubsampling, 0);
 	std::array<const uint16_t*, (1 << blUVvsElUVshifts)> blSrcUp;
 	std::array<const uint16_t*, 1> elSrcUp;
 	std::array<uint16_t*, (1 << blYvsElUVshifts)> dstGp;
