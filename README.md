@@ -37,7 +37,7 @@ subtitle("maxcll = " + string(mcll))
 This application analyzes the RPU.bin file in order to show information relevant to deciding whether it is worth to use DoViBaker or if this can be skipped completly and the Base Layer can be used directly.
 
 ```
-usage: DoViAnalyzer.exe <path_to_rpu.bin_file>
+usage: DoViAnalyzer.exe <path_to_rpu.bin_file> <optional_scenecutfile.txt>
 ```
 The output will show the following attributes:
 * clip length
@@ -47,3 +47,5 @@ The output will show the following attributes:
 * enabled processing of the Enhancement Layer
 
 The last three will indicate that the look of the clip will be different when DolbyVision is taken into account compared to just playing the Base Layer clip. This will mean that the processing using DoViBaker is necessary in order to get the DolbyVision look.
+
+Additionally it is possible to generate a scenecutfile based on the information from the RPU file. This might be given to the encoder to improve the scene detection (using the parameter --qpfile for x265).
