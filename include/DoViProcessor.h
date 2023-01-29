@@ -144,8 +144,6 @@ private:
   uint16_t desiredTrimPq;
   float targetMaxNits;
   float targetMinNits;
-  uint16_t targetMaxPq;
-  uint16_t targetMinPq;
   std::vector<uint16_t> availableTrimPqs;
   struct TrimCoefficients {
     uint16_t slope;
@@ -168,8 +166,6 @@ void DoViProcessor::setTrim(uint16_t trimPq, float targetMinNits, float targetMa
   desiredTrimPq = trimPq;
   this->targetMinNits = min(max(targetMinNits, 0.0001), 5);
   this->targetMaxNits = max(min(targetMaxNits, 10000), 5);
-  targetMinPq = nits2pq(targetMinNits);
-  targetMaxPq = nits2pq(targetMaxNits);
 }
 
 float DoViProcessor::pq2nits(uint16_t pq)
