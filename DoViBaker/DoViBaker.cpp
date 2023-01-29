@@ -16,11 +16,18 @@ DoViBaker<quarterResolutionEl>::DoViBaker(
 	bool _blChromaSubSampled, 
 	bool _elChromaSubSampled,
 	std::vector<std::pair<uint16_t, std::string>>& _cubes,
+	uint16_t _desiredTrimPq,
+	float _targetMinLum,
+	float _targetMaxLum,
 	bool _qnd,
 	bool _rgbProof,
 	bool _nlqProof,
 	IScriptEnvironment* env)
-  : GenericVideoFilter(_blChild), elChild(_elChild), qnd(_qnd), blClipChromaSubSampled(_blChromaSubSampled), elClipChromaSubSampled(_elChromaSubSampled)
+	: GenericVideoFilter(_blChild)
+	, elChild(_elChild)
+	, qnd(_qnd)
+	, blClipChromaSubSampled(_blChromaSubSampled)
+	, elClipChromaSubSampled(_elChromaSubSampled)
 {
 	int bits_per_pixel = vi.BitsPerComponent();
 	if (bits_per_pixel != DoViProcessor::containerBitDepth) {
@@ -34,12 +41,17 @@ DoViBaker<quarterResolutionEl>::DoViBaker(
 	}
 	doviProc->setRgbProof(_rgbProof);
 	doviProc->setNlqProof(_nlqProof);
+	
+	doviProc->setTrim(_desiredTrimPq, _targetMinLum, _targetMaxLum);
 
 	if (vi.num_frames != doviProc->getClipLength()) {
 		env->ThrowError("DoViBaker: Clip length does not match length indicated by RPU file");
 	}
+	if (elChild && vi.num_frames != elChild->GetVideoInfo().num_frames) {
+		env->ThrowError("DoViBaker: Length of BL clip does not match length of EL clip");
+	}
 
-  CPU_FLAG = env->GetCPUFlags();
+	CPU_FLAG = env->GetCPUFlags();
 	int lutMaxCpuCaps = INT_MAX;
 
 	for (int i = 0; i < _cubes.size(); i++) {
@@ -544,6 +556,43 @@ void DoViBaker<quarterResolutionEl>::convert2rgb(PVideoFrame& dst, const PVideoF
 }
 
 template<int quarterResolutionEl>
+void DoViBaker<quarterResolutionEl>::applyTrim(PVideoFrame& dst, const PVideoFrame& src) const
+{
+	unsigned int width = vi.width;
+	unsigned int height = vi.height;
+
+	const uint16_t* srcP[3];
+	int srcPitch[3];
+	uint16_t* dstP[3];
+	int dstPitch[3];
+
+	srcP[0] = (const uint16_t*)src->GetReadPtr(PLANAR_R);
+	srcP[1] = (const uint16_t*)src->GetReadPtr(PLANAR_G);
+	srcP[2] = (const uint16_t*)src->GetReadPtr(PLANAR_B);
+	srcPitch[0] = src->GetPitch(PLANAR_R) / sizeof(uint16_t);
+	srcPitch[1] = src->GetPitch(PLANAR_G) / sizeof(uint16_t);
+	srcPitch[2] = src->GetPitch(PLANAR_B) / sizeof(uint16_t);
+	dstP[0] = (uint16_t*)dst->GetWritePtr(PLANAR_R);
+	dstP[1] = (uint16_t*)dst->GetWritePtr(PLANAR_G);
+	dstP[2] = (uint16_t*)dst->GetWritePtr(PLANAR_B);
+	dstPitch[0] = dst->GetPitch(PLANAR_R) / sizeof(uint16_t);
+	dstPitch[1] = dst->GetPitch(PLANAR_G) / sizeof(uint16_t);
+	dstPitch[2] = dst->GetPitch(PLANAR_B) / sizeof(uint16_t);
+
+	for (unsigned h = 0; h < height; ++h)
+	{
+		for (unsigned w = 0; w < width; ++w)
+		doviProc->processTrim(dstP[0][w], dstP[1][w], dstP[2][w], srcP[0][w], srcP[1][w], srcP[2][w]);
+
+		for (unsigned p = 0; p < 3; ++p)
+		{
+			srcP[p] += srcPitch[p];
+			dstP[p] += dstPitch[p];
+		}
+	}
+}
+
+template<int quarterResolutionEl>
 void DoViBaker<quarterResolutionEl>::applyLut(PVideoFrame& dst, const PVideoFrame& src) const
 {
 	unsigned int width = vi.width;
@@ -610,8 +659,9 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 		return dst;
 	}
 	env->propSetInt(env->getFramePropsRW(dst), "_Matrix", 0, 0);      //output is RGB
-	env->propSetInt(env->getFramePropsRW(dst), "_ColorRange", 0, 0);  //output is full range RGB
+	env->propSetInt(env->getFramePropsRW(dst), "_ColorRange", doviProc->isLimitedRangeOutput(), 0);
 	env->propDeleteKey(env->getFramePropsRW(dst), "_ChromaLocation"); //RGB has no chroma location defined
+	env->propSetInt(env->getFramePropsRW(dst), "_SceneChangePrev", doviProc->isSceneChange(), 0);
 	env->propSetInt(env->getFramePropsRW(dst), "_dovi_max_pq", doviProc->getMaxPq(), 0);
 	env->propSetInt(env->getFramePropsRW(dst), "_dovi_max_content_light_level", doviProc->getMaxContentLightLevel(), 0);
 
@@ -625,6 +675,8 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 			}
 		}
 	}
+
+	bool skipTrim = doviProc->trimProcessingDisabled();
 
 	bool skipElProcessing = false;
 	if (!elChild || !doviProc->isFEL() || doviProc->elProcessingDisabled()) {
@@ -688,6 +740,9 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 			upsampleChroma(mez444, mez, vi444, env);
 		}
 		convert2rgb(dst, mez, (!mez444)? mez : mez444);
+	}
+	if (!skipTrim) {
+		applyTrim(dst, dst);
 	}
 	if (!skipLut) {
 		applyLut(dst, dst);

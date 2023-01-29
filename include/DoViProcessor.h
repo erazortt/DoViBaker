@@ -27,18 +27,23 @@ public:
   bool wasCreationSuccessful() { return successfulCreation; }
   void setRgbProof(bool set = true) { rgbProof = set; }
   void setNlqProof(bool set = true) { nlqProof = set; }
+  inline void setTrim(uint16_t trimPq, float targetMinNits, float targetMaxNits);
 
   bool intializeFrame(int frame, IScriptEnvironment* env);
-  inline int getClipLength() { return rpus->len; }
+  inline int getClipLength() const { return rpus->len; }
   inline bool isFEL() const { return is_fel; }
-  inline bool isSceneChange() { return scene_refresh_flag; }
-  inline bool elProcessingDisabled() { return disable_residual_flag; }
+  inline bool isSceneChange() const { return scene_refresh_flag; }
+  inline bool isLimitedRangeOutput() const { return !signal_full_range_flag; }
+  inline bool elProcessingDisabled() const { return disable_residual_flag; }
+  inline bool trimProcessingDisabled() const { return skipTrim; }
   inline void forceDisableElProcessing(bool force = true) { disable_residual_flag = force; }
   inline uint16_t getNlqOffset(int cmp) const { return nlq_offset[cmp] << (containerBitDepth - el_bit_depth); }
   inline uint16_t getMaxPq() const { return max_pq; }
   inline uint16_t getMaxContentLightLevel() const { return max_content_light_level; }
+  const std::vector<uint16_t>& getAvailableTrimPqs() const { return availableTrimPqs; }
 
-  static inline uint16_t pq2nits(uint16_t pq);
+  static inline float pq2nits(uint16_t pq);
+  static inline uint16_t nits2pq(float nits);
 
   /*
   * these upsampling functions are not following the paper, but should be correct when assuming top-left chroma location
@@ -65,6 +70,7 @@ public:
   inline uint16_t processSampleV(uint16_t bl, uint16_t el, uint16_t mmrBlY, uint16_t mmrBlU, uint16_t mmrBlV) const;
 
   inline void sample2rgb(uint16_t& r, uint16_t& g, uint16_t& b, const uint16_t& y, const uint16_t& u, const uint16_t& v) const;
+  void processTrim(uint16_t& ro, uint16_t& go, uint16_t& bo, const uint16_t& ri, const uint16_t& gi, const uint16_t& bi) const;
 
   static const uint16_t containerBitDepth = 16;
 private:
@@ -76,6 +82,7 @@ private:
   uint16_t mmrMapping(int cmp, int pivot_idx, uint16_t sampleY, uint16_t sampleU, uint16_t sampleV) const;
   int16_t nonLinearInverseQuantization(int cmp, uint16_t sample) const;
   uint16_t signalReconstruction(uint16_t v, int16_t r) const;
+  void prepareTrimCoef();
 
   HINSTANCE doviLib;
   DoviRpuOpaqueList* rpus;
@@ -95,6 +102,8 @@ private:
   bool successfulCreation;
   bool rgbProof;
   bool nlqProof;
+  bool skipTrim;
+  bool trimInfoMissing;
 
   uint8_t bl_bit_depth;
   uint8_t el_bit_depth;
@@ -103,8 +112,11 @@ private:
   bool is_fel;
   bool disable_residual_flag;
   bool scene_refresh_flag;
+  bool signal_full_range_flag;
 
   uint16_t max_pq;
+  uint16_t min_pq;
+  uint16_t avg_pq;
   uint16_t max_content_light_level;
   int16_t ycc_to_rgb_coef[9];
   uint32_t ycc_to_rgb_offset[3];
@@ -128,9 +140,39 @@ private:
   uint32_t fp_hdr_in_max[3];
   uint32_t fp_linear_deadzone_slope[3];
   uint32_t fp_linear_deadzone_threshold[3];
+
+  uint16_t desiredTrimPq;
+  float targetMaxNits;
+  float targetMinNits;
+  uint16_t targetMaxPq;
+  uint16_t targetMinPq;
+  std::vector<uint16_t> availableTrimPqs;
+  struct TrimCoefficients {
+    uint16_t slope;
+    uint16_t offset;
+    uint16_t power;
+    uint16_t chroma_weight;
+    uint16_t saturation_gain;
+    uint16_t tone_detail;
+
+    float maxNits;
+    float minNits;
+    float ccc[3];
+    float goP[3];
+    float cS[2];
+  } trim;
 };
 
-uint16_t DoViProcessor::pq2nits(uint16_t pq)
+void DoViProcessor::setTrim(uint16_t trimPq, float targetMinNits, float targetMaxNits)
+{
+  desiredTrimPq = trimPq;
+  this->targetMinNits = min(max(targetMinNits, 0.0001), 5);
+  this->targetMaxNits = max(min(targetMaxNits, 10000), 5);
+  targetMinPq = nits2pq(targetMinNits);
+  targetMaxPq = nits2pq(targetMaxNits);
+}
+
+float DoViProcessor::pq2nits(uint16_t pq)
 {
   static const float m1 = 2610.0 / 4096 / 4;
   static const float m2 = 2523.0 / 4096 * 128;
@@ -142,6 +184,21 @@ uint16_t DoViProcessor::pq2nits(uint16_t pq)
   const float num = max(epower - c1, 0);
   const float denom = c2 - c3 * epower;
   return powf(num / denom, 1 / m1) * 10000;
+}
+
+uint16_t DoViProcessor::nits2pq(float nits)
+{
+  static const float m1 = 2610.0 / 4096 / 4;
+  static const float m2 = 2523.0 / 4096 * 128;
+  static const float c3 = 2392.0 / 4096 * 32;
+  static const float c2 = 2413.0 / 4096 * 32;
+  static const float c1 = c3 - c2 + 1;
+
+  const float relNits = nits / 10000;
+  const float epower = powf(relNits, m1);
+  const float num = c1 + c2 * epower;
+  const float denom = 1 + c3 * epower;
+  return powf(num / denom, m2) * 4095.0;
 }
 
 constexpr uint16_t DoViProcessor::Clip3(uint16_t lower, uint16_t upper, int value)

@@ -4,7 +4,7 @@
 #include <string>
 
 DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env)
-	: successfulCreation(false), rgbProof(false), nlqProof(false), max_content_light_level(1000)
+	: successfulCreation(false), rgbProof(false), nlqProof(false), desiredTrimPq(0), max_content_light_level(1000)
 {
 	ycc_to_rgb_coef[0] = 8192;
 	ycc_to_rgb_coef[1] = 0;
@@ -208,12 +208,6 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 			return false;
 		}
 
-		max_pq = vdr_dm_data->dm_data.level1->max_pq;
-		//max_content_light_level = pq2nits(vdr_dm_data->source_max_pq);
-
-		//max_content_light_level = vdr_dm_data->dm_data.level6->max_content_light_level;
-		max_content_light_level = pq2nits(max_pq);
-
 		ycc_to_rgb_coef[0] = vdr_dm_data->ycc_to_rgb_coef0;
 		ycc_to_rgb_coef[1] = vdr_dm_data->ycc_to_rgb_coef1;
 		ycc_to_rgb_coef[2] = vdr_dm_data->ycc_to_rgb_coef2;
@@ -233,8 +227,44 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 		}
 
 		scene_refresh_flag = vdr_dm_data->scene_refresh_flag;
+		signal_full_range_flag = vdr_dm_data->signal_full_range_flag;
+		/*if (!signal_full_range_flag) {
+			showMessage("DoViBaker: Limited range output signals have not been tested, no idea if that works.", env);
+			return false;
+		}*/
+
+		min_pq = vdr_dm_data->dm_data.level1->min_pq;
+		max_pq = vdr_dm_data->dm_data.level1->max_pq;
+		//max_content_light_level = pq2nits(vdr_dm_data->source_max_pq);
+		//max_content_light_level = vdr_dm_data->dm_data.level6->max_content_light_level;
+		max_content_light_level = pq2nits(max_pq);
+
+		skipTrim = true;
+		if (desiredTrimPq) {
+			skipTrim = false;
+			avg_pq = vdr_dm_data->dm_data.level1->avg_pq;
+			auto lvl2 = vdr_dm_data->dm_data.level2;
+			availableTrimPqs = std::vector<uint16_t>(lvl2.len);
+			trimInfoMissing = true;
+			for (int i = 0; i < lvl2.len; i++) {
+				availableTrimPqs[i] = lvl2.list[i]->target_max_pq;
+				if (desiredTrimPq != lvl2.list[i]->target_max_pq) continue;
+				trimInfoMissing = false;
+				trim.slope = lvl2.list[i]->trim_slope;
+				trim.offset = lvl2.list[i]->trim_offset;
+				trim.power = lvl2.list[i]->trim_power;
+				trim.chroma_weight = lvl2.list[i]->trim_chroma_weight;
+				trim.saturation_gain = lvl2.list[i]->trim_saturation_gain;
+				trim.tone_detail = lvl2.list[i]->ms_weight;
+			}
+			prepareTrimCoef();
+		}
 
 		dovi_rpu_free_vdr_dm_data(vdr_dm_data);
+	}
+	else {
+		showMessage("DoViBaker: No DM Metadata avilable.", env);
+		return false;
 	}
 
 	dovi_rpu_free_data_mapping(mapping_data);
@@ -399,4 +429,62 @@ uint16_t DoViProcessor::signalReconstruction(uint16_t v, int16_t r) const {
 	h = h < 0 ? 0 : h;
 	h = h > MAXOUT ? MAXOUT : h;
 	return h;
+}
+
+void DoViProcessor::prepareTrimCoef() {
+	float x1 = trim.minNits = pq2nits(min_pq);
+	float x2 = pq2nits(avg_pq);
+	float x3 = trim.maxNits = pq2nits(max_pq);
+
+	float y1 = targetMinNits;
+	float y2 = sqrtf(x2 * sqrtf(targetMaxNits * targetMinNits));
+	float y3 = targetMaxNits;
+
+	float m[10];
+	m[9] = x3 * y3 * (x1 - x2) + x2 * y2 * (x3 - x1) + x1 * y1 * (x2 - x3);
+	m[0] = x2 * x3 * (y2 - y3); m[1] = x1 * x3 * (y3 - y1); m[2] = x1 * x2 * (y1 - y2);
+	m[3] = x3 * y3 - x2 * y2; m[4] = x1 * y1 - x3 * y3; m[5] = x2 * y2 - x1 * y1;
+	m[6] = x3 - x2; m[7] = x1 - x3; m[8] = x2 - x1;
+
+	trim.ccc[0] = (m[0] * y1 + m[1] * y2 + m[2] * y3) / m[9];
+	trim.ccc[1] = (m[3] * y1 + m[4] * y2 + m[5] * y3) / m[9];
+	trim.ccc[2] = (m[6] * y1 + m[7] * y2 + m[8] * y3) / m[9];
+
+	if (!trimInfoMissing) {
+		trim.goP[0] = trim.slope / 4096.0 + 0.5;
+		trim.goP[1] = trim.offset / 4096.0 - 0.5;
+		trim.goP[2] = trim.power / 4096.0 + 0.5;
+		trim.cS[0] = trim.chroma_weight / 4096.0 - 0.5;
+		trim.cS[1] = trim.saturation_gain / 4096.0 - 0.5;
+	}
+}
+
+void DoViProcessor::processTrim(uint16_t& ro, uint16_t& go, uint16_t& bo, const uint16_t& ri, const uint16_t& gi, const uint16_t& bi) const  {
+	float dr = pq2nits(ri >> (containerBitDepth - out_bit_depth));
+	float dg = pq2nits(gi >> (containerBitDepth - out_bit_depth));
+	float db = pq2nits(bi >> (containerBitDepth - out_bit_depth));
+
+	float er = (trim.ccc[0] + dr * trim.ccc[1]) / (1 + dr * trim.ccc[2]);
+	float eg = (trim.ccc[0] + dg * trim.ccc[1]) / (1 + dg * trim.ccc[2]);
+	float eb = (trim.ccc[0] + db * trim.ccc[1]) / (1 + db * trim.ccc[2]);
+
+	if (trimInfoMissing) {
+		ro = nits2pq(er) << (containerBitDepth - out_bit_depth);
+		go = nits2pq(eg) << (containerBitDepth - out_bit_depth);
+		bo = nits2pq(eb) << (containerBitDepth - out_bit_depth);
+	}	else {
+		float y3 = targetMaxNits;
+		float fr = powf((min(max(0, ((er / y3) * trim.goP[0]) + trim.goP[1]), 1)), trim.goP[2]) * y3;
+		float fg = powf((min(max(0, ((eg / y3) * trim.goP[0]) + trim.goP[1]), 1)), trim.goP[2]) * y3;
+		float fb = powf((min(max(0, ((eb / y3) * trim.goP[0]) + trim.goP[1]), 1)), trim.goP[2]) * y3;
+
+		float Y = 0.22897 * fr + 0.69174 * fg + fb * 0.07929;
+		float gr = fr * powf((1 + trim.cS[0]) * fr / Y, trim.cS[1]);
+		float gg = fg * powf((1 + trim.cS[0]) * fg / Y, trim.cS[1]);
+		float gb = fb * powf((1 + trim.cS[0]) * fb / Y, trim.cS[1]);
+
+		ro = nits2pq(gr) << (containerBitDepth - out_bit_depth);
+		go = nits2pq(gg) << (containerBitDepth - out_bit_depth);
+		bo = nits2pq(gb) << (containerBitDepth - out_bit_depth);
+	}
 }

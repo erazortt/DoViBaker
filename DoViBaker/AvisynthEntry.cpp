@@ -9,12 +9,15 @@
 #include <sstream>
 
 AVSValue __cdecl Create_RealDoViBaker(
-  PClip blclip, 
-  PClip elclip, 
-  const char* rpuPath, 
-  std::string cubeFiles, 
-  std::string nits, 
+  PClip blclip,
+  PClip elclip,
+  const char* rpuPath,
+  std::string cubeFiles,
+  std::string nits,
   std::string cubesBasePath,
+  uint16_t desiredTrimPq,
+  float targetMaxNits,
+  float targetMinNits,
   bool qnd,
   bool rgbProof,
   bool nlqProof,
@@ -93,10 +96,10 @@ AVSValue __cdecl Create_RealDoViBaker(
   }
   
   if (quarterResolutionEl == 0) {
-    return new DoViBaker<false>(blclip, elclip, rpuPath, blClipChromaSubSampled, elClipChromaSubSampled, cubeNitsPairs, qnd, rgbProof, nlqProof, env);
+    return new DoViBaker<false>(blclip, elclip, rpuPath, blClipChromaSubSampled, elClipChromaSubSampled, cubeNitsPairs, desiredTrimPq, targetMinNits, targetMaxNits, qnd, rgbProof, nlqProof, env);
   }
   if (quarterResolutionEl == 1) {
-    return new DoViBaker<true>(blclip, elclip, rpuPath, blClipChromaSubSampled, elClipChromaSubSampled, cubeNitsPairs, qnd, rgbProof, nlqProof, env);
+    return new DoViBaker<true>(blclip, elclip, rpuPath, blClipChromaSubSampled, elClipChromaSubSampled, cubeNitsPairs, desiredTrimPq, targetMinNits, targetMaxNits, qnd, rgbProof, nlqProof, env);
   }
 }
 
@@ -110,9 +113,12 @@ AVSValue __cdecl Create_DoViBaker(AVSValue args, void* user_data, IScriptEnviron
     args[3].AsString(""), 
     args[4].AsString(""), 
     args[5].AsString(""),
-    args[6].AsBool(false),
-    args[7].AsBool(false),
-    args[8].AsBool(false),
+    args[6].AsInt(0),
+    args[7].AsFloat(100),
+    args[8].AsFloat(0),
+    args[9].AsBool(false),
+    args[10].AsBool(false),
+    args[11].AsBool(false),
     &args, env);
 }
 
@@ -122,7 +128,7 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScri
 {
   AVS_linkage = vectors;
 
-  env->AddFunction("DoViBaker", "c[el]c[rpu]s[cubes]s[mclls]s[cubes_basepath]s[qnd]b[rgbProof]b[nlqProof]b", Create_DoViBaker, 0);
+  env->AddFunction("DoViBaker", "c[el]c[rpu]s[cubes]s[mclls]s[cubes_basepath]s[trimPq]i[targetMaxNits]f[targetMinNits]f[qnd]b[rgbProof]b[nlqProof]b", Create_DoViBaker, 0);
 
   return "Hey it is just a spectrogram!";
 }
@@ -312,12 +318,17 @@ int main(int argc, char** argv)
 
   int length = dovi.getClipLength();
   printf("clip length: %i\n", length);
+  dovi.setTrim(1, 5, 5); //enable trimming so that we get all possible trims
   int clip_max_pq = 0;
   bool elMixing = false;
   uint16_t unusualMatrix = 0;
   uint16_t nonIdentityMapping = 0;
+  bool limitedRangeOutput = false;
+  std::vector<uint16_t> trimPq;
   for (int i = 0; i < length; i++) {
-    dovi.intializeFrame(i, NULL);
+    if (!dovi.intializeFrame(i, NULL)) {
+      return 1;
+    }
     int frame_max_pq = dovi.getMaxPq();
     if (frame_max_pq > clip_max_pq) {
       clip_max_pq = frame_max_pq;
@@ -328,6 +339,14 @@ int main(int argc, char** argv)
     if(fp && dovi.isSceneChange()){
       fputs((std::to_string(i)+" K\n").c_str(), fp);
     }
+    if (dovi.isLimitedRangeOutput()) {
+      limitedRangeOutput = true;
+    }
+    for (int i = 0; i < dovi.getAvailableTrimPqs().size(); i++) {
+      if (std::find(trimPq.begin(), trimPq.end(), dovi.getAvailableTrimPqs()[i]) == trimPq.end()) {
+        trimPq.push_back(dovi.getAvailableTrimPqs()[i]);
+      }
+    }
   }
 
   if (fp) {
@@ -335,9 +354,16 @@ int main(int argc, char** argv)
   }
 
   //printf("clip max pq: %i\n", clip_max_pq);
-  printf("overall max cll: %i\n", DoViProcessor::pq2nits(clip_max_pq));
+  printf("overall max cll: %i\n", int(DoViProcessor::pq2nits(clip_max_pq) + 0.5));
   printf("color matrix deviation: %i\n", to8bits(unusualMatrix));
   printf("mapping deviation: %i\n", to8bits(nonIdentityMapping));
   if(elMixing) printf("el-clip processing: enabled\n");
   else printf("el-clip processing: disabled\n");
+  printf("available trims: ");
+  for (int i = 0; i < trimPq.size(); i++) {
+    printf("%i nits (%i)\n", int(dovi.pq2nits(trimPq[i] + 0.5)), trimPq[i]);
+    printf("                 ");
+  }
+  (trimPq.size() > 0) ? printf("\n") : printf("none\n");
+  if (limitedRangeOutput) printf("output is limited range!\n");
 }

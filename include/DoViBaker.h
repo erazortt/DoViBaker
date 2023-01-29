@@ -14,15 +14,18 @@ class DoViBaker : public GenericVideoFilter
 {
 public:
   DoViBaker(
-    PClip _blChild, 
-    PClip _elChild, 
+    PClip blChild, 
+    PClip elChild, 
     const char* rpuPath, 
     bool blClipChromaSubSampled, 
     bool elClipChromaSubSampled, 
-    std::vector<std::pair<uint16_t, std::string>> &cubes, 
+    std::vector<std::pair<uint16_t, std::string>> &cubes,
+    uint16_t desiredTrimPq,
+    float targetMinLum,
+    float targetMaxLum,
     bool qnd, 
     bool rgbProof, 
-    bool nlqProof, 
+    bool nlqProof,
     IScriptEnvironment* env);
   virtual ~DoViBaker();
   PVideoFrame GetFrame(int n, IScriptEnvironment* env) override;
@@ -40,6 +43,7 @@ private:
   void applyDovi(PVideoFrame& dst, const PVideoFrame& blSrcY, const PVideoFrame& blSrcUV, const PVideoFrame& elSrcY, const PVideoFrame& elSrcUV, IScriptEnvironment* env) const;
   void convert2rgb(PVideoFrame& rgb, const PVideoFrame& y, const PVideoFrame& uv) const;
   void applyLut(PVideoFrame& dst, const PVideoFrame& src) const;
+  void applyTrim(PVideoFrame& dst, const PVideoFrame& src) const;
 
   typedef uint16_t(*upscaler_t)(const uint16_t* srcSamples, int idx0);
   template<int vertLen, int nD>
