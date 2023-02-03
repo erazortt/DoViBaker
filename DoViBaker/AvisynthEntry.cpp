@@ -366,4 +366,5 @@ int main(int argc, char** argv)
   }
   (trimPq.size() > 0) ? printf("\n") : printf("none\n");
   if (limitedRangeOutput) printf("output is limited range!\n");
+  else printf("output is full range\n");
 }

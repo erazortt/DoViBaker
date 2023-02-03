@@ -72,7 +72,7 @@ public:
   inline void sample2rgb(uint16_t& r, uint16_t& g, uint16_t& b, const uint16_t& y, const uint16_t& u, const uint16_t& v) const;
   void processTrim(uint16_t& ro, uint16_t& go, uint16_t& bo, const uint16_t& ri, const uint16_t& gi, const uint16_t& bi) const;
 
-  static const uint16_t containerBitDepth = 16;
+  static const uint8_t containerBitDepth = 16;
 private:
   static inline constexpr uint16_t Clip3(uint16_t lower, uint16_t upper, int value);
   void showMessage(const char* message, IScriptEnvironment* env);
