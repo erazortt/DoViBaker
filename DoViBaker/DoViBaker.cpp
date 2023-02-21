@@ -22,10 +22,12 @@ DoViBaker<quarterResolutionEl>::DoViBaker(
 	bool _qnd,
 	bool _rgbProof,
 	bool _nlqProof,
+	bool _outYUV,
 	IScriptEnvironment* env)
 	: GenericVideoFilter(_blChild)
 	, elChild(_elChild)
 	, qnd(_qnd)
+	, outYUV(_outYUV)
 	, blClipChromaSubSampled(_blChromaSubSampled)
 	, elClipChromaSubSampled(_elChromaSubSampled)
 {
@@ -33,7 +35,8 @@ DoViBaker<quarterResolutionEl>::DoViBaker(
 	if (bits_per_pixel != DoViProcessor::containerBitDepth) {
 		env->ThrowError("DoViBaker: Video must be 16bit");
 	}
-	vi.pixel_type = VideoInfo::CS_RGBP16;
+	if (!outYUV)
+		vi.pixel_type = VideoInfo::CS_RGBP16;
 
 	doviProc = new DoViProcessor(rpuPath, env);
 	if (!doviProc->wasCreationSuccessful()) {
@@ -626,18 +629,23 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 {
 	PVideoFrame blSrc = child->GetFrame(n, env);
 	PVideoFrame elSrc = elChild ? elChild->GetFrame(n, env) : blSrc;
-	PVideoFrame dst = env->NewVideoFrameP(vi, &blSrc);
+	PVideoFrame dst;
+	if (!outYUV) {
+		dst = env->NewVideoFrameP(vi, &blSrc);
+	}
 	
 	bool doviInitialized = doviProc->intializeFrame(n, env);
 	if (!doviInitialized) {
 		return dst;
 	}
-	env->propSetInt(env->getFramePropsRW(dst), "_Matrix", 0, 0);      //output is RGB
-	env->propSetInt(env->getFramePropsRW(dst), "_ColorRange", doviProc->isLimitedRangeOutput(), 0);
-	env->propDeleteKey(env->getFramePropsRW(dst), "_ChromaLocation"); //RGB has no chroma location defined
-	env->propSetInt(env->getFramePropsRW(dst), "_SceneChangePrev", doviProc->isSceneChange(), 0);
-	env->propSetInt(env->getFramePropsRW(dst), "_dovi_max_pq", doviProc->getMaxPq(), 0);
-	env->propSetInt(env->getFramePropsRW(dst), "_dovi_max_content_light_level", doviProc->getMaxContentLightLevel(), 0);
+	if (!outYUV) {
+		env->propSetInt(env->getFramePropsRW(dst), "_Matrix", 0, 0);      //output is RGB
+		env->propSetInt(env->getFramePropsRW(dst), "_ColorRange", 0, 0);  //output is full range RGB
+		env->propDeleteKey(env->getFramePropsRW(dst), "_ChromaLocation"); //RGB has no chroma location defined
+	}
+    env->propSetInt(env->getFramePropsRW(dst), "_dovi_max_pq", doviProc->getMaxPq(), 0);
+    env->propSetInt(env->getFramePropsRW(dst), "_dovi_max_content_light_level", doviProc->getMaxContentLightLevel(), 0);
+    env->propSetInt(env->getFramePropsRW(dst), "_SceneChangePrev", doviProc->isSceneChange(), 0);
 
 	bool skipLut = luts.size() == 0;
 	if (!skipLut) {
@@ -727,6 +735,13 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 			applyDovi<true>(mez, blSrc, (!blSrc444) ? blSrc : blSrc444, elSrcR, (!elSrc444) ? elSrcR : elSrc444, env);
 		else
 			applyDovi<false>(mez, blSrc, (!blSrc444) ? blSrc : blSrc444, elSrcR, (!elSrc444) ? elSrcR : elSrc444, env);
+
+		if (outYUV) {
+			env->copyFrameProps(blSrc, mez);
+			env->propSetInt(env->getFramePropsRW(mez), "_dovi_max_pq", doviProc->getMaxPq(), 0);
+			env->propSetInt(env->getFramePropsRW(mez), "_dovi_max_content_light_level", doviProc->getMaxContentLightLevel(), 0);
+			return mez;
+		}
 
 		PVideoFrame mez444;
 		if (frameChromaSubSampled) {

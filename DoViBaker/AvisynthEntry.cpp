@@ -21,6 +21,7 @@ AVSValue __cdecl Create_RealDoViBaker(
   bool qnd,
   bool rgbProof,
   bool nlqProof,
+  bool outYUV,
   const AVSValue* args, 
   IScriptEnvironment* env)
 {
@@ -55,6 +56,27 @@ AVSValue __cdecl Create_RealDoViBaker(
     if (elclip && elClipChromaSubSampled < 0) {
       env->ThrowError("DoViBaker: Only 444 and 420 subsampling allowed");
     }
+  }
+
+  if (outYUV) {
+      if (blClipChromaSubSampled != elClipChromaSubSampled) {
+          env->ThrowError("DoViBaker: Both BL and EL must have same chroma subsampling when outYUV=true");
+      }
+      if (!cubeFiles.empty()) {
+          env->ThrowError("DoViBaker: cubes cannot be used when outYUV=true");
+      }
+      if (!nits.empty()) {
+          env->ThrowError("DoViBaker: mclls cannot be used when outYUV=true");
+      }
+      if (!cubesBasePath.empty()) {
+          env->ThrowError("DoViBaker: cubes_basepath cannot be used when outYUV=true");
+      }
+      if (qnd) {
+          env->ThrowError("DoViBaker: qnd cannot be true when outYUV=true");
+      }
+      if (rgbProof) {
+          env->ThrowError("DoViBaker: rgbProof cannot be true when outYUV=true");
+      }
   }
 
   int quarterResolutionEl = 0;
@@ -96,10 +118,10 @@ AVSValue __cdecl Create_RealDoViBaker(
   }
   
   if (quarterResolutionEl == 0) {
-    return new DoViBaker<false>(blclip, elclip, rpuPath, blClipChromaSubSampled, elClipChromaSubSampled, cubeNitsPairs, desiredTrimPq, targetMinNits, targetMaxNits, qnd, rgbProof, nlqProof, env);
+    return new DoViBaker<false>(blclip, elclip, rpuPath, blClipChromaSubSampled, elClipChromaSubSampled, cubeNitsPairs, desiredTrimPq, targetMinNits, targetMaxNits, qnd, rgbProof, nlqProof, outYUV, env);
   }
   if (quarterResolutionEl == 1) {
-    return new DoViBaker<true>(blclip, elclip, rpuPath, blClipChromaSubSampled, elClipChromaSubSampled, cubeNitsPairs, desiredTrimPq, targetMinNits, targetMaxNits, qnd, rgbProof, nlqProof, env);
+    return new DoViBaker<true>(blclip, elclip, rpuPath, blClipChromaSubSampled, elClipChromaSubSampled, cubeNitsPairs, desiredTrimPq, targetMinNits, targetMaxNits, qnd, rgbProof, nlqProof, outYUV, env);
   }
 }
 
@@ -119,6 +141,7 @@ AVSValue __cdecl Create_DoViBaker(AVSValue args, void* user_data, IScriptEnviron
     args[9].AsBool(false),
     args[10].AsBool(false),
     args[11].AsBool(false),
+    args[12].AsBool(false),
     &args, env);
 }
 
@@ -128,7 +151,7 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScri
 {
   AVS_linkage = vectors;
 
-  env->AddFunction("DoViBaker", "c[el]c[rpu]s[cubes]s[mclls]s[cubes_basepath]s[trimPq]i[targetMaxNits]f[targetMinNits]f[qnd]b[rgbProof]b[nlqProof]b", Create_DoViBaker, 0);
+  env->AddFunction("DoViBaker", "c[el]c[rpu]s[cubes]s[mclls]s[cubes_basepath]s[trimPq]i[targetMaxNits]f[targetMinNits]f[qnd]b[rgbProof]b[nlqProof]b[outYUV]b", Create_DoViBaker, 0);
 
   return "Hey it is just a spectrogram!";
 }

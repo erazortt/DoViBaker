@@ -26,6 +26,7 @@ public:
     bool qnd, 
     bool rgbProof, 
     bool nlqProof,
+    bool outYUV,
     IScriptEnvironment* env);
   virtual ~DoViBaker();
   PVideoFrame GetFrame(int n, IScriptEnvironment* env) override;
@@ -56,6 +57,7 @@ private:
   int CPU_FLAG;
   DoViProcessor* doviProc;
   const bool qnd;
+  const bool outYUV;
   const bool blClipChromaSubSampled;
   const bool elClipChromaSubSampled;
   std::vector<std::pair<uint16_t, std::unique_ptr<timecube::Lut>>> luts;
