@@ -8,18 +8,6 @@
 #include <vector>
 #include <windows.h>
 
-typedef DoviRpuOpaqueList* (*f_dovi_parse_rpu_bin_file)(const char* path);
-typedef void (*f_dovi_rpu_list_free)(DoviRpuOpaqueList* ptr);
-typedef const char* (*f_dovi_rpu_get_error)(const DoviRpuOpaque* ptr);
-typedef const DoviRpuDataHeader* (*f_dovi_rpu_get_header)(const DoviRpuOpaque* ptr);
-typedef void (*f_dovi_rpu_free_header)(const DoviRpuDataHeader* ptr);
-typedef const DoviRpuDataNlq* (*f_dovi_rpu_get_data_nlq)(const DoviRpuOpaque* ptr);
-typedef void (*f_dovi_rpu_free_data_nlq)(const DoviRpuDataNlq* ptr);
-typedef const DoviRpuDataMapping* (*f_dovi_rpu_get_data_mapping)(const DoviRpuOpaque* ptr);
-typedef void (*f_dovi_rpu_free_data_mapping)(const DoviRpuDataMapping* ptr);
-typedef const DoviVdrDmData* (*f_dovi_rpu_get_vdr_dm_data)(const DoviRpuOpaque* ptr);
-typedef void (*f_dovi_rpu_free_vdr_dm_data)(const DoviVdrDmData* ptr);
-
 class DoViProcessor {
 public:
   DoViProcessor(const char* rpuPath, IScriptEnvironment* env);
@@ -84,20 +72,7 @@ private:
   uint16_t signalReconstruction(uint16_t v, int16_t r) const;
   void prepareTrimCoef();
 
-  HINSTANCE doviLib;
-  DoviRpuOpaqueList* rpus;
-
-  f_dovi_parse_rpu_bin_file dovi_parse_rpu_bin_file;
-  f_dovi_rpu_list_free dovi_rpu_list_free;
-  f_dovi_rpu_get_header dovi_rpu_get_header;
-  f_dovi_rpu_free_header dovi_rpu_free_header;
-  f_dovi_rpu_get_data_nlq dovi_rpu_get_data_nlq;
-  f_dovi_rpu_free_data_nlq dovi_rpu_free_data_nlq;
-  f_dovi_rpu_get_vdr_dm_data dovi_rpu_get_vdr_dm_data;
-  f_dovi_rpu_free_vdr_dm_data dovi_rpu_free_vdr_dm_data;
-  f_dovi_rpu_get_data_mapping dovi_rpu_get_data_mapping;
-  f_dovi_rpu_free_data_mapping dovi_rpu_free_data_mapping;
-  f_dovi_rpu_get_error dovi_rpu_get_error;
+  const DoviRpuOpaqueList* rpus;
 
   bool successfulCreation;
   bool rgbProof;
