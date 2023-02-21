@@ -83,41 +83,12 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 		return false;
 	}
 
-	if (header->guessed_profile != 7) {
-		showMessage("DoViBaker: Expecting profile 7 rpu data.", env);
-		return false;
-	}
-
 	const DoviRpuDataMapping* mapping_data = dovi_rpu_get_data_mapping(rpu);
 	if (!mapping_data) {
 		const char* error = dovi_rpu_get_error(rpu);
 		showMessage((std::string("DoViBaker: ") + error).c_str(), env);
 		return false;
 	}
-
-	const DoviRpuDataNlq* nlq_data = mapping_data->nlq;
-	if (!nlq_data) {
-		const char* error = dovi_rpu_get_error(rpu);
-		showMessage((std::string("DoViBaker: ") + error).c_str(), env);
-		return false;
-	}
-
-	if (mapping_data->nlq_method_idc != 0) {
-		//https://ffmpeg.org/doxygen/trunk/dovi__rpu_8c_source.html
-		showMessage("DoViBaker: Only method NLQ_LINEAR_DZ can be applied, NLQ_MU_LAW is not documented.", env);
-		return false;
-		//alternativlely we could just gracefully disable the nlq processing with disable_residual_flag=true
-	}
-	if (mapping_data->nlq_num_pivots_minus2 != 0) {
-		showMessage("DoViBaker: Expecting nlq_num_pivots_minus2 to be 0.", env);
-		return false;
-		//alternativlely we could just gracefully disable the nlq processing with disable_residual_flag=true
-	}
-
-	std::string el_type(header->el_type);
-	std::transform(el_type.begin(), el_type.end(), el_type.begin(),
-		[](unsigned char c) { return std::toupper(c); });
-	is_fel = (el_type.compare("FEL")==0);
 
 	out_bit_depth = header->vdr_bit_depth_minus8 + 8;
 	bl_bit_depth = header->bl_bit_depth_minus8 + 8;
@@ -129,11 +100,11 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
         const DoviReshapingCurve curve = mapping_data->curves[cmp];
 		num_pivots_minus1[cmp] = curve.num_pivots_minus2 + 1;
 
-		pivot_value[cmp] = std::vector<uint16_t>(num_pivots_minus1[cmp] + 1);
+		pivot_value[cmp] = std::vector<uint16_t>(curve.pivots.len);
 		pivot_value[cmp][0] = curve.pivots.data[0];
 
-		for (int pivot_idx = 1; pivot_idx < num_pivots_minus1[cmp] + 1; pivot_idx++) {
-			pivot_value[cmp][pivot_idx] = curve.pivots.data[pivot_idx - 1] + curve.pivots.data[pivot_idx];
+		for (int pivot_idx = 1; pivot_idx < curve.pivots.len; pivot_idx++) {
+			pivot_value[cmp][pivot_idx] = pivot_value[cmp][pivot_idx - 1] + curve.pivots.data[pivot_idx];
 		}
 
 		mapping_idc[cmp] = std::vector<uint8_t>(num_pivots_minus1[cmp]);
@@ -186,24 +157,6 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 				}
 			}
 		}
-	}
-
-	auto nlq_offsets = nlq_data->nlq_offset;
-	auto vdr_in_max_int = nlq_data->vdr_in_max_int;
-	auto vdr_in_max = nlq_data->vdr_in_max;
-	auto linear_deadzone_slope_int = nlq_data->linear_deadzone_slope_int;
-	auto linear_deadzone_slope = nlq_data->linear_deadzone_slope;
-	auto linear_deadzone_threshold_int = nlq_data->linear_deadzone_threshold_int;
-	auto linear_deadzone_threshold = nlq_data->linear_deadzone_threshold;
-
-	for (int cmp = 0; cmp < 3; cmp++) {
-		nlq_offset[cmp] = nlq_offsets[cmp];
-		fp_hdr_in_max[cmp] = (vdr_in_max_int[cmp] << coeff_log2_denom) + vdr_in_max[cmp];
-		fp_linear_deadzone_slope[cmp] = (linear_deadzone_slope_int[cmp] << coeff_log2_denom) + linear_deadzone_slope[cmp];
-		fp_linear_deadzone_threshold[cmp] = (linear_deadzone_threshold_int[cmp] << coeff_log2_denom) + linear_deadzone_threshold[cmp];
-	}
-	if (nlqProof) {
-		fp_linear_deadzone_slope[0] *= 4;
 	}
 
 	if (header->vdr_dm_metadata_present_flag) {
@@ -271,6 +224,54 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 	else {
 		showMessage("DoViBaker: No DM Metadata avilable.", env);
 		return false;
+	}
+
+	if (header->guessed_profile != 7) {
+		dovi_rpu_free_data_mapping(mapping_data);
+		dovi_rpu_free_header(header);
+		return successfulCreation;
+	}
+
+	const DoviRpuDataNlq* nlq_data = mapping_data->nlq;
+	if (!nlq_data) {
+		const char* error = dovi_rpu_get_error(rpu);
+		showMessage((std::string("DoViBaker: ") + error).c_str(), env);
+		return false;
+	}
+
+	if (mapping_data->nlq_method_idc != 0) {
+		//https://ffmpeg.org/doxygen/trunk/dovi__rpu_8c_source.html
+		showMessage("DoViBaker: Only method NLQ_LINEAR_DZ can be applied, NLQ_MU_LAW is not documented.", env);
+		return false;
+		//alternativlely we could just gracefully disable the nlq processing with disable_residual_flag=true
+	}
+	if (mapping_data->nlq_num_pivots_minus2 != 0) {
+		showMessage("DoViBaker: Expecting nlq_num_pivots_minus2 to be 0.", env);
+		return false;
+		//alternativlely we could just gracefully disable the nlq processing with disable_residual_flag=true
+	}
+
+	std::string el_type(header->el_type);
+	std::transform(el_type.begin(), el_type.end(), el_type.begin(),
+		[](unsigned char c) { return std::toupper(c); });
+	is_fel = (el_type.compare("FEL")==0);
+
+	auto nlq_offsets = nlq_data->nlq_offset;
+	auto vdr_in_max_int = nlq_data->vdr_in_max_int;
+	auto vdr_in_max = nlq_data->vdr_in_max;
+	auto linear_deadzone_slope_int = nlq_data->linear_deadzone_slope_int;
+	auto linear_deadzone_slope = nlq_data->linear_deadzone_slope;
+	auto linear_deadzone_threshold_int = nlq_data->linear_deadzone_threshold_int;
+	auto linear_deadzone_threshold = nlq_data->linear_deadzone_threshold;
+
+	for (int cmp = 0; cmp < 3; cmp++) {
+		nlq_offset[cmp] = nlq_offsets[cmp];
+		fp_hdr_in_max[cmp] = (vdr_in_max_int[cmp] << coeff_log2_denom) + vdr_in_max[cmp];
+		fp_linear_deadzone_slope[cmp] = (linear_deadzone_slope_int[cmp] << coeff_log2_denom) + linear_deadzone_slope[cmp];
+		fp_linear_deadzone_threshold[cmp] = (linear_deadzone_threshold_int[cmp] << coeff_log2_denom) + linear_deadzone_threshold[cmp];
+	}
+	if (nlqProof) {
+		fp_linear_deadzone_slope[0] *= 4;
 	}
 
 	dovi_rpu_free_data_mapping(mapping_data);
@@ -381,7 +382,7 @@ uint16_t DoViProcessor::mmrMapping(int cmp, int pivot_idx, uint16_t s0, uint16_t
 		tt[21] = (tt[7] * tt[14]) >> 20;
 	}
 	int64_t rr = fp_mmr_const[cmp][pivot_idx] * tt[0];
-	int cnt = 0;
+	int cnt = 1;
 	for (int i = 0; i < mmr_order[cmp][pivot_idx]; i++) {
 		for (int j = 0; j < 7; j++) {
 			rr += fp_mmr_coef[cmp][pivot_idx][i][j] * tt[cnt];
