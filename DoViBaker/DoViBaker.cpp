@@ -640,12 +640,12 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 	}
 	if (!outYUV) {
 		env->propSetInt(env->getFramePropsRW(dst), "_Matrix", 0, 0);      //output is RGB
-		env->propSetInt(env->getFramePropsRW(dst), "_ColorRange", 0, 0);  //output is full range RGB
+		env->propSetInt(env->getFramePropsRW(dst), "_ColorRange", doviProc->isLimitedRangeOutput(), 0);
 		env->propDeleteKey(env->getFramePropsRW(dst), "_ChromaLocation"); //RGB has no chroma location defined
+		env->propSetInt(env->getFramePropsRW(dst), "_SceneChangePrev", doviProc->isSceneChange(), 0);
+		env->propSetInt(env->getFramePropsRW(dst), "_dovi_max_pq", doviProc->getMaxPq(), 0);
+		env->propSetInt(env->getFramePropsRW(dst), "_dovi_max_content_light_level", doviProc->getMaxContentLightLevel(), 0);
 	}
-    env->propSetInt(env->getFramePropsRW(dst), "_dovi_max_pq", doviProc->getMaxPq(), 0);
-    env->propSetInt(env->getFramePropsRW(dst), "_dovi_max_content_light_level", doviProc->getMaxContentLightLevel(), 0);
-    env->propSetInt(env->getFramePropsRW(dst), "_SceneChangePrev", doviProc->isSceneChange(), 0);
 
 	bool skipLut = luts.size() == 0;
 	if (!skipLut) {
@@ -738,6 +738,7 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 
 		if (outYUV) {
 			env->copyFrameProps(blSrc, mez);
+			env->propSetInt(env->getFramePropsRW(mez), "_SceneChangePrev", doviProc->isSceneChange(), 0);
 			env->propSetInt(env->getFramePropsRW(mez), "_dovi_max_pq", doviProc->getMaxPq(), 0);
 			env->propSetInt(env->getFramePropsRW(mez), "_dovi_max_content_light_level", doviProc->getMaxContentLightLevel(), 0);
 			return mez;
