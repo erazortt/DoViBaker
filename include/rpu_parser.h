@@ -4,9 +4,9 @@
 #define DOVI_H
 
 
-#define RPU_PARSER_MAJOR 1
-#define RPU_PARSER_MINOR 6
-#define RPU_PARSER_PATCH 7
+#define RPU_PARSER_MAJOR 3
+#define RPU_PARSER_MINOR 1
+#define RPU_PARSER_PATCH 1
 
 
 #include <stddef.h>
@@ -39,20 +39,6 @@ typedef struct {
 } DoviData;
 
 /**
- * Struct representing a data buffer
- */
-typedef struct {
-    /**
-     * Pointer to the data buffer. Can be null if length is zero.
-     */
-    const uint64_t *data;
-    /**
-     * Data buffer size
-     */
-    size_t len;
-} DoviU64Data;
-
-/**
  * C struct for rpu_data_header()
  */
 typedef struct {
@@ -61,10 +47,10 @@ typedef struct {
      */
     uint8_t guessed_profile;
     /**
-     * Subprofile (FEL or MEL) if the RPU is profile 7
+     * Enhancement layer type (FEL or MEL) if the RPU is profile 7
      * null pointer if not profile 7
      */
-    const char *subprofile;
+    const char *el_type;
     uint8_t rpu_nal_prefix;
     uint8_t rpu_type;
     uint16_t rpu_format;
@@ -78,7 +64,7 @@ typedef struct {
     bool bl_video_full_range_flag;
     uint64_t bl_bit_depth_minus8;
     uint64_t el_bit_depth_minus8;
-    uint64_t vdr_bit_depth_minus_8;
+    uint64_t vdr_bit_depth_minus8;
     bool spatial_resampling_filter_flag;
     uint8_t reserved_zero_3bits;
     bool el_spatial_resampling_filter_flag;
@@ -86,26 +72,35 @@ typedef struct {
     bool vdr_dm_metadata_present_flag;
     bool use_prev_vdr_rpu_flag;
     uint64_t prev_vdr_rpu_id;
-    uint64_t vdr_rpu_id;
-    uint64_t mapping_color_space;
-    uint64_t mapping_chroma_format_idc;
-    uint64_t num_pivots_minus_2[DoviNUM_COMPONENTS];
-    DoviU64Data pred_pivot_value[DoviNUM_COMPONENTS];
-    /**
-     * Set to -1 to represent Option::None
-     */
-    int32_t nlq_method_idc;
-    /**
-     * Set to -1 to represent Option::None
-     */
-    int32_t nlq_num_pivots_minus2;
-    /**
-     * Length of zero when not present. Only present in profile 4 and 7.
-     */
-    DoviU64Data nlq_pred_pivot_value;
-    uint64_t num_x_partitions_minus1;
-    uint64_t num_y_partitions_minus1;
 } DoviRpuDataHeader;
+
+/**
+ * Struct representing a data buffer
+ */
+typedef struct {
+    /**
+     * Pointer to the data buffer. Can be null if length is zero.
+     */
+    const uint16_t *data;
+    /**
+     * Data buffer size
+     */
+    size_t len;
+} DoviU16Data;
+
+/**
+ * Struct representing a data buffer
+ */
+typedef struct {
+    /**
+     * Pointer to the data buffer. Can be null if length is zero.
+     */
+    const uint64_t *data;
+    /**
+     * Data buffer size
+     */
+    size_t len;
+} DoviU64Data;
 
 /**
  * Struct representing a data buffer
@@ -149,6 +144,13 @@ typedef struct {
     size_t len;
 } DoviU64Data2D;
 
+typedef struct {
+    DoviU64Data poly_order_minus1;
+    DoviData linear_interp_flag;
+    DoviI64Data2D poly_coef_int;
+    DoviU64Data2D poly_coef;
+} DoviPolynomialCurve;
+
 /**
  * Struct representing a 3D data buffer
  */
@@ -177,59 +179,76 @@ typedef struct {
     size_t len;
 } DoviU64Data3D;
 
+typedef struct {
+    DoviData mmr_order_minus1;
+    DoviI64Data mmr_constant_int;
+    DoviU64Data mmr_constant;
+    DoviI64Data3D mmr_coef_int;
+    DoviU64Data3D mmr_coef;
+} DoviMMRCurve;
+
+typedef struct {
+    /**
+     * [2, 9]
+     */
+    uint64_t num_pivots_minus2;
+    DoviU16Data pivots;
+    /**
+     * Consistent for a component
+     * Luma (component 0): Polynomial = 0
+     * Chroma (components 1 and 2): MMR = 1
+     */
+    uint8_t mapping_idc;
+    /**
+     * mapping_idc = 0, null pointer otherwise
+     */
+    const DoviPolynomialCurve *polynomial;
+    /**
+     * mapping_idc = 1, null pointer otherwise
+     */
+    const DoviMMRCurve *mmr;
+} DoviReshapingCurve;
+
+/**
+ * C struct for rpu_data_nlq()
+ */
+typedef struct {
+    uint16_t nlq_offset[DoviNUM_COMPONENTS];
+    uint64_t vdr_in_max_int[DoviNUM_COMPONENTS];
+    uint64_t vdr_in_max[DoviNUM_COMPONENTS];
+    uint64_t linear_deadzone_slope_int[DoviNUM_COMPONENTS];
+    uint64_t linear_deadzone_slope[DoviNUM_COMPONENTS];
+    uint64_t linear_deadzone_threshold_int[DoviNUM_COMPONENTS];
+    uint64_t linear_deadzone_threshold[DoviNUM_COMPONENTS];
+} DoviRpuDataNlq;
+
 /**
  * C struct for rpu_data_mapping()
  */
 typedef struct {
-    DoviU64Data mapping_idc[DoviNUM_COMPONENTS];
-    DoviData mapping_param_pred_flag[DoviNUM_COMPONENTS];
-    DoviU64Data num_mapping_param_predictors[DoviNUM_COMPONENTS];
-    DoviU64Data diff_pred_part_idx_mapping_minus1[DoviNUM_COMPONENTS];
-    DoviU64Data poly_order_minus1[DoviNUM_COMPONENTS];
-    DoviData linear_interp_flag[DoviNUM_COMPONENTS];
-    DoviU64Data pred_linear_interp_value_int[DoviNUM_COMPONENTS];
-    DoviU64Data pred_linear_interp_value[DoviNUM_COMPONENTS];
-    DoviI64Data2D poly_coef_int[DoviNUM_COMPONENTS];
-    DoviU64Data2D poly_coef[DoviNUM_COMPONENTS];
-    DoviData mmr_order_minus1[DoviNUM_COMPONENTS];
-    DoviI64Data mmr_constant_int[DoviNUM_COMPONENTS];
-    DoviU64Data mmr_constant[DoviNUM_COMPONENTS];
-    DoviI64Data3D mmr_coef_int[DoviNUM_COMPONENTS];
-    DoviU64Data3D mmr_coef[DoviNUM_COMPONENTS];
+    uint64_t vdr_rpu_id;
+    uint64_t mapping_color_space;
+    uint64_t mapping_chroma_format_idc;
+    uint64_t num_x_partitions_minus1;
+    uint64_t num_y_partitions_minus1;
+    DoviReshapingCurve curves[DoviNUM_COMPONENTS];
+    /**
+     * Set to -1 to represent Option::None
+     */
+    int32_t nlq_method_idc;
+    /**
+     * Set to -1 to represent Option::None
+     */
+    int32_t nlq_num_pivots_minus2;
+    /**
+     * Length of zero when not present. Only present in profile 4 and 7.
+     */
+    DoviU16Data nlq_pred_pivot_value;
+    /**
+     * Pointer to `RpuDataNlq` struct, null if not dual layer profile
+     */
+    const DoviRpuDataNlq *nlq;
 } DoviRpuDataMapping;
-
-/**
- * Struct representing a 2D data buffer
- */
-typedef struct {
-    /**
-     * Pointer to the list of Data structs
-     */
-    const DoviData *const *list;
-    /**
-     * List length
-     */
-    size_t len;
-} DoviData2D;
-
-/**
- * C struct for rpu_data_nlq()
- *
- * Here all the Data2D structs are of size N x 3.
- * Using dynamic buffers for convenience.
- */
-typedef struct {
-    DoviU64Data2D num_nlq_param_predictors;
-    DoviData2D nlq_param_pred_flag;
-    DoviU64Data2D diff_pred_part_idx_nlq_minus1;
-    DoviU64Data2D nlq_offset;
-    DoviU64Data2D vdr_in_max_int;
-    DoviU64Data2D vdr_in_max;
-    DoviU64Data2D linear_deadzone_slope_int;
-    DoviU64Data2D linear_deadzone_slope;
-    DoviU64Data2D linear_deadzone_threshold_int;
-    DoviU64Data2D linear_deadzone_threshold;
-} DoviRpuDataNlq;
 
 /**
  * Statistical analysis of the frame: min, max, avg brightness.
@@ -429,7 +448,7 @@ typedef struct {
 
 /**
  * Metadata level optionally present in CM v2.9.
- * Maybe for debugging?
+ * Different display modes (calibration/verify/bypass), debugging
  */
 typedef struct {
     uint8_t dm_run_mode;
@@ -566,7 +585,7 @@ void dovi_data_free(const DoviData *data);
 
 /**
  * # Safety
- * The struct pointer should be valid.
+ * The struct pointer must be valid.
  *
  * Writes the encoded RPU as a byte buffer.
  * If an error occurs in the writing, it is logged to RpuOpaque.error
@@ -575,7 +594,7 @@ const DoviData *dovi_write_rpu(DoviRpuOpaque *ptr);
 
 /**
  * # Safety
- * The struct pointer should be valid.
+ * The struct pointer must be valid.
  *
  * Writes the encoded RPU, escapes the bytes for HEVC and prepends the buffer with 0x7C01.
  * If an error occurs in the writing, it is logged to RpuOpaque.error
@@ -584,21 +603,23 @@ const DoviData *dovi_write_unspec62_nalu(DoviRpuOpaque *ptr);
 
 /**
  * # Safety
- * The struct pointer should be valid.
- * The mode should be between 0 and 4.
+ * The struct pointer must be valid.
+ * The mode must be between 0 and 4.
  *
  * Converts the RPU to be compatible with a different Dolby Vision profile.
  * Possible modes:
- *     0: Don't modify the RPU
- *     1: Converts the RPU to be MEL compatible
- *     2: Converts the RPU to be profile 8.1 compatible
- *     3: Converts profile 5 to 8.1
- *     4: Converts to static profile 8.4
+ *     - 0: Don't modify the RPU
+ *     - 1: Converts the RPU to be MEL compatible
+ *     - 2: Converts the RPU to be profile 8.1 compatible. Both luma and chroma mapping curves are set to no-op.
+ *          This mode handles source profiles 5, 7 and 8.
+ *     - 3: Converts to static profile 8.4
+ *     - 4: Converts to profile 8.1 preserving luma and chroma mapping. Old mode 2 behaviour.
  *
  * If an error occurs, it is logged to RpuOpaque.error.
  * Returns 0 if successful, -1 otherwise.
  */
-int32_t dovi_convert_rpu_with_mode(DoviRpuOpaque *ptr, uint8_t mode);
+int32_t dovi_convert_rpu_with_mode(DoviRpuOpaque *ptr,
+                                   uint8_t mode);
 
 /**
  * # Safety
@@ -636,22 +657,6 @@ void dovi_rpu_free_data_mapping(const DoviRpuDataMapping *ptr);
  * # Safety
  * The pointer to the opaque struct must be valid.
  *
- * Get the DoVi RpuDataNlq struct.
- */
-const DoviRpuDataNlq *dovi_rpu_get_data_nlq(const DoviRpuOpaque *ptr);
-
-/**
- * # Safety
- * The pointer to the struct must be valid.
- *
- * Frees the memory used by the RpuDataNlq struct.
- */
-void dovi_rpu_free_data_nlq(const DoviRpuDataNlq *ptr);
-
-/**
- * # Safety
- * The pointer to the opaque struct must be valid.
- *
  * Get the DoVi VdrDmData struct.
  */
 const DoviVdrDmData *dovi_rpu_get_vdr_dm_data(const DoviRpuOpaque *ptr);
@@ -682,6 +687,27 @@ const DoviRpuOpaqueList *dovi_parse_rpu_bin_file(const char *path);
  * Frees the memory used by the DoviRpuOpaqueList struct.
  */
 void dovi_rpu_list_free(const DoviRpuOpaqueList *ptr);
+
+/**
+ * # Safety
+ * The struct pointer must be valid.
+ *
+ * Sets the L5 metadata active area offsets.
+ * If there is no L5 block present, it is created with the offsets.
+ */
+int32_t dovi_rpu_set_active_area_offsets(DoviRpuOpaque *ptr,
+                                         uint16_t left,
+                                         uint16_t right,
+                                         uint16_t top,
+                                         uint16_t bottom);
+
+/**
+ * # Safety
+ * The struct pointer must be valid.
+ *
+ * Converts the existing reshaping/mapping to become no-op.
+ */
+int32_t dovi_rpu_remove_mapping(DoviRpuOpaque *ptr);
 
 #ifdef __cplusplus
 } // extern "C"
