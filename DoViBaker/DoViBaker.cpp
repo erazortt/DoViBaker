@@ -594,7 +594,7 @@ void DoViBaker<quarterResolutionEl>::applyLut(PVideoFrame& dst, const PVideoFram
 	dst_stride[1] = dst->GetPitch(PLANAR_G) / sizeof(uint16_t);
 	dst_stride[2] = dst->GetPitch(PLANAR_B) / sizeof(uint16_t);
 
-	tmp_buf.reset((float*)_aligned_malloc(aligned_width * 3 * sizeof(float), 32));
+	tmp_buf.reset((float*)_aligned_malloc(aligned_width * 3 * sizeof(float), 64));
 	if (!tmp_buf)
 		throw std::bad_alloc{};
 
