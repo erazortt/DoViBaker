@@ -13,8 +13,6 @@ typedef void (*f_dovi_rpu_list_free)(DoviRpuOpaqueList* ptr);
 typedef const char* (*f_dovi_rpu_get_error)(const DoviRpuOpaque* ptr);
 typedef const DoviRpuDataHeader* (*f_dovi_rpu_get_header)(const DoviRpuOpaque* ptr);
 typedef void (*f_dovi_rpu_free_header)(const DoviRpuDataHeader* ptr);
-typedef const DoviRpuDataNlq* (*f_dovi_rpu_get_data_nlq)(const DoviRpuOpaque* ptr);
-typedef void (*f_dovi_rpu_free_data_nlq)(const DoviRpuDataNlq* ptr);
 typedef const DoviRpuDataMapping* (*f_dovi_rpu_get_data_mapping)(const DoviRpuOpaque* ptr);
 typedef void (*f_dovi_rpu_free_data_mapping)(const DoviRpuDataMapping* ptr);
 typedef const DoviVdrDmData* (*f_dovi_rpu_get_vdr_dm_data)(const DoviRpuOpaque* ptr);
@@ -91,8 +89,6 @@ private:
   f_dovi_rpu_list_free dovi_rpu_list_free;
   f_dovi_rpu_get_header dovi_rpu_get_header;
   f_dovi_rpu_free_header dovi_rpu_free_header;
-  f_dovi_rpu_get_data_nlq dovi_rpu_get_data_nlq;
-  f_dovi_rpu_free_data_nlq dovi_rpu_free_data_nlq;
   f_dovi_rpu_get_vdr_dm_data dovi_rpu_get_vdr_dm_data;
   f_dovi_rpu_free_vdr_dm_data dovi_rpu_free_vdr_dm_data;
   f_dovi_rpu_get_data_mapping dovi_rpu_get_data_mapping;

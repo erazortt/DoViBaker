@@ -34,8 +34,6 @@ DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env)
 	dovi_rpu_list_free = (f_dovi_rpu_list_free)GetProcAddress(doviLib, "dovi_rpu_list_free");
 	dovi_rpu_get_header = (f_dovi_rpu_get_header)GetProcAddress(doviLib, "dovi_rpu_get_header");
 	dovi_rpu_free_header = (f_dovi_rpu_free_header)GetProcAddress(doviLib, "dovi_rpu_free_header");
-	dovi_rpu_get_data_nlq = (f_dovi_rpu_get_data_nlq)GetProcAddress(doviLib, "dovi_rpu_get_data_nlq");
-	dovi_rpu_free_data_nlq = (f_dovi_rpu_free_data_nlq)GetProcAddress(doviLib, "dovi_rpu_free_data_nlq");
 	dovi_rpu_get_vdr_dm_data = (f_dovi_rpu_get_vdr_dm_data)GetProcAddress(doviLib, "dovi_rpu_get_vdr_dm_data");
 	dovi_rpu_free_vdr_dm_data = (f_dovi_rpu_free_vdr_dm_data)GetProcAddress(doviLib, "dovi_rpu_free_vdr_dm_data");
 	dovi_rpu_get_data_mapping = (f_dovi_rpu_get_data_mapping)GetProcAddress(doviLib, "dovi_rpu_get_data_mapping");
