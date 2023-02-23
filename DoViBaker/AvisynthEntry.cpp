@@ -105,10 +105,12 @@ AVSValue __cdecl Create_RealDoViBaker(
 
 AVSValue __cdecl Create_DoViBaker(AVSValue args, void* user_data, IScriptEnvironment* env)
 {
+  auto elClip = (args[1].Defined() ? args[1].AsClip() : nullptr);
+
   //args.ArraySize()
   return Create_RealDoViBaker(
     args[0].AsClip(), 
-    args[1].AsClip(), 
+    elClip, 
     args[2].AsString(), 
     args[3].AsString(""), 
     args[4].AsString(""), 
