@@ -227,6 +227,7 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 	if (header->guessed_profile != 7) {
 		dovi_rpu_free_data_mapping(mapping_data);
 		dovi_rpu_free_header(header);
+		is_fel = false;
 		return successfulCreation;
 	}
 
