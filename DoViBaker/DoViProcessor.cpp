@@ -229,6 +229,7 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 	if (header->guessed_profile != 7) {
 		dovi_rpu_free_data_mapping(mapping_data);
 		dovi_rpu_free_header(header);
+		is_fel = false;
 		return successfulCreation;
 	}
 
@@ -303,7 +304,7 @@ uint16_t DoViProcessor::processSample(int cmp, uint16_t bl, uint16_t el, uint16_
 }
 
 int DoViProcessor::getPivotIndex(int cmp, uint16_t s) const {
-	int pivot_idx = num_pivots_minus1[cmp];
+	int pivot_idx = num_pivots_minus1[cmp] - 1;
 	for (int idx = 0; idx < num_pivots_minus1[cmp]; idx++) {
 		if (s < pivot_value[cmp][idx + 1]) {
 			pivot_idx = idx;
