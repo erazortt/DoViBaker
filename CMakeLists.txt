@@ -35,7 +35,7 @@ set_source_files_properties(DoViBaker/lut_sse41.cpp PROPERTIES COMPILE_OPTIONS "
 set_source_files_properties(DoViBaker/lut_avx2.cpp.cpp PROPERTIES COMPILE_OPTIONS "-mavx2;-mfma")
 set_source_files_properties(DoViBaker/lut_avx512.cpp PROPERTIES COMPILE_OPTIONS "-mavx512f;-mavx512bw;-mavx512dq;-mavx512vl;-mfma")
 
-target_link_libraries(libdovibaker libdovi.a)
+target_link_libraries(libdovibaker dovi)
 
 find_package (Git)
 
