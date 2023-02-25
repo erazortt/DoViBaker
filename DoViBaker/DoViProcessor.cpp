@@ -1,7 +1,9 @@
-#include "DoViProcessor.h"
-#include <array>
 #include <algorithm>
+#include <array>
 #include <string>
+
+#include "DoViProcessor.h"
+
 
 DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env)
 	: successfulCreation(false), rgbProof(false), nlqProof(false), desiredTrimPq(0), max_content_light_level(1000)
@@ -478,9 +480,9 @@ void DoViProcessor::processTrim(uint16_t& ro, uint16_t& go, uint16_t& bo, const 
 		bo = nits2pq(eb) << (containerBitDepth - out_bit_depth);
 	}	else {
 		float y3 = targetMaxNits;
-		float fr = powf((min(max(0, ((er / y3) * trim.goP[0]) + trim.goP[1]), 1)), trim.goP[2]) * y3;
-		float fg = powf((min(max(0, ((eg / y3) * trim.goP[0]) + trim.goP[1]), 1)), trim.goP[2]) * y3;
-		float fb = powf((min(max(0, ((eb / y3) * trim.goP[0]) + trim.goP[1]), 1)), trim.goP[2]) * y3;
+		float fr = powf((std::clamp(((er / y3) * trim.goP[0]) + trim.goP[1], 0.0f, 1.0f)), trim.goP[2]) * y3;
+		float fg = powf((std::clamp(((eg / y3) * trim.goP[0]) + trim.goP[1], 0.0f, 1.0f)), trim.goP[2]) * y3;
+		float fb = powf((std::clamp(((eb / y3) * trim.goP[0]) + trim.goP[1], 0.0f, 1.0f)), trim.goP[2]) * y3;
 
 		float Y = 0.22897 * fr + 0.69174 * fg + fb * 0.07929;
 		float gr = fr * powf((1 + trim.cS[0]) * fr / Y, trim.cS[1]);

@@ -1,13 +1,10 @@
 #pragma once
-#pragma warning(push)
-#pragma warning(disable: 4512 4244 4100 693)
-#include "avisynth.h"
-#pragma warning(pop)
+
+#include <string>
 
 #include "DoViProcessor.h"
 #include "lut.h"
 
-#include <string>
 
 template<int quarterResolutionEl>
 class DoViBaker : public GenericVideoFilter

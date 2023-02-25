@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <tuple>
 #include <vector>
+
 #include "cube.h"
 #include "lut.h"
 #include "lut_x86.h"

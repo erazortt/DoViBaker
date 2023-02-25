@@ -1,12 +1,6 @@
-#pragma warning(push)
-#pragma warning(disable: 4512 4244 4100 693)
-#include "avisynth.h"
-#pragma warning(pop)
+#include <sstream>
 
 #include "DoViBaker.h"
-#include <vector>
-#include <string>
-#include <sstream>
 
 AVSValue __cdecl Create_RealDoViBaker(
   PClip blclip,
@@ -111,9 +105,9 @@ AVSValue __cdecl Create_DoViBaker(AVSValue args, void* user_data, IScriptEnviron
   return Create_RealDoViBaker(
     args[0].AsClip(), 
     elClip, 
-    args[2].AsString(), 
+    args[2].AsString(""),
     args[3].AsString(""), 
-    args[4].AsString(""), 
+    args[4].AsString(""),
     args[5].AsString(""),
     args[6].AsInt(0),
     args[7].AsFloat(100),
