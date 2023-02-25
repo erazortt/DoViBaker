@@ -4,8 +4,9 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <vector>
 #include <immintrin.h>
+#include <vector>
+
 #include "cube.h"
 #include "lut.h"
 #include "lut_x86.h"

@@ -9,6 +9,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <system_error>
+
 #include "cube.h"
 
 namespace timecube {

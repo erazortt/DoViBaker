@@ -1,8 +1,34 @@
-#include "DoViBaker.h"
-#include "cube.h"
-
 #include <array>
-#include <io.h>
+#include <filesystem>
+
+#include "cube.h"
+#include "DoViBaker.h"
+
+
+AVS_FORCEINLINE void* aligned_malloc(size_t size, size_t align)
+{
+	void* result = [&]() {
+#ifdef _MSC_VER 
+		return _aligned_malloc(size, align);
+#else 
+		if (posix_memalign(&result, align, size))
+			return result = nullptr;
+		else
+			return result;
+#endif
+	}();
+
+	return result;
+}
+
+AVS_FORCEINLINE void aligned_free(void* ptr)
+{
+#ifdef _MSC_VER 
+	_aligned_free(ptr);
+#else 
+	free(ptr);
+#endif
+}
 
 //////////////////////////////
 // Code
@@ -56,7 +82,7 @@ DoViBaker<quarterResolutionEl>::DoViBaker(
 
 	for (int i = 0; i < _cubes.size(); i++) {
 		auto cube_path = _cubes[i].second;
-		if (_access(cube_path.c_str(), 0)) {
+		if (!std::filesystem::exists(std::filesystem::path(cube_path))) {
 			env->ThrowError((std::string("DoViBaker: cannot open cube file ")+cube_path).c_str());
 		}
 		timecube::Cube cube = timecube::read_cube_from_file(cube_path.c_str());
@@ -89,12 +115,12 @@ inline void DoViBaker<quarterResolutionEl>::upsampleVert(PVideoFrame& dst, const
 
 	for (int h0 = 0; h0 < srcHeight; h0++) {
 		for (int i = 0; i < nD; i++) {
-			int factor = max(h0 + Dn0p[i], 0);
+			int factor = std::max(h0 + Dn0p[i], 0);
 			srcP[i] = srcPb + factor * srcPitch;
 		}
 		srcP0 = srcPb + h0 * srcPitch;
 		for (int i = nD + 1; i < vertLen; i++) {
-			int factor = min(h0 + Dn0p[i], srcHeight - 1);
+			int factor = std::min(h0 + Dn0p[i], srcHeight - 1);
 			srcP[i] = srcPb + factor * srcPitch;
 		}
 
@@ -133,7 +159,7 @@ void DoViBaker<quarterResolutionEl>::upsampleHorz(PVideoFrame& dst, const PVideo
 		}
 		for (int w = 0; w < nD; w++) {
 			for (int i = 0; i < nD; i++) {
-				int wd = max(w + Dn0p[i], 0);
+				int wd = std::max(w + Dn0p[i], 0);
 				value[i] = srcP[wd];
 			}
 			std::copy_n(&srcP[w], pD + 1, &value[nD]);
@@ -142,7 +168,7 @@ void DoViBaker<quarterResolutionEl>::upsampleHorz(PVideoFrame& dst, const PVideo
 		}
 		for (int w = srcWidth - pD; w < srcWidth; w++) {
 			for (int i = nD + 1; i < Dn0p.size(); i++) {
-				int wd = min(w + Dn0p[i], srcWidth - 1);
+				int wd = std::min(w + Dn0p[i], srcWidth - 1);
 				value[i] = srcP[wd];
 			}
 			std::copy_n(&srcP[w - nD], nD + 1, &value[0]);
@@ -402,15 +428,15 @@ void DoViBaker<quarterResolutionEl>::doAllQuickAndDirty(PVideoFrame& dst, const 
 	elSrcYp[0] = (const uint16_t*)elSrc->GetReadPtr(PLANAR_Y);
 	dstRp[0] = (uint16_t*)dst->GetWritePtr(PLANAR_R);
 
-	const int blUVvsElUVshifts = max(quarterResolutionEl + elChromaSubsampling - blChromaSubsampling, 0);
-	std::array<const uint16_t*, (1 << blUVvsElUVshifts)> blSrcUp;
+	const int blUVvsElUVshifts = std::max(quarterResolutionEl + elChromaSubsampling - blChromaSubsampling, 0);
+	std::vector<const uint16_t*> blSrcUp(1 << blUVvsElUVshifts);
 	std::array<const uint16_t*, 1> elSrcUp;
 	std::array<uint16_t*, (1 << blYvsElUVshifts)> dstGp;
 	blSrcUp[0] = (const uint16_t*)blSrc->GetReadPtr(PLANAR_U);
 	elSrcUp[0] = (const uint16_t*)elSrc->GetReadPtr(PLANAR_U);
 	dstGp[0] = (uint16_t*)dst->GetWritePtr(PLANAR_G);
 
-	std::array<const uint16_t*, (1 << blUVvsElUVshifts)> blSrcVp;
+	std::vector<const uint16_t*>blSrcVp(1 << blUVvsElUVshifts);
 	std::array<const uint16_t*, 1> elSrcVp;
 	std::array<uint16_t*, (1 << blYvsElUVshifts)> dstBp;
 	blSrcVp[0] = (const uint16_t*)blSrc->GetReadPtr(PLANAR_V);
@@ -572,7 +598,7 @@ void DoViBaker<quarterResolutionEl>::applyLut(PVideoFrame& dst, const PVideoFram
 	unsigned int width = vi.width;
 	unsigned int height = vi.height;
 
-	std::unique_ptr<float, decltype(&_aligned_free)> tmp_buf{ nullptr, _aligned_free };
+	std::unique_ptr<float, decltype(&aligned_free)> tmp_buf{ nullptr, aligned_free };
 	unsigned aligned_width = width % 8 ? (width - width % 8) + 8 : width;
 
 	const uint16_t* src_p[3];
@@ -594,7 +620,7 @@ void DoViBaker<quarterResolutionEl>::applyLut(PVideoFrame& dst, const PVideoFram
 	dst_stride[1] = dst->GetPitch(PLANAR_G) / sizeof(uint16_t);
 	dst_stride[2] = dst->GetPitch(PLANAR_B) / sizeof(uint16_t);
 
-	tmp_buf.reset((float*)_aligned_malloc(aligned_width * 3 * sizeof(float), 64));
+	tmp_buf.reset((float*)aligned_malloc(aligned_width * 3 * sizeof(float), 64));
 	if (!tmp_buf)
 		throw std::bad_alloc{};
 

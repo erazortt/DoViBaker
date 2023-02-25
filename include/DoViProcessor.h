@@ -1,12 +1,27 @@
 #pragma once
+
+#include <algorithm>
+#include <vector>
+
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#else
+#include <climits>
+#include <cmath>
+#endif
+
 #pragma warning(push)
 #pragma warning(disable: 4512 4244 4100 693)
 #include "avisynth.h"
 #pragma warning(pop)
-
 #include "rpu_parser.h"
-#include <vector>
-#include <windows.h>
+
 
 typedef DoviRpuOpaqueList* (*f_dovi_parse_rpu_bin_file)(const char* path);
 typedef void (*f_dovi_rpu_list_free)(DoviRpuOpaqueList* ptr);
@@ -72,7 +87,7 @@ public:
 
   static const uint8_t containerBitDepth = 16;
 private:
-  static inline constexpr uint16_t Clip3(uint16_t lower, uint16_t upper, int value);
+  static inline constexpr uint16_t Clip3(int lower, int upper, int value);
   void showMessage(const char* message, IScriptEnvironment* env);
   uint16_t processSample(int cmp, uint16_t bl, uint16_t el, uint16_t mmrBlY, uint16_t mmrBlU, uint16_t mmrBlV) const;
   int getPivotIndex(int cmp, uint16_t sample) const;
@@ -160,8 +175,8 @@ private:
 void DoViProcessor::setTrim(uint16_t trimPq, float targetMinNits, float targetMaxNits)
 {
   desiredTrimPq = trimPq;
-  this->targetMinNits = min(max(targetMinNits, 0.0001), 5);
-  this->targetMaxNits = max(min(targetMaxNits, 10000), 5);
+  this->targetMinNits = std::clamp(targetMinNits, 0.0001f, 5.0f);
+  this->targetMaxNits = std::clamp(targetMaxNits, 5.0f, 10000.0f);
 }
 
 float DoViProcessor::pq2nits(uint16_t pq)
@@ -173,7 +188,7 @@ float DoViProcessor::pq2nits(uint16_t pq)
   static const float c1 = c3 - c2 + 1;
   const float relPq = pq / 4095.0;
   const float epower = powf(relPq, 1 / m2);
-  const float num = max(epower - c1, 0);
+  const float num = std::max(epower - c1, 0.0f);
   const float denom = c2 - c3 * epower;
   return powf(num / denom, 1 / m1) * 10000;
 }
@@ -193,9 +208,9 @@ uint16_t DoViProcessor::nits2pq(float nits)
   return powf(num / denom, m2) * 4095.0;
 }
 
-constexpr uint16_t DoViProcessor::Clip3(uint16_t lower, uint16_t upper, int value)
+constexpr uint16_t DoViProcessor::Clip3(int lower, int upper, int value)
 {
-  return max(min(value, upper), lower);
+  return static_cast<uint16_t>(std::clamp(value, lower, upper));
 }
 
 /*
