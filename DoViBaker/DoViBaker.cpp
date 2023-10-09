@@ -55,27 +55,26 @@ DoViBaker<quarterResolutionEl>::DoViBaker(
 	, blClipChromaSubSampled(_blChromaSubSampled)
 	, elClipChromaSubSampled(_elChromaSubSampled)
 {
-	int bits_per_pixel = vi.BitsPerComponent();
-	if (bits_per_pixel != DoViProcessor::containerBitDepth) {
-		env->ThrowError("DoViBaker: Video must be 16bit");
-	}
-	vi.pixel_type = VideoInfo::CS_RGBP16;
-
-	doviProc = new DoViProcessor(rpuPath, env);
+	int blContainerBits = vi.BitsPerComponent();
+	int elContainerBits = elChild ? elChild->GetVideoInfo().BitsPerComponent() : 0;
+	doviProc = new DoViProcessor(rpuPath, env, blContainerBits, elContainerBits);
 	if (!doviProc->wasCreationSuccessful()) {
 		env->ThrowError("DoViBaker: Cannot create object");
 	}
 	doviProc->setRgbProof(_rgbProof);
 	doviProc->setNlqProof(_nlqProof);
-	
+
 	doviProc->setTrim(_desiredTrimPq, _targetMinLum, _targetMaxLum);
 
-	if (vi.num_frames != doviProc->getClipLength()) {
+	if (!doviProc->isIntegratedRpu() && vi.num_frames != doviProc->getClipLength()) {
 		env->ThrowError("DoViBaker: Clip length does not match length indicated by RPU file");
 	}
 	if (elChild && vi.num_frames != elChild->GetVideoInfo().num_frames) {
 		env->ThrowError("DoViBaker: Length of BL clip does not match length of EL clip");
 	}
+
+	// set the output pixel type
+	vi.pixel_type = VideoInfo::CS_RGBP16;
 
 	CPU_FLAG = env->GetCPUFlags();
 	int lutMaxCpuCaps = INT_MAX;
@@ -630,7 +629,7 @@ void DoViBaker<quarterResolutionEl>::applyLut(PVideoFrame& dst, const PVideoFram
 
 	timecube::PixelFormat format;
 	format.type = (timecube::PixelType)1;
-	format.depth = DoViProcessor::containerBitDepth;
+	format.depth = DoViProcessor::outContainerBitDepth;
 	format.fullrange = true;
 
 	for (unsigned i = 0; i < height; ++i)
@@ -653,8 +652,22 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 	PVideoFrame blSrc = child->GetFrame(n, env);
 	PVideoFrame elSrc = elChild ? elChild->GetFrame(n, env) : blSrc;
 	PVideoFrame dst = env->NewVideoFrameP(vi, &blSrc);
+
+	const char* rpubuf = 0x0;
+	size_t rpusize = 0;
+
+	if (doviProc->isIntegratedRpu()) {
+		if (env->propNumElements(env->getFramePropsRO(blSrc), "DolbyVisionRPU") > -1) {
+			rpubuf = env->propGetData(env->getFramePropsRO(blSrc), "DolbyVisionRPU", 0, 0);
+			rpusize = env->propGetDataSize(env->getFramePropsRO(blSrc), "DolbyVisionRPU", 0, 0);
+		}
+		else if (env->propNumElements(env->getFramePropsRO(elSrc), "DolbyVisionRPU") > -1) {
+			rpubuf = env->propGetData(env->getFramePropsRO(elSrc), "DolbyVisionRPU", 0, 0);
+			rpusize = env->propGetDataSize(env->getFramePropsRO(elSrc), "DolbyVisionRPU", 0, 0);
+		}
+	}
 	
-	bool doviInitialized = doviProc->intializeFrame(n, env);
+	bool doviInitialized = doviProc->intializeFrame(n, env, (const uint8_t*)rpubuf, rpusize);
 	if (!doviInitialized) {
 		return dst;
 	}

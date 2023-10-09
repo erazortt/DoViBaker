@@ -5,8 +5,8 @@
 
 
 #define RPU_PARSER_MAJOR 3
-#define RPU_PARSER_MINOR 1
-#define RPU_PARSER_PATCH 1
+#define RPU_PARSER_MINOR 2
+#define RPU_PARSER_PATCH 0
 
 
 #include <stddef.h>
@@ -51,6 +51,10 @@ typedef struct {
      * null pointer if not profile 7
      */
     const char *el_type;
+    /**
+     * Deprecated since 3.2.0
+     * The field is not actually part of the RPU header
+     */
     uint8_t rpu_nal_prefix;
     uint8_t rpu_type;
     uint16_t rpu_format;

@@ -22,8 +22,8 @@
 #pragma warning(pop)
 #include "rpu_parser.h"
 
-
 typedef DoviRpuOpaqueList* (*f_dovi_parse_rpu_bin_file)(const char* path);
+typedef DoviRpuOpaque* (*f_dovi_parse_unspec62_nalu)(const uint8_t* rpubuf, size_t rpusize);
 typedef void (*f_dovi_rpu_list_free)(DoviRpuOpaqueList* ptr);
 typedef const char* (*f_dovi_rpu_get_error)(const DoviRpuOpaque* ptr);
 typedef const DoviRpuDataHeader* (*f_dovi_rpu_get_header)(const DoviRpuOpaque* ptr);
@@ -35,22 +35,23 @@ typedef void (*f_dovi_rpu_free_vdr_dm_data)(const DoviVdrDmData* ptr);
 
 class DoViProcessor {
 public:
-  DoViProcessor(const char* rpuPath, IScriptEnvironment* env);
+  DoViProcessor(const char* rpuPath, IScriptEnvironment* env, uint8_t blContainerBits, uint8_t elContainerBits);
   virtual ~DoViProcessor();
   bool wasCreationSuccessful() { return successfulCreation; }
   void setRgbProof(bool set = true) { rgbProof = set; }
   void setNlqProof(bool set = true) { nlqProof = set; }
   inline void setTrim(uint16_t trimPq, float targetMinNits, float targetMaxNits);
 
-  bool intializeFrame(int frame, IScriptEnvironment* env);
+  bool intializeFrame(int frame, IScriptEnvironment* env, const uint8_t* rpubuf, size_t rpusize);
   inline int getClipLength() const { return rpus->len; }
+  inline bool isIntegratedRpu() const { return !rpus; }
   inline bool isFEL() const { return is_fel; }
   inline bool isSceneChange() const { return scene_refresh_flag; }
   inline bool isLimitedRangeOutput() const { return !signal_full_range_flag; }
   inline bool elProcessingDisabled() const { return disable_residual_flag; }
   inline bool trimProcessingDisabled() const { return skipTrim; }
   inline void forceDisableElProcessing(bool force = true) { disable_residual_flag = force; }
-  inline uint16_t getNlqOffset(int cmp) const { return nlq_offset[cmp] << (containerBitDepth - el_bit_depth); }
+  inline uint16_t getNlqOffset(int cmp) const { return nlq_offset[cmp] << (outContainerBitDepth - el_bit_depth); }
   inline uint16_t getMaxPq() const { return max_pq; }
   inline uint16_t getMaxContentLightLevel() const { return max_content_light_level; }
   const std::vector<uint16_t>& getAvailableTrimPqs() const { return availableTrimPqs; }
@@ -85,7 +86,7 @@ public:
   inline void sample2rgb(uint16_t& r, uint16_t& g, uint16_t& b, const uint16_t& y, const uint16_t& u, const uint16_t& v) const;
   void processTrim(uint16_t& ro, uint16_t& go, uint16_t& bo, const uint16_t& ri, const uint16_t& gi, const uint16_t& bi) const;
 
-  static const uint8_t containerBitDepth = 16;
+  static const uint8_t outContainerBitDepth = 16;
 private:
   static inline constexpr uint16_t Clip3(int lower, int upper, int value);
   void showMessage(const char* message, IScriptEnvironment* env);
@@ -101,6 +102,7 @@ private:
   DoviRpuOpaqueList* rpus;
 
   f_dovi_parse_rpu_bin_file dovi_parse_rpu_bin_file;
+  f_dovi_parse_unspec62_nalu dovi_parse_unspec62_nalu;
   f_dovi_rpu_list_free dovi_rpu_list_free;
   f_dovi_rpu_get_header dovi_rpu_get_header;
   f_dovi_rpu_free_header dovi_rpu_free_header;
@@ -116,6 +118,8 @@ private:
   bool skipTrim;
   bool trimInfoMissing;
 
+  const uint8_t blContainerBitDepth;
+  const uint8_t elContainerBitDepth;
   uint8_t bl_bit_depth;
   uint8_t el_bit_depth;
   uint8_t out_bit_depth;
@@ -133,7 +137,7 @@ private:
   uint32_t ycc_to_rgb_offset[3];
 
   static const uint16_t ycc_to_rgb_coef_scale_shifts = 13;
-  static const uint16_t ycc_to_rgb_offset_scale_shifts = (28-containerBitDepth);
+  static const uint16_t ycc_to_rgb_offset_scale_shifts = (28-outContainerBitDepth);
   static const uint16_t rgb_to_lms_coef_scale_shifts = 14;
 
   uint8_t num_pivots_minus1[3];
