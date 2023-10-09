@@ -5,13 +5,15 @@
 #include "DoViProcessor.h"
 
 
-DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env)
+DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env, uint8_t blContainerBits, uint8_t elContainerBits)
 	: successfulCreation(false)
 	, rgbProof(false)
 	, nlqProof(false)
 	, desiredTrimPq(0)
 	, max_content_light_level(1000)
 	, rpus(0x0)
+	, blContainerBitDepth(blContainerBits)
+	, elContainerBitDepth(elContainerBits)
 {
 	ycc_to_rgb_coef[0] = 8192;
 	ycc_to_rgb_coef[1] = 0;
@@ -24,8 +26,8 @@ DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env)
 	ycc_to_rgb_coef[8] = 0;
 
 	ycc_to_rgb_offset[0] = 0;
-	ycc_to_rgb_offset[1] = (1 << (containerBitDepth - 1)) << ycc_to_rgb_offset_scale_shifts;
-	ycc_to_rgb_offset[2] = (1 << (containerBitDepth - 1)) << ycc_to_rgb_offset_scale_shifts;
+	ycc_to_rgb_offset[1] = (1 << (outContainerBitDepth - 1)) << ycc_to_rgb_offset_scale_shifts;
+	ycc_to_rgb_offset[2] = (1 << (outContainerBitDepth - 1)) << ycc_to_rgb_offset_scale_shifts;
 
 	doviLib = ::LoadLibrary(L"dovi.dll"); // delayed loading, original name
 	if (doviLib == NULL) {
@@ -115,6 +117,15 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env, const uin
 	el_bit_depth = header->el_bit_depth_minus8 + 8;
 	coeff_log2_denom = header->coefficient_log2_denom;
 	disable_residual_flag = header->disable_residual_flag;
+
+	if (blContainerBitDepth < bl_bit_depth) {
+		showMessage("DoViBaker: BL stream needs higher bitdepth", env);
+		return false;
+	}
+	if ((!elProcessingDisabled()) && elContainerBitDepth < el_bit_depth) {
+		showMessage("DoViBaker: EL stream needs higher bitdepth", env);
+		return false;
+	}
 
 	for (int cmp = 0; cmp < 3; cmp++) {
         const DoviReshapingCurve curve = mapping_data->curves[cmp];
@@ -301,25 +312,25 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env, const uin
 }
 
 uint16_t DoViProcessor::processSample(int cmp, uint16_t bl, uint16_t el, uint16_t mmrBlY, uint16_t mmrBlU, uint16_t mmrBlV) const {
-	bl >>= (containerBitDepth - bl_bit_depth);
+	bl >>= (blContainerBitDepth - bl_bit_depth);
 	int pivot_idx = getPivotIndex(cmp, bl);
 	int v;
 	if (cmp == 0 || mapping_idc[cmp][pivot_idx] == 0) {
 		v = polynompialMapping(cmp, pivot_idx, bl);
 	}
 	else {
-		mmrBlY >>= (containerBitDepth - bl_bit_depth);
-		mmrBlU >>= (containerBitDepth - bl_bit_depth);
-		mmrBlV >>= (containerBitDepth - bl_bit_depth);
+		mmrBlY >>= (blContainerBitDepth - bl_bit_depth);
+		mmrBlU >>= (blContainerBitDepth - bl_bit_depth);
+		mmrBlV >>= (blContainerBitDepth - bl_bit_depth);
 		v = mmrMapping(cmp, pivot_idx, mmrBlY, mmrBlU, mmrBlV);
 	}
 	int r = 0;
 	if (!disable_residual_flag) {
-		el >>= (containerBitDepth - el_bit_depth);
+		el >>= (elContainerBitDepth - el_bit_depth);
 		r = nonLinearInverseQuantization(cmp, el);
 	}
 	uint16_t h = signalReconstruction(v, r);
-	h <<= (containerBitDepth - out_bit_depth);
+	h <<= (outContainerBitDepth - out_bit_depth);
 	return h;
 }
 
@@ -487,18 +498,18 @@ void DoViProcessor::prepareTrimCoef() {
 }
 
 void DoViProcessor::processTrim(uint16_t& ro, uint16_t& go, uint16_t& bo, const uint16_t& ri, const uint16_t& gi, const uint16_t& bi) const  {
-	float dr = pq2nits(ri >> (containerBitDepth - out_bit_depth));
-	float dg = pq2nits(gi >> (containerBitDepth - out_bit_depth));
-	float db = pq2nits(bi >> (containerBitDepth - out_bit_depth));
+	float dr = pq2nits(ri >> (outContainerBitDepth - out_bit_depth));
+	float dg = pq2nits(gi >> (outContainerBitDepth - out_bit_depth));
+	float db = pq2nits(bi >> (outContainerBitDepth - out_bit_depth));
 
 	float er = (trim.ccc[0] + dr * trim.ccc[1]) / (1 + dr * trim.ccc[2]);
 	float eg = (trim.ccc[0] + dg * trim.ccc[1]) / (1 + dg * trim.ccc[2]);
 	float eb = (trim.ccc[0] + db * trim.ccc[1]) / (1 + db * trim.ccc[2]);
 
 	if (trimInfoMissing) {
-		ro = nits2pq(er) << (containerBitDepth - out_bit_depth);
-		go = nits2pq(eg) << (containerBitDepth - out_bit_depth);
-		bo = nits2pq(eb) << (containerBitDepth - out_bit_depth);
+		ro = nits2pq(er) << (outContainerBitDepth - out_bit_depth);
+		go = nits2pq(eg) << (outContainerBitDepth - out_bit_depth);
+		bo = nits2pq(eb) << (outContainerBitDepth - out_bit_depth);
 	}	else {
 		float y3 = targetMaxNits;
 		float fr = powf((std::clamp(((er / y3) * trim.goP[0]) + trim.goP[1], 0.0f, 1.0f)), trim.goP[2]) * y3;
@@ -510,8 +521,8 @@ void DoViProcessor::processTrim(uint16_t& ro, uint16_t& go, uint16_t& bo, const 
 		float gg = fg * powf((1 + trim.cS[0]) * fg / Y, trim.cS[1]);
 		float gb = fb * powf((1 + trim.cS[0]) * fb / Y, trim.cS[1]);
 
-		ro = nits2pq(gr) << (containerBitDepth - out_bit_depth);
-		go = nits2pq(gg) << (containerBitDepth - out_bit_depth);
-		bo = nits2pq(gb) << (containerBitDepth - out_bit_depth);
+		ro = nits2pq(gr) << (outContainerBitDepth - out_bit_depth);
+		go = nits2pq(gg) << (outContainerBitDepth - out_bit_depth);
+		bo = nits2pq(gb) << (outContainerBitDepth - out_bit_depth);
 	}
 }

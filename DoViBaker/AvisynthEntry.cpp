@@ -64,6 +64,7 @@ AVSValue __cdecl Create_RealDoViBaker(
       env->ThrowError("DoViBaker: Enhancement Layer must either be same size or quarter size as Base Layer");
     }
   }
+  
   std::stringstream ssCubeFiles(cubeFiles);
   std::vector<std::string> cubesList;
   std::string segment;
@@ -130,10 +131,10 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScri
 }
 
 void ypp2ycc(uint16_t* ycc, float y, float u, float v) {
-  static const uint16_t scale = 1 << DoViProcessor::containerBitDepth;
-  static const uint16_t bias = 16 << (DoViProcessor::containerBitDepth - 8);
-  static const uint16_t ltop = scale - (21 << (DoViProcessor::containerBitDepth - 8));
-  static const uint16_t ctop = scale - (16 << (DoViProcessor::containerBitDepth - 8));
+  static const uint16_t scale = 1 << DoViProcessor::outContainerBitDepth;
+  static const uint16_t bias = 16 << (DoViProcessor::outContainerBitDepth - 8);
+  static const uint16_t ltop = scale - (21 << (DoViProcessor::outContainerBitDepth - 8));
+  static const uint16_t ctop = scale - (16 << (DoViProcessor::outContainerBitDepth - 8));
 
   ycc[0] = y * (ltop - bias) + bias;
   ycc[1] = (u + 0.5) * (ctop - bias) + bias;
@@ -142,7 +143,7 @@ void ypp2ycc(uint16_t* ycc, float y, float u, float v) {
 
 inline uint16_t to8bits(uint16_t sample) {
   // we just check for 8bit precicion deviations, assuming smaller differences to be not visible
-  return (sample >> (DoViProcessor::containerBitDepth - 8));
+  return (sample >> (DoViProcessor::outContainerBitDepth - 8));
 }
 
 bool checkElProcessing(const DoViProcessor &dovi) {
@@ -163,7 +164,7 @@ uint16_t checkMatrix(const DoViProcessor& dovi) {
   uint16_t rgb[3];
   uint16_t diffBits = 0;
 
-  static const uint16_t maxNormRGB = 255 << (DoViProcessor::containerBitDepth - 8);
+  static const uint16_t maxNormRGB = 255 << (DoViProcessor::outContainerBitDepth - 8);
   static const uint16_t halfNormRGB = maxNormRGB >> 1;
 
   ypp2ycc(yuv, 1.0000, 0.0000, 0.0000);
@@ -302,7 +303,7 @@ int main(int argc, char** argv)
     return 1;
   }
   
-  DoViProcessor dovi(argv[1], NULL);
+  DoViProcessor dovi(argv[1], NULL, DoViProcessor::outContainerBitDepth, DoViProcessor::outContainerBitDepth);
   if (!dovi.wasCreationSuccessful()) {
     return 1;
   }
