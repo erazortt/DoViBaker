@@ -62,7 +62,9 @@ DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env)
 
 DoViProcessor::~DoViProcessor()
 {
-	dovi_rpu_list_free(rpus);
+	if (successfulCreation) {
+		dovi_rpu_list_free(rpus);
+	}
 	::FreeLibrary(doviLib);
 }
 
@@ -112,8 +114,8 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 		fp_poly_coef[cmp] = std::vector<std::vector<int32_t>>(num_pivots_minus1[cmp]);
 
 		mmr_order[cmp] = std::vector<uint8_t>(num_pivots_minus1[cmp]);
-		fp_mmr_const[cmp] = std::vector<int32_t>(num_pivots_minus1[cmp]);
-		fp_mmr_coef[cmp] = std::vector<std::vector<std::vector<int32_t>>>(num_pivots_minus1[cmp]);
+		fp_mmr_const[cmp] = std::vector<int64_t>(num_pivots_minus1[cmp]);
+		fp_mmr_coef[cmp] = std::vector<std::vector<std::vector<int64_t>>>(num_pivots_minus1[cmp]);
 
 		for (int pivot_idx = 0; pivot_idx < num_pivots_minus1[cmp]; pivot_idx++) {
 			mapping_idc[cmp][pivot_idx] = curve.mapping_idc;
@@ -145,10 +147,10 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
 				auto constant_int = mmr_constant_int.data[pivot_idx];
 				auto constant = mmr_constant.data[pivot_idx];
 				fp_mmr_const[cmp][pivot_idx] = (constant_int << coeff_log2_denom) + constant;
-				fp_mmr_coef[cmp][pivot_idx] = std::vector<std::vector<int32_t>>(mmr_order[cmp][pivot_idx]);
+				fp_mmr_coef[cmp][pivot_idx] = std::vector<std::vector<int64_t>>(mmr_order[cmp][pivot_idx]);
 
 				for (int i = 0; i < mmr_order[cmp][pivot_idx]; i++) {
-					fp_mmr_coef[cmp][pivot_idx][i] = std::vector<int32_t>(7);
+					fp_mmr_coef[cmp][pivot_idx][i] = std::vector<int64_t>(7);
 					for (int j = 0; j < 7; j++) {
 						auto port_int = mmr_coef_int.list[pivot_idx]->list[i]->data[j];
 						auto port_frac = mmr_coef.list[pivot_idx]->list[i]->data[j];
