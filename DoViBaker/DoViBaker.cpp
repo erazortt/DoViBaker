@@ -70,7 +70,7 @@ DoViBaker<quarterResolutionEl>::DoViBaker(
 	
 	doviProc->setTrim(_desiredTrimPq, _targetMinLum, _targetMaxLum);
 
-	if (vi.num_frames != doviProc->getClipLength()) {
+	if (!doviProc->isIntegratedRpu() && vi.num_frames != doviProc->getClipLength()) {
 		env->ThrowError("DoViBaker: Clip length does not match length indicated by RPU file");
 	}
 	if (elChild && vi.num_frames != elChild->GetVideoInfo().num_frames) {
@@ -653,8 +653,22 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 	PVideoFrame blSrc = child->GetFrame(n, env);
 	PVideoFrame elSrc = elChild ? elChild->GetFrame(n, env) : blSrc;
 	PVideoFrame dst = env->NewVideoFrameP(vi, &blSrc);
+
+	const char* rpubuf = 0x0;
+	size_t rpusize = 0;
+
+	if (doviProc->isIntegratedRpu()) {
+		if (env->propNumElements(env->getFramePropsRO(blSrc), "DolbyVisionRPU") > -1) {
+			rpubuf = env->propGetData(env->getFramePropsRO(blSrc), "DolbyVisionRPU", 0, 0);
+			rpusize = env->propGetDataSize(env->getFramePropsRO(blSrc), "DolbyVisionRPU", 0, 0);
+		}
+		else if (env->propNumElements(env->getFramePropsRO(elSrc), "DolbyVisionRPU") > -1) {
+			rpubuf = env->propGetData(env->getFramePropsRO(elSrc), "DolbyVisionRPU", 0, 0);
+			rpusize = env->propGetDataSize(env->getFramePropsRO(elSrc), "DolbyVisionRPU", 0, 0);
+		}
+	}
 	
-	bool doviInitialized = doviProc->intializeFrame(n, env);
+	bool doviInitialized = doviProc->intializeFrame(n, env, (const uint8_t*)rpubuf, rpusize);
 	if (!doviInitialized) {
 		return dst;
 	}

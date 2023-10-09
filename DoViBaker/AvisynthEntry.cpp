@@ -322,7 +322,7 @@ int main(int argc, char** argv)
   bool limitedRangeOutput = false;
   std::vector<uint16_t> trimPq;
   for (int i = 0; i < length; i++) {
-    if (!dovi.intializeFrame(i, NULL)) {
+    if (!dovi.intializeFrame(i, NULL, 0, 0)) {
       return 1;
     }
     int frame_max_pq = dovi.getMaxPq();

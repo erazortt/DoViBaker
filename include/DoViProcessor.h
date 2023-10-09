@@ -22,8 +22,8 @@
 #pragma warning(pop)
 #include "rpu_parser.h"
 
-
 typedef DoviRpuOpaqueList* (*f_dovi_parse_rpu_bin_file)(const char* path);
+typedef DoviRpuOpaque* (*f_dovi_parse_unspec62_nalu)(const uint8_t* rpubuf, size_t rpusize);
 typedef void (*f_dovi_rpu_list_free)(DoviRpuOpaqueList* ptr);
 typedef const char* (*f_dovi_rpu_get_error)(const DoviRpuOpaque* ptr);
 typedef const DoviRpuDataHeader* (*f_dovi_rpu_get_header)(const DoviRpuOpaque* ptr);
@@ -42,8 +42,9 @@ public:
   void setNlqProof(bool set = true) { nlqProof = set; }
   inline void setTrim(uint16_t trimPq, float targetMinNits, float targetMaxNits);
 
-  bool intializeFrame(int frame, IScriptEnvironment* env);
+  bool intializeFrame(int frame, IScriptEnvironment* env, const uint8_t* rpubuf, size_t rpusize);
   inline int getClipLength() const { return rpus->len; }
+  inline bool isIntegratedRpu() const { return !rpus; }
   inline bool isFEL() const { return is_fel; }
   inline bool isSceneChange() const { return scene_refresh_flag; }
   inline bool isLimitedRangeOutput() const { return !signal_full_range_flag; }
@@ -101,6 +102,7 @@ private:
   DoviRpuOpaqueList* rpus;
 
   f_dovi_parse_rpu_bin_file dovi_parse_rpu_bin_file;
+  f_dovi_parse_unspec62_nalu dovi_parse_unspec62_nalu;
   f_dovi_rpu_list_free dovi_rpu_list_free;
   f_dovi_rpu_get_header dovi_rpu_get_header;
   f_dovi_rpu_free_header dovi_rpu_free_header;

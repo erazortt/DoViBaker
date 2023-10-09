@@ -6,7 +6,12 @@
 
 
 DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env)
-	: successfulCreation(false), rgbProof(false), nlqProof(false), desiredTrimPq(0), max_content_light_level(1000)
+	: successfulCreation(false)
+	, rgbProof(false)
+	, nlqProof(false)
+	, desiredTrimPq(0)
+	, max_content_light_level(1000)
+	, rpus(0x0)
 {
 	ycc_to_rgb_coef[0] = 8192;
 	ycc_to_rgb_coef[1] = 0;
@@ -33,6 +38,7 @@ DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env)
 		showMessage("DoViBaker: Cannot load function dovi_parse_rpu_bin_file", env);
 		return;
 	}
+	dovi_parse_unspec62_nalu = (f_dovi_parse_unspec62_nalu)GetProcAddress(doviLib, "dovi_parse_unspec62_nalu");
 	dovi_rpu_list_free = (f_dovi_rpu_list_free)GetProcAddress(doviLib, "dovi_rpu_list_free");
 	dovi_rpu_get_header = (f_dovi_rpu_get_header)GetProcAddress(doviLib, "dovi_rpu_get_header");
 	dovi_rpu_free_header = (f_dovi_rpu_free_header)GetProcAddress(doviLib, "dovi_rpu_free_header");
@@ -41,10 +47,12 @@ DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env)
 	dovi_rpu_get_data_mapping = (f_dovi_rpu_get_data_mapping)GetProcAddress(doviLib, "dovi_rpu_get_data_mapping");
 	dovi_rpu_free_data_mapping = (f_dovi_rpu_free_data_mapping)GetProcAddress(doviLib, "dovi_rpu_free_data_mapping");
 
-	rpus = dovi_parse_rpu_bin_file(rpuPath);
-	if (rpus->error) {
-		showMessage((std::string("DoViBaker: ")+rpus->error).c_str(), env);
-		return;
+	if (strlen(rpuPath)) {
+		rpus = dovi_parse_rpu_bin_file(rpuPath);
+		if (rpus->error) {
+			showMessage((std::string("DoViBaker: ") + rpus->error).c_str(), env);
+			return;
+		}
 	}
 
 	pivot_value.resize(3);
@@ -62,7 +70,7 @@ DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env)
 
 DoViProcessor::~DoViProcessor()
 {
-	if (successfulCreation) {
+	if (wasCreationSuccessful() && isIntegratedRpu()) {
 		dovi_rpu_list_free(rpus);
 	}
 	::FreeLibrary(doviLib);
@@ -76,8 +84,18 @@ void DoViProcessor::showMessage(const char* message, IScriptEnvironment* env)
 		printf(message);
 }
 
-bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env) {
-	DoviRpuOpaque* rpu = rpus->list[frame];
+bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env, const uint8_t* rpubuf, size_t rpusize) {
+	DoviRpuOpaque* rpu;
+	if (rpus) {
+		rpu = rpus->list[frame];
+	}
+	else if (rpubuf){
+		rpu = dovi_parse_unspec62_nalu(rpubuf, rpusize);
+	}
+	else {
+		showMessage("DoViBaker: RPU not given", env);
+		return false;
+	}
 	const DoviRpuDataHeader* header = dovi_rpu_get_header(rpu);
 	if (!header) {
 		const char* error = dovi_rpu_get_error(rpu);
