@@ -144,8 +144,8 @@ private:
   std::vector<std::vector<std::vector<int32_t>>> fp_poly_coef;
 
   std::vector<std::vector<uint8_t>> mmr_order;
-  std::vector<std::vector<int32_t>> fp_mmr_const;
-  std::vector<std::vector<std::vector<std::vector<int32_t>>>> fp_mmr_coef;
+  std::vector<std::vector<int64_t>> fp_mmr_const;
+  std::vector<std::vector<std::vector<std::vector<int64_t>>>> fp_mmr_coef;
 
   uint16_t nlq_offset[3];
   uint32_t fp_hdr_in_max[3];
