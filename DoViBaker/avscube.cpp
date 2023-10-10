@@ -76,11 +76,11 @@ public:
 
 		std::unique_ptr<timecube_lut, TimecubeLutFree> cube{ timecube_lut_from_file(cube_path) };
 		if (!cube)
-			throw std::runtime_error{ "DoViBaker: error reading LUT from file" };
+			throw std::runtime_error{ "AVSCube: error reading LUT from file" };
 
 		m_lut.reset(timecube_filter_create(cube.get(), &params));
 		if (!m_lut)
-			throw std::runtime_error{ "DoViBaker: error creating LUT" };
+			throw std::runtime_error{ "AVSCube: error creating LUT" };
 	}
 
 	AVSCube::~AVSCube(void)
@@ -99,14 +99,11 @@ T* incr(T* ptr, ptrdiff_t count)
 PVideoFrame __stdcall AVSCube::GetFrame(int n, IScriptEnvironment* env)
 {
 	PVideoFrame src = child->GetFrame(n, env);
-	//	PVideoFrame dst = env->NewVideoFrame(vi);
 	PVideoFrame dst;
 	if (has_at_least_v8)
 		dst = env->NewVideoFrameP(vi, &src);
 	else
 		dst = env->NewVideoFrame(vi);
-	unsigned int width = vi.width;
-	unsigned int height = vi.height;
 
 	const void* src_p[3];
 	ptrdiff_t src_stride[3];
