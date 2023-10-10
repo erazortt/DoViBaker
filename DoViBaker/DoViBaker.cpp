@@ -55,6 +55,8 @@ DoViBaker<quarterResolutionEl>::DoViBaker(
 	// set the output pixel type
 	if (!outYUV)
 		vi.pixel_type = VideoInfo::CS_RGBP16;
+	else if (blContainerBits < 16)
+		vi.pixel_type = (vi.Is420()) ? VideoInfo::CS_YUV420P16 : VideoInfo::CS_YUV444P16;
 }
 
 template<int quarterResolutionEl>
@@ -557,8 +559,9 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 	PVideoFrame blSrc = child->GetFrame(n, env);
 	PVideoFrame elSrc = elChild ? elChild->GetFrame(n, env) : blSrc;
 	PVideoFrame dst;
-	if (!outYUV)
+	if (!outYUV) {
 		dst = env->NewVideoFrameP(vi, &blSrc);
+	}
 
 	const char* rpubuf = 0x0;
 	size_t rpusize = 0;
