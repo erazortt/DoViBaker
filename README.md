@@ -3,6 +3,20 @@ Bake the DoVi into your clip
 
 This avisynth plugin reads the Base Layer, Enhancement Layer and RPU data from a profile 7 DolbyVision stream to create a clip with the DolbyVision data baked in.
 
+## Feeding the plugin 
+
+To my knowledge there are currently three source libraries that can be used. It is advisable to choose one of them in a speed test on your machine.
+
+### [LSMASHSource](https://github.com/HomeOfAviSynthPlusEvolution/L-SMASH-Works)
+
+example.avs:
+```
+bl=LWLibavVideoSource("clip.ts", format="YUV420P10", stream_index=0)
+el=LWLibavVideoSource("clip.ts", format="YUV420P10", stream_index=1)
+DoViBaker(bl,el)
+```
+### [DGDecNV](https://www.rationalqm.us/dgdecnv/binaries/)
+
 1. Get dovi_tool: https://github.com/quietvoid/dovi_tool/releases/tag/2.1.0
 2. Extract the Base and Enhancement Layers separately from the initial profile 7 stream
 3. Extract the RPU data from the Enhancement Layer using dovi_tool
@@ -14,12 +28,18 @@ bl=DGSource("blclip.dgi")
 el=DGSource("elclip.dgi")
 DoViBaker(bl,el,rpu="RPU.bin")
 ```
+### [FFmpegSource](http://avisynth.nl/index.php/FFmpegSource)
 
+example.avs:
+```
+bl=FFVideoSource("blclip.dgi", threads=1, track=0)
+el=FFVideoSource("elclip.dgi", threads=1, track=1)
+DoViBaker(bl,el)
+```
+## Integrated LUT processing
 This plugin uses the metadata from the RPU file to compose the DolbyVision HDR picture out of the Base Layer (BL) and Enhancement Layer (EL). Display Management (DM) metadata will not be processed per default. It is however possible to use level 1 maximal pixel brightness data from DM by providing a collection of LUTs and limits of validity measured in nits of max-content-light-level. These will then be processed internally. (The LUT processing implentation is based on: https://github.com/sekrit-twc/timecube).
 ```
-bl=DGSource("blclip.dgi")
-el=DGSource("elclip.dgi")
-DoViBaker(bl,el,rpu="RPU.bin",cubes="lut_1000.cube;lut_2000.cube;lut_4000.cube",mclls="1010;2020",cubes_basepath="C:\")
+DoViBaker(bl,el,cubes="lut_1000.cube;lut_2000.cube;lut_4000.cube",mclls="1010;2020",cubes_basepath="C:\")
 ```
 This example will use the file lut_1000.cube for frames where the max-content-light-level is below or equal to 1010 nits, the file lut_2000.cube for above 1010 but below or equal 2020 nits and lut_4000.cube for all frames above 2020 nits. All cube files must be available in the path given to cubes_basepath, in this example it would be "C:\\".
 
