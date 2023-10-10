@@ -47,9 +47,6 @@
     <ClInclude Include="..\include\DoViBaker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\rpu_parser.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\DoViProcessor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -60,6 +57,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\lut_x86.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\dovi\rpu_parser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

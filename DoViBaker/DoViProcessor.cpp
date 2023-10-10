@@ -29,26 +29,6 @@ DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env, uint8
 	ycc_to_rgb_offset[1] = (1 << (outContainerBitDepth - 1)) << ycc_to_rgb_offset_scale_shifts;
 	ycc_to_rgb_offset[2] = (1 << (outContainerBitDepth - 1)) << ycc_to_rgb_offset_scale_shifts;
 
-	doviLib = ::LoadLibrary(L"dovi.dll"); // delayed loading, original name
-	if (doviLib == NULL) {
-		showMessage("DoViBaker: Cannot load dovi.dll", env);
-		return;
-	}
-
-	dovi_parse_rpu_bin_file = (f_dovi_parse_rpu_bin_file)GetProcAddress(doviLib, "dovi_parse_rpu_bin_file");
-	if (dovi_parse_rpu_bin_file == NULL) {
-		showMessage("DoViBaker: Cannot load function dovi_parse_rpu_bin_file", env);
-		return;
-	}
-	dovi_parse_unspec62_nalu = (f_dovi_parse_unspec62_nalu)GetProcAddress(doviLib, "dovi_parse_unspec62_nalu");
-	dovi_rpu_list_free = (f_dovi_rpu_list_free)GetProcAddress(doviLib, "dovi_rpu_list_free");
-	dovi_rpu_get_header = (f_dovi_rpu_get_header)GetProcAddress(doviLib, "dovi_rpu_get_header");
-	dovi_rpu_free_header = (f_dovi_rpu_free_header)GetProcAddress(doviLib, "dovi_rpu_free_header");
-	dovi_rpu_get_vdr_dm_data = (f_dovi_rpu_get_vdr_dm_data)GetProcAddress(doviLib, "dovi_rpu_get_vdr_dm_data");
-	dovi_rpu_free_vdr_dm_data = (f_dovi_rpu_free_vdr_dm_data)GetProcAddress(doviLib, "dovi_rpu_free_vdr_dm_data");
-	dovi_rpu_get_data_mapping = (f_dovi_rpu_get_data_mapping)GetProcAddress(doviLib, "dovi_rpu_get_data_mapping");
-	dovi_rpu_free_data_mapping = (f_dovi_rpu_free_data_mapping)GetProcAddress(doviLib, "dovi_rpu_free_data_mapping");
-
 	if (strlen(rpuPath)) {
 		rpus = dovi_parse_rpu_bin_file(rpuPath);
 		if (rpus->error) {
@@ -75,7 +55,6 @@ DoViProcessor::~DoViProcessor()
 	if (wasCreationSuccessful() && isIntegratedRpu()) {
 		dovi_rpu_list_free(rpus);
 	}
-	::FreeLibrary(doviLib);
 }
 
 void DoViProcessor::showMessage(const char* message, IScriptEnvironment* env)
@@ -285,7 +264,7 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env, const uin
 
 	std::string el_type(header->el_type);
 	std::transform(el_type.begin(), el_type.end(), el_type.begin(),
-		[](unsigned char c) { return std::toupper(c); });
+		[](unsigned char c) { return toupper(c); });
 	is_fel = (el_type.compare("FEL")==0);
 
 	auto nlq_offsets = nlq_data->nlq_offset;
