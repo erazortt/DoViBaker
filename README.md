@@ -62,3 +62,13 @@ The output will show the following attributes:
 Pay attention to 3-5 since these will indicate if the look of the clip will be different when DolbyVision is taken into account compared to just playing the Base Layer clip. If you are using LUTs, pay attention to 7) since in this case the LUTs provided will need to be different.
 
 Additionally it is possible to generate a scenecutfile based on the information from the RPU file. This might be given to the encoder to improve the scene detection (using the parameter --qpfile for x265).
+
+# Remarks concerning compilation
+I had some issues linking against Timecube. I was constantly getting the following error:
+```
+fatal error C1083: Cannot open compiler generated file: 'x64\Release\timecube.asm': No such file or directory
+```
+
+It turnes out that this is related to the following setting: "Properies" (of the timecube project) -> "C++" -> "Output Files" -> "Assembler Output".
+Setting this to "No Listing" resolves the issue.
+
