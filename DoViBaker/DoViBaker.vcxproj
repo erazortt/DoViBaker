@@ -28,22 +28,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AvisynthEntry.cpp" />
-    <ClCompile Include="cube.cpp" />
     <ClCompile Include="DoViBaker.cpp" />
     <ClCompile Include="DoViProcessor.cpp" />
-    <ClCompile Include="lut.cpp" />
-    <ClCompile Include="lut_avx2.cpp" />
-    <ClCompile Include="lut_avx512.cpp" />
-    <ClCompile Include="lut_sse41.cpp" />
-    <ClCompile Include="lut_x86.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\include\cube.h" />
     <ClInclude Include="..\include\DoViBaker.h" />
     <ClInclude Include="..\include\DoViProcessor.h" />
     <ClInclude Include="..\include\dovi\rpu_parser.h" />
-    <ClInclude Include="..\include\lut.h" />
-    <ClInclude Include="..\include\lut_x86.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
@@ -196,7 +187,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <AdditionalDependencies>dovi.lib;timecube.lib;ntdll.lib;bcrypt.lib;ws2_32.lib;Userenv.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)\dovi_tool\dolby_vision\target\x86_64-pc-windows-msvc\release;$(SolutionDir)\timecube\_msvc\x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)\dovi_tool\dolby_vision\target\x86_64-pc-windows-msvc\release;$(SolutionDir)\timecube\_msvc\x64\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>
     </Link>

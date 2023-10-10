@@ -3,7 +3,7 @@
 #include <string>
 
 #include "DoViProcessor.h"
-#include "lut.h"
+#include "timecube/timecube.h"
 
 
 template<int quarterResolutionEl>
@@ -28,6 +28,14 @@ public:
   PVideoFrame GetFrame(int n, IScriptEnvironment* env) override;
 
 private:
+  struct TimecubeLutFree {
+    void operator()(timecube_lut* ptr) { timecube_lut_free(ptr); }
+  };
+
+  struct TimecubeFilterFree {
+    void operator()(timecube_filter* ptr) { timecube_filter_free(ptr); }
+  };
+
   void upscaleEl(PVideoFrame& dst, const PVideoFrame& el, VideoInfo dstVi, IScriptEnvironment* env);
   void upsampleChroma(PVideoFrame& dst, const PVideoFrame& el, VideoInfo dstVi, IScriptEnvironment* env);
   //void upsampleElChroma(PVideoFrame& dst, const PVideoFrame& el, VideoInfo dstVi, IScriptEnvironment* env);
@@ -55,6 +63,6 @@ private:
   const bool qnd;
   const bool blClipChromaSubSampled;
   const bool elClipChromaSubSampled;
-  std::vector<std::pair<uint16_t, std::unique_ptr<timecube::Lut>>> luts;
-  const timecube::Lut* current_frame_lut;
+  std::vector<std::pair<uint16_t, timecube_filter*>> luts;
+  const timecube_filter* current_frame_lut;
 };
