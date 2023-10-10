@@ -81,6 +81,9 @@ Pay attention to 3-5 since these will indicate if the look of the clip will be d
 
 Additionally it is possible to generate a scenecutfile based on the information from the RPU file. This might be given to the encoder to improve the scene detection (using the parameter --qpfile for x265).
 
+# AVSCube
+There is also an implementation of AVSCube, which provides the same processing as the integrated LUT processing.
+
 # Remarks concerning compilation
 I had some issues linking against Timecube. I was constantly getting the following error:
 ```
