@@ -1,3 +1,6 @@
 [submodule "dovi_tool"]
 	path = dovi_tool
 	url = https://github.com/quietvoid/dovi_tool.git
+[submodule "timecube"]
+	path = timecube
+	url = https://github.com/sekrit-twc/timecube.git

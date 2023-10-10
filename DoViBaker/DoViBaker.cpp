@@ -1,7 +1,6 @@
 #include <array>
 #include <filesystem>
 
-#include "cube.h"
 #include "DoViBaker.h"
 
 
@@ -73,20 +72,40 @@ DoViBaker<quarterResolutionEl>::DoViBaker(
 		env->ThrowError("DoViBaker: Length of BL clip does not match length of EL clip");
 	}
 
-	// set the output pixel type
-	vi.pixel_type = VideoInfo::CS_RGBP16;
-
 	CPU_FLAG = env->GetCPUFlags();
 	int lutMaxCpuCaps = INT_MAX;
+
+	timecube_filter_params params{};
+	params.width = vi.width;
+	params.height = vi.height;
+	params.src_type = TIMECUBE_PIXEL_WORD;
+	params.src_depth = doviProc->outContainerBitDepth;
+	params.src_range = TIMECUBE_RANGE_FULL;
+	params.dst_type = TIMECUBE_PIXEL_WORD;
+	params.dst_depth = doviProc->outContainerBitDepth;
+	params.dst_range = TIMECUBE_RANGE_FULL;
+	params.interp = TIMECUBE_INTERP_TETRA;
+	params.cpu = static_cast<timecube_cpu_type_e>(lutMaxCpuCaps);
 
 	for (int i = 0; i < _cubes.size(); i++) {
 		auto cube_path = _cubes[i].second;
 		if (!std::filesystem::exists(std::filesystem::path(cube_path))) {
-			env->ThrowError((std::string("DoViBaker: cannot open cube file ")+cube_path).c_str());
+			env->ThrowError((std::string("DoViBaker: cannot find cube file ") + cube_path).c_str());
 		}
-		timecube::Cube cube = timecube::read_cube_from_file(cube_path.c_str());
-		luts.push_back(std::pair(_cubes[i].first, timecube::create_lut_impl(cube, lutMaxCpuCaps)));
+		std::unique_ptr<timecube_lut, TimecubeLutFree> cube{ timecube_lut_from_file(cube_path.c_str()) };
+		if (!cube)
+			throw std::runtime_error{ "DoViBaker: error reading LUT from file" };
+
+		timecube_filter* lut = timecube_filter_create(cube.get(), &params);
+		if (!lut)
+			throw std::runtime_error{ "DoViBaker: error creating LUT" };
+
+		luts.push_back(std::pair(_cubes[i].first, lut));
 	}
+
+	// set the output pixel type
+	vi.pixel_type = VideoInfo::CS_RGBP16;
+
 }
 
 template<int quarterResolutionEl>
@@ -594,56 +613,28 @@ void DoViBaker<quarterResolutionEl>::applyTrim(PVideoFrame& dst, const PVideoFra
 template<int quarterResolutionEl>
 void DoViBaker<quarterResolutionEl>::applyLut(PVideoFrame& dst, const PVideoFrame& src) const
 {
-	unsigned int width = vi.width;
-	unsigned int height = vi.height;
+	const void* src_p[3];
+	ptrdiff_t src_stride[3];
+	void* dst_p[3];
+	ptrdiff_t dst_stride[3];
 
-	std::unique_ptr<float, decltype(&aligned_free)> tmp_buf{ nullptr, aligned_free };
-	unsigned aligned_width = width % 8 ? (width - width % 8) + 8 : width;
+	src_p[0] = src->GetReadPtr(PLANAR_R);
+	src_p[1] = src->GetReadPtr(PLANAR_G);
+	src_p[2] = src->GetReadPtr(PLANAR_B);
+	src_stride[0] = src->GetPitch(PLANAR_R);
+	src_stride[1] = src->GetPitch(PLANAR_G);
+	src_stride[2] = src->GetPitch(PLANAR_B);
+	dst_p[0] = dst->GetWritePtr(PLANAR_R);
+	dst_p[1] = dst->GetWritePtr(PLANAR_G);
+	dst_p[2] = dst->GetWritePtr(PLANAR_B);
+	dst_stride[0] = dst->GetPitch(PLANAR_R);
+	dst_stride[1] = dst->GetPitch(PLANAR_G);
+	dst_stride[2] = dst->GetPitch(PLANAR_B);
 
-	const uint16_t* src_p[3];
-	int src_stride[3];
-	uint16_t* dst_p[3];
-	int dst_stride[3];
-	float* tmp[3] = { 0 };
+	std::unique_ptr<void, decltype(&aligned_free)> tmp{ nullptr, aligned_free };
+	tmp.reset(aligned_malloc(timecube_filter_get_tmp_size(current_frame_lut), 64));
 
-	src_p[0] = (const uint16_t*)src->GetReadPtr(PLANAR_R);
-	src_p[1] = (const uint16_t*)src->GetReadPtr(PLANAR_G);
-	src_p[2] = (const uint16_t*)src->GetReadPtr(PLANAR_B);
-	src_stride[0] = src->GetPitch(PLANAR_R) / sizeof(uint16_t);
-	src_stride[1] = src->GetPitch(PLANAR_G) / sizeof(uint16_t);
-	src_stride[2] = src->GetPitch(PLANAR_B) / sizeof(uint16_t);
-	dst_p[0] = (uint16_t*)dst->GetWritePtr(PLANAR_R);
-	dst_p[1] = (uint16_t*)dst->GetWritePtr(PLANAR_G);
-	dst_p[2] = (uint16_t*)dst->GetWritePtr(PLANAR_B);
-	dst_stride[0] = dst->GetPitch(PLANAR_R) / sizeof(uint16_t);
-	dst_stride[1] = dst->GetPitch(PLANAR_G) / sizeof(uint16_t);
-	dst_stride[2] = dst->GetPitch(PLANAR_B) / sizeof(uint16_t);
-
-	tmp_buf.reset((float*)aligned_malloc(aligned_width * 3 * sizeof(float), 64));
-	if (!tmp_buf)
-		throw std::bad_alloc{};
-
-	tmp[0] = tmp_buf.get();
-	tmp[1] = tmp_buf.get() + aligned_width;
-	tmp[2] = tmp_buf.get() + aligned_width * 2;
-
-	timecube::PixelFormat format;
-	format.type = (timecube::PixelType)1;
-	format.depth = DoViProcessor::outContainerBitDepth;
-	format.fullrange = true;
-
-	for (unsigned i = 0; i < height; ++i)
-	{
-		current_frame_lut->to_float((const void**)src_p, tmp, format, width);
-		current_frame_lut->process(tmp, tmp, width);
-		current_frame_lut->from_float(tmp, (void**)dst_p, format, width);
-
-		for (unsigned p = 0; p < 3; ++p)
-		{
-			src_p[p] += src_stride[p];
-			dst_p[p] += dst_stride[p];
-		}
-	}
+	timecube_filter_apply(current_frame_lut, src_p, src_stride, dst_p, dst_stride, tmp.get());
 }
 
 template<int quarterResolutionEl>
@@ -680,15 +671,14 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 
 	bool skipLut = luts.size() == 0;
 	if (!skipLut) {
-		current_frame_lut = luts[luts.size() - 1].second.get();
+		current_frame_lut = luts[luts.size() - 1].second;
 		for (int i = 1; i < luts.size(); i++) {
 			if (doviProc->getMaxContentLightLevel() <= luts[i].first) {
-				current_frame_lut = luts[i - 1].second.get();
+				current_frame_lut = luts[i - 1].second;
 				break;
 			}
 		}
 	}
-
 	bool skipTrim = doviProc->trimProcessingDisabled();
 
 	bool skipElProcessing = false;

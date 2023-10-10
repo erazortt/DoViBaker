@@ -3,9 +3,7 @@ Bake the DoVi into your clip
 
 This avisynth plugin reads the Base Layer, Enhancement Layer and RPU data from a profile 7 DolbyVision stream to create a clip with the DolbyVision data baked in.
 
-1. Get dovi_tool and libdovi and save the dovi.dll such that it is reachable for avisynth (like in C:\Windows\System32)
-  - https://github.com/quietvoid/dovi_tool/releases/tag/2.0.2
-  - https://github.com/erazortt/DoViBaker/files/10810040/libdovi-3.1.1-x86_64-pc-windows-msvc.zip
+1. Get dovi_tool: https://github.com/quietvoid/dovi_tool/releases/tag/2.1.0
 2. Extract the Base and Enhancement Layers separately from the initial profile 7 stream
 3. Extract the RPU data from the Enhancement Layer using dovi_tool
 4. Write a Avisynth script like the example below
@@ -62,3 +60,13 @@ The output will show the following attributes:
 Pay attention to 3-5 since these will indicate if the look of the clip will be different when DolbyVision is taken into account compared to just playing the Base Layer clip. If you are using LUTs, pay attention to 7) since in this case the LUTs provided will need to be different.
 
 Additionally it is possible to generate a scenecutfile based on the information from the RPU file. This might be given to the encoder to improve the scene detection (using the parameter --qpfile for x265).
+
+# Remarks concerning compilation
+I had some issues linking against Timecube. I was constantly getting the following error:
+```
+fatal error C1083: Cannot open compiler generated file: 'x64\Release\timecube.asm': No such file or directory
+```
+
+It turnes out that this is related to the following setting: "Properies" (of the timecube project) -> "C++" -> "Output Files" -> "Assembler Output".
+Setting this to "No Listing" resolves the issue.
+
