@@ -32,8 +32,8 @@ DoViBaker(bl,el,rpu="RPU.bin")
 
 example.avs:
 ```
-bl=FFVideoSource("blclip.dgi", threads=1, track=0)
-el=FFVideoSource("elclip.dgi", threads=1, track=1)
+bl=FFVideoSource("clip.ts", threads=1, track=0)
+el=FFVideoSource("clip.ts", threads=1, track=1)
 DoViBaker(bl,el)
 ```
 ## Integrated LUT processing
