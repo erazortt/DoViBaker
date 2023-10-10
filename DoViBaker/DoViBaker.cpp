@@ -79,10 +79,10 @@ DoViBaker<quarterResolutionEl>::DoViBaker(
 	params.width = vi.width;
 	params.height = vi.height;
 	params.src_type = TIMECUBE_PIXEL_WORD;
-	params.src_depth = vi.BitsPerComponent();
+	params.src_depth = doviProc->outContainerBitDepth;
 	params.src_range = TIMECUBE_RANGE_FULL;
 	params.dst_type = TIMECUBE_PIXEL_WORD;
-	params.dst_depth = vi.BitsPerComponent();
+	params.dst_depth = doviProc->outContainerBitDepth;
 	params.dst_range = TIMECUBE_RANGE_FULL;
 	params.interp = TIMECUBE_INTERP_TETRA;
 	params.cpu = static_cast<timecube_cpu_type_e>(lutMaxCpuCaps);
@@ -613,26 +613,23 @@ void DoViBaker<quarterResolutionEl>::applyTrim(PVideoFrame& dst, const PVideoFra
 template<int quarterResolutionEl>
 void DoViBaker<quarterResolutionEl>::applyLut(PVideoFrame& dst, const PVideoFrame& src) const
 {
-	unsigned int width = vi.width;
-	unsigned int height = vi.height;
-
 	const void* src_p[3];
 	ptrdiff_t src_stride[3];
 	void* dst_p[3];
 	ptrdiff_t dst_stride[3];
 
-	src_p[0] = (const uint16_t*)src->GetReadPtr(PLANAR_R);
-	src_p[1] = (const uint16_t*)src->GetReadPtr(PLANAR_G);
-	src_p[2] = (const uint16_t*)src->GetReadPtr(PLANAR_B);
-	src_stride[0] = src->GetPitch(PLANAR_R) / sizeof(uint16_t);
-	src_stride[1] = src->GetPitch(PLANAR_G) / sizeof(uint16_t);
-	src_stride[2] = src->GetPitch(PLANAR_B) / sizeof(uint16_t);
-	dst_p[0] = (uint16_t*)dst->GetWritePtr(PLANAR_R);
-	dst_p[1] = (uint16_t*)dst->GetWritePtr(PLANAR_G);
-	dst_p[2] = (uint16_t*)dst->GetWritePtr(PLANAR_B);
-	dst_stride[0] = dst->GetPitch(PLANAR_R) / sizeof(uint16_t);
-	dst_stride[1] = dst->GetPitch(PLANAR_G) / sizeof(uint16_t);
-	dst_stride[2] = dst->GetPitch(PLANAR_B) / sizeof(uint16_t);
+	src_p[0] = src->GetReadPtr(PLANAR_R);
+	src_p[1] = src->GetReadPtr(PLANAR_G);
+	src_p[2] = src->GetReadPtr(PLANAR_B);
+	src_stride[0] = src->GetPitch(PLANAR_R);
+	src_stride[1] = src->GetPitch(PLANAR_G);
+	src_stride[2] = src->GetPitch(PLANAR_B);
+	dst_p[0] = dst->GetWritePtr(PLANAR_R);
+	dst_p[1] = dst->GetWritePtr(PLANAR_G);
+	dst_p[2] = dst->GetWritePtr(PLANAR_B);
+	dst_stride[0] = dst->GetPitch(PLANAR_R);
+	dst_stride[1] = dst->GetPitch(PLANAR_G);
+	dst_stride[2] = dst->GetPitch(PLANAR_B);
 
 	std::unique_ptr<void, decltype(&aligned_free)> tmp{ nullptr, aligned_free };
 	tmp.reset(aligned_malloc(timecube_filter_get_tmp_size(current_frame_lut), 64));
@@ -682,7 +679,6 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 			}
 		}
 	}
-
 	bool skipTrim = doviProc->trimProcessingDisabled();
 
 	bool skipElProcessing = false;
