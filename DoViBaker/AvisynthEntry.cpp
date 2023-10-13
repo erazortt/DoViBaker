@@ -131,6 +131,7 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScri
 }
 
 void ypp2ycc(uint16_t* ycc, float y, float u, float v) {
+  //YPrPb to YCrCb
   static const uint16_t scale = 1 << DoViProcessor::outContainerBitDepth;
   static const uint16_t bias = 16 << (DoViProcessor::outContainerBitDepth - 8);
   static const uint16_t ltop = scale - (21 << (DoViProcessor::outContainerBitDepth - 8));
@@ -167,37 +168,37 @@ uint16_t checkMatrix(const DoViProcessor& dovi) {
   static const uint16_t maxNormRGB = 255 << (DoViProcessor::outContainerBitDepth - 8);
   static const uint16_t halfNormRGB = maxNormRGB >> 1;
 
-  ypp2ycc(yuv, 1.0000, 0.0000, 0.0000);
+  ypp2ycc(yuv, 1.0000, 0.0000, 0.0000); // 10000nits white
   dovi.sample2rgb(rgb[0], rgb[1], rgb[2], yuv[0], yuv[1], yuv[2]);
   diffBits |= std::abs(rgb[0] - maxNormRGB);
   diffBits |= std::abs(rgb[1] - maxNormRGB);
   diffBits |= std::abs(rgb[2] - maxNormRGB);
     
-  ypp2ycc(yuv, 0.0000, 0.0000, 0.0000);
+  ypp2ycc(yuv, 0.0000, 0.0000, 0.0000); // black
   dovi.sample2rgb(rgb[0], rgb[1], rgb[2], yuv[0], yuv[1], yuv[2]);
   diffBits |= rgb[0];
   diffBits |= rgb[1];
   diffBits |= rgb[2];
 
-  ypp2ycc(yuv, 0.5000, 0.0000, 0.0000);
+  ypp2ycc(yuv, 0.5000, 0.0000, 0.0000); // 92nits white
   dovi.sample2rgb(rgb[0], rgb[1], rgb[2], yuv[0], yuv[1], yuv[2]);
   diffBits |= std::abs(rgb[0] - halfNormRGB);
   diffBits |= std::abs(rgb[1] - halfNormRGB);
   diffBits |= std::abs(rgb[2] - halfNormRGB);
 
-  ypp2ycc(yuv, 0.2627 / 2, -0.1396 / 2, 0.5000 / 2);
+  ypp2ycc(yuv, 0.2627 / 2, -0.1396 / 2, 0.5000 / 2); // half intensity red
   dovi.sample2rgb(rgb[0], rgb[1], rgb[2], yuv[0], yuv[1], yuv[2]);
   diffBits |= std::abs(rgb[0] - halfNormRGB);
   diffBits |= rgb[1];
   diffBits |= rgb[2];
 
-  ypp2ycc(yuv, 0.6780 / 2, -0.3604 / 2, -0.4598 / 2);
+  ypp2ycc(yuv, 0.6780 / 2, -0.3604 / 2, -0.4598 / 2); // half intensity blue
   dovi.sample2rgb(rgb[0], rgb[1], rgb[2], yuv[0], yuv[1], yuv[2]);
   diffBits |= rgb[0];
   diffBits |= std::abs(rgb[1] - halfNormRGB);
   diffBits |= rgb[2];
   
-  ypp2ycc(yuv, 0.0593 / 2, 0.5000 / 2, -0.0402 / 2);
+  ypp2ycc(yuv, 0.0593 / 2, 0.5000 / 2, -0.0402 / 2); // half intensity green
   dovi.sample2rgb(rgb[0], rgb[1], rgb[2], yuv[0], yuv[1], yuv[2]);
   diffBits |= rgb[0];
   diffBits |= rgb[1];
