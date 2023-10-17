@@ -112,6 +112,7 @@ template<int quarterResolutionEl>
 DoViBaker<quarterResolutionEl>::~DoViBaker()
 {
 	doviProc->~DoViProcessor();
+	delete doviProc;
 }
 
 template<int quarterResolutionEl>
