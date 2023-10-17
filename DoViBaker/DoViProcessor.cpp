@@ -287,6 +287,8 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env, const uin
 
 	dovi_rpu_free_data_mapping(mapping_data);
 	dovi_rpu_free_header(header);
+	if (rpubuf)
+		dovi_rpu_free(rpu);
 	return successfulCreation;
 }
 
