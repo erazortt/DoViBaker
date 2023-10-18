@@ -31,7 +31,10 @@ DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env, uint8
 
 	if (strlen(rpuPath)) {
 		rpus = dovi_parse_rpu_bin_file(rpuPath);
-		if (rpus->error) {
+		if (!rpus) {
+			showMessage("DoViBaker: parsing failed.", env);
+		}
+		else if (rpus->error) {
 			showMessage((std::string("DoViBaker: ") + rpus->error).c_str(), env);
 			return;
 		}
