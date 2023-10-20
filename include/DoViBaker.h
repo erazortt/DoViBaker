@@ -26,6 +26,10 @@ public:
     IScriptEnvironment* env);
   virtual ~DoViBaker();
   PVideoFrame GetFrame(int n, IScriptEnvironment* env) override;
+  int __stdcall SetCacheHints(int cachehints, int frame_range) override
+  {
+      return cachehints == CACHE_GET_MTMODE ? MT_MULTI_INSTANCE : 0;
+  }
 
 private:
   struct TimecubeLutFree {
