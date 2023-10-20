@@ -111,7 +111,6 @@ DoViBaker<quarterResolutionEl>::DoViBaker(
 template<int quarterResolutionEl>
 DoViBaker<quarterResolutionEl>::~DoViBaker()
 {
-	doviProc->~DoViProcessor();
 	delete doviProc;
 }
 

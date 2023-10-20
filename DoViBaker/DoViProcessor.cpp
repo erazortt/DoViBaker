@@ -52,7 +52,7 @@ DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env, uint8
 
 DoViProcessor::~DoViProcessor()
 {
-	if (wasCreationSuccessful() && isIntegratedRpu()) {
+	if (wasCreationSuccessful() && !isIntegratedRpu()) {
 		dovi_rpu_list_free(rpus);
 	}
 }
