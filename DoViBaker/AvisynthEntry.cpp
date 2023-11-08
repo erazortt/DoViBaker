@@ -16,7 +16,7 @@ AVSValue __cdecl Create_RealDoViBaker(
   bool qnd,
   bool rgbProof,
   bool nlqProof,
-  const AVSValue* args, 
+  int sourceProfile,
   IScriptEnvironment* env)
 {
   if (!blclip->GetVideoInfo().HasVideo() || (elclip && !elclip->GetVideoInfo().HasVideo())) {
@@ -65,12 +65,16 @@ AVSValue __cdecl Create_RealDoViBaker(
       env->ThrowError("DoViBaker: Enhancement Layer must either be same size or quarter size as Base Layer");
     }
   }
-  
+
+  if (sourceProfile != 7 && sourceProfile != 8) {
+      env->ThrowError("DoViBaker: sourceProfile must be either 7 or 8.");
+  }
+
   if (quarterResolutionEl == 0) {
-    return new DoViBaker<false>(blclip, elclip, rpuPath, blClipChromaSubSampled, elClipChromaSubSampled, desiredTrimPq, targetMinNits, targetMaxNits, qnd, rgbProof, nlqProof, env);
+    return new DoViBaker<false>(blclip, elclip, rpuPath, blClipChromaSubSampled, elClipChromaSubSampled, desiredTrimPq, targetMinNits, targetMaxNits, qnd, rgbProof, nlqProof, sourceProfile, env);
   }
   if (quarterResolutionEl == 1) {
-    return new DoViBaker<true>(blclip, elclip, rpuPath, blClipChromaSubSampled, elClipChromaSubSampled, desiredTrimPq, targetMinNits, targetMaxNits, qnd, rgbProof, nlqProof, env);
+    return new DoViBaker<true>(blclip, elclip, rpuPath, blClipChromaSubSampled, elClipChromaSubSampled, desiredTrimPq, targetMinNits, targetMaxNits, qnd, rgbProof, nlqProof, sourceProfile, env);
   }
 }
 
@@ -79,8 +83,8 @@ AVSValue __cdecl Create_DoViBaker(AVSValue args, void* user_data, IScriptEnviron
   auto elClip = (args[1].Defined() ? args[1].AsClip() : nullptr);
 
   return Create_RealDoViBaker(
-    args[0].AsClip(), 
-    elClip, 
+    args[0].AsClip(),
+    elClip,
     args[2].AsString(""),
     args[3].AsInt(0),
     args[4].AsFloat(100),
@@ -88,7 +92,8 @@ AVSValue __cdecl Create_DoViBaker(AVSValue args, void* user_data, IScriptEnviron
     args[6].AsBool(false),
     args[7].AsBool(false),
     args[8].AsBool(false),
-    &args, env);
+    args[9].AsInt(7),
+    env);
 }
 
 AVSValue __cdecl Create_RealDoViCubes(
@@ -104,7 +109,7 @@ AVSValue __cdecl Create_RealDoViCubes(
   {
     env->ThrowError("DoViTonemap: input must be planar RGB");
   }
-  
+
   std::stringstream ssCubeFiles(cubeFiles);
   std::vector<std::string> cubesList;
   std::string segment;
@@ -219,7 +224,7 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScri
 {
   AVS_linkage = vectors;
 
-  env->AddFunction("DoViBaker", "c[el]c[rpu]s[trimPq]i[targetMaxNits]f[targetMinNits]f[qnd]b[rgbProof]b[nlqProof]b", Create_DoViBaker, 0);
+  env->AddFunction("DoViBaker", "c[el]c[rpu]s[trimPq]i[targetMaxNits]f[targetMinNits]f[qnd]b[rgbProof]b[nlqProof]b[sourceProfile]i", Create_DoViBaker, 0);
   env->AddFunction("DoViTonemap", "c[targetMaxNits]f[targetMinNits]f[masterMaxNits]f[masterMinNits]f[lumScale]f[kneeOffset]f[normalizeOutput]b", Create_DoViTonemap, 0);
   env->AddFunction("DoViCubes", "c[cubes]s[mclls]s[cubes_basepath]s[fullrange]b", Create_DoViCubes, 0);
   env->AddFunction("DoViStatsFileLoader", "c[statsFile]s[sceneCutsFile]s", Create_DoViStatsFileLoader, 0);
@@ -271,7 +276,7 @@ uint16_t checkMatrix(const DoViProcessor& dovi) {
   diffBits |= std::abs(rgb[0] - maxNormRGB);
   diffBits |= std::abs(rgb[1] - maxNormRGB);
   diffBits |= std::abs(rgb[2] - maxNormRGB);
-    
+
   ypp2ycc(yuv, 0.0000, 0.0000, 0.0000); // black
   dovi.sample2rgb(rgb[0], rgb[1], rgb[2], yuv[0], yuv[1], yuv[2]);
   diffBits |= rgb[0];
@@ -295,7 +300,7 @@ uint16_t checkMatrix(const DoViProcessor& dovi) {
   diffBits |= rgb[0];
   diffBits |= std::abs(rgb[1] - halfNormRGB);
   diffBits |= rgb[2];
-  
+
   ypp2ycc(yuv, 0.0593 / 2, 0.5000 / 2, -0.0402 / 2); // half intensity green
   dovi.sample2rgb(rgb[0], rgb[1], rgb[2], yuv[0], yuv[1], yuv[2]);
   diffBits |= rgb[0];
@@ -448,7 +453,7 @@ int main(int argc, char* argv[])
     fpSceneChange = fopen(argv[2], "w");
   }
 
-  DoViProcessor dovi(argv[1], NULL, DoViProcessor::outContainerBitDepth, DoViProcessor::outContainerBitDepth);
+  DoViProcessor dovi(argv[1], NULL, DoViProcessor::outContainerBitDepth, DoViProcessor::outContainerBitDepth, 0);
   if (!dovi.wasCreationSuccessful()) {
     return 1;
   }

@@ -19,6 +19,7 @@ public:
     bool qnd, 
     bool rgbProof, 
     bool nlqProof,
+    int sourceProfile,
     IScriptEnvironment* env);
   virtual ~DoViBaker();
   PVideoFrame GetFrame(int n, IScriptEnvironment* env) override;
