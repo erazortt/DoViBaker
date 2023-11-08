@@ -47,6 +47,7 @@ DoViBaker<quarterResolutionEl>::DoViBaker(
 	bool _qnd,
 	bool _rgbProof,
 	bool _nlqProof,
+	int sourceProfile,
 	IScriptEnvironment* env)
 	: GenericVideoFilter(_blChild)
 	, elChild(_elChild)
@@ -56,7 +57,7 @@ DoViBaker<quarterResolutionEl>::DoViBaker(
 {
 	int blContainerBits = vi.BitsPerComponent();
 	int elContainerBits = elChild ? elChild->GetVideoInfo().BitsPerComponent() : 0;
-	doviProc = new DoViProcessor(rpuPath, env, blContainerBits, elContainerBits);
+	doviProc = new DoViProcessor(rpuPath, env, blContainerBits, elContainerBits, sourceProfile);
 	if (!doviProc->wasCreationSuccessful()) {
 		env->ThrowError("DoViBaker: Cannot create object");
 	}

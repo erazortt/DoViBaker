@@ -24,7 +24,7 @@
 
 class DoViProcessor {
 public:
-  DoViProcessor(const char* rpuPath, IScriptEnvironment* env, uint8_t blContainerBits, uint8_t elContainerBits);
+  DoViProcessor(const char* rpuPath, IScriptEnvironment* env, uint8_t blContainerBits, uint8_t elContainerBits, const int sourceProfile);
   virtual ~DoViProcessor();
   bool wasCreationSuccessful() { return successfulCreation; }
   void setRgbProof(bool set = true) { rgbProof = set; }
@@ -151,6 +151,7 @@ private:
     float goP[3];
     float cS[2];
   } trim;
+  const int sourceProfile;
 };
 
 void DoViProcessor::setTrim(uint16_t trimPq, float targetMinNits, float targetMaxNits)

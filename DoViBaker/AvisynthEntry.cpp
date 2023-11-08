@@ -15,7 +15,7 @@ AVSValue __cdecl Create_RealDoViBaker(
   bool qnd,
   bool rgbProof,
   bool nlqProof,
-  const AVSValue* args, 
+  int sourceProfile,
   IScriptEnvironment* env)
 {
   if (!blclip->GetVideoInfo().HasVideo() || (elclip && !elclip->GetVideoInfo().HasVideo())) {
@@ -89,12 +89,16 @@ AVSValue __cdecl Create_RealDoViBaker(
       cubeNitsPairs.push_back(std::pair(nitsList[i], cubesList[i + 1]));
     }
   }
+
+  if (sourceProfile != 7 && sourceProfile != 8) {
+      env->ThrowError("DoViBaker: sourceProfile must be either 7 or 8.");
+  }
   
   if (quarterResolutionEl == 0) {
-    return new DoViBaker<false>(blclip, elclip, rpuPath, blClipChromaSubSampled, elClipChromaSubSampled, cubeNitsPairs, desiredTrimPq, targetMinNits, targetMaxNits, qnd, rgbProof, nlqProof, env);
+    return new DoViBaker<false>(blclip, elclip, rpuPath, blClipChromaSubSampled, elClipChromaSubSampled, cubeNitsPairs, desiredTrimPq, targetMinNits, targetMaxNits, qnd, rgbProof, nlqProof, sourceProfile, env);
   }
   if (quarterResolutionEl == 1) {
-    return new DoViBaker<true>(blclip, elclip, rpuPath, blClipChromaSubSampled, elClipChromaSubSampled, cubeNitsPairs, desiredTrimPq, targetMinNits, targetMaxNits, qnd, rgbProof, nlqProof, env);
+    return new DoViBaker<true>(blclip, elclip, rpuPath, blClipChromaSubSampled, elClipChromaSubSampled, cubeNitsPairs, desiredTrimPq, targetMinNits, targetMaxNits, qnd, rgbProof, nlqProof, sourceProfile, env);
   }
 }
 
@@ -116,7 +120,8 @@ AVSValue __cdecl Create_DoViBaker(AVSValue args, void* user_data, IScriptEnviron
     args[9].AsBool(false),
     args[10].AsBool(false),
     args[11].AsBool(false),
-    &args, env);
+    args[12].AsInt(7),
+    env);
 }
 
 const AVS_Linkage *AVS_linkage = nullptr;
@@ -125,7 +130,7 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScri
 {
   AVS_linkage = vectors;
 
-  env->AddFunction("DoViBaker", "c[el]c[rpu]s[cubes]s[mclls]s[cubes_basepath]s[trimPq]i[targetMaxNits]f[targetMinNits]f[qnd]b[rgbProof]b[nlqProof]b", Create_DoViBaker, 0);
+  env->AddFunction("DoViBaker", "c[el]c[rpu]s[cubes]s[mclls]s[cubes_basepath]s[trimPq]i[targetMaxNits]f[targetMinNits]f[qnd]b[rgbProof]b[nlqProof]b[sourceProfile]i", Create_DoViBaker, 0);
 
   return "Hey it is just a spectrogram!";
 }
@@ -304,7 +309,7 @@ int main(int argc, char** argv)
     return 1;
   }
   
-  DoViProcessor dovi(argv[1], NULL, DoViProcessor::outContainerBitDepth, DoViProcessor::outContainerBitDepth);
+  DoViProcessor dovi(argv[1], NULL, DoViProcessor::outContainerBitDepth, DoViProcessor::outContainerBitDepth, 0);
   if (!dovi.wasCreationSuccessful()) {
     return 1;
   }
