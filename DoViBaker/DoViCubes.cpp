@@ -1,0 +1,122 @@
+#include "DoViCubes.h"
+#include "DoViProcessor.h"
+#include <filesystem>
+
+AVS_FORCEINLINE void* aligned_malloc(size_t size, size_t align)
+{
+	void* result = [&]() {
+#ifdef _MSC_VER 
+		return _aligned_malloc(size, align);
+#else 
+		if (posix_memalign(&result, align, size))
+			return result = nullptr;
+		else
+			return result;
+#endif
+		}();
+
+		return result;
+}
+
+AVS_FORCEINLINE void aligned_free(void* ptr)
+{
+#ifdef _MSC_VER 
+	_aligned_free(ptr);
+#else 
+	free(ptr);
+#endif
+}
+
+DoViCubes::DoViCubes(
+  PClip child,
+  std::vector<std::pair<uint16_t, std::string>>& _cubes,
+  bool _fullrange,
+  IScriptEnvironment* env)
+  : GenericVideoFilter(child) 
+{
+	if (vi.pixel_type != VideoInfo::CS_RGBP16)
+	{
+		env->ThrowError("DoViCubes: input must be CS_RGBP16");
+	}
+
+	int lutMaxCpuCaps = INT_MAX;
+
+	timecube_filter_params params{};
+	params.width = vi.width;
+	params.height = vi.height;
+	params.src_type = TIMECUBE_PIXEL_WORD;
+	params.src_depth = DoViProcessor::outContainerBitDepth;
+	params.src_range = TIMECUBE_RANGE_FULL;
+	params.dst_type = TIMECUBE_PIXEL_WORD;
+	params.dst_depth = DoViProcessor::outContainerBitDepth;
+	params.dst_range = TIMECUBE_RANGE_FULL;
+	params.interp = TIMECUBE_INTERP_TETRA;
+	params.cpu = static_cast<timecube_cpu_type_e>(lutMaxCpuCaps);
+
+	for (int i = 0; i < _cubes.size(); i++) {
+		auto cube_path = _cubes[i].second;
+		if (!std::filesystem::exists(std::filesystem::path(cube_path))) {
+			env->ThrowError((std::string("DoViBaker: cannot find cube file ") + cube_path).c_str());
+		}
+		std::unique_ptr<timecube_lut, TimecubeLutFree> cube{ timecube_lut_from_file(cube_path.c_str()) };
+		if (!cube)
+			throw std::runtime_error{ "DoViBaker: error reading LUT from file" };
+
+		timecube_filter* lut = timecube_filter_create(cube.get(), &params);
+		if (!lut)
+			throw std::runtime_error{ "DoViBaker: error creating LUT" };
+
+		luts.push_back(std::pair(_cubes[i].first, lut));
+	}
+}
+
+DoViCubes::~DoViCubes() {}
+
+void DoViCubes::applyLut(PVideoFrame& dst, const PVideoFrame& src) const
+{
+	const void* src_p[3];
+	ptrdiff_t src_stride[3];
+	void* dst_p[3];
+	ptrdiff_t dst_stride[3];
+
+	src_p[0] = src->GetReadPtr(PLANAR_R);
+	src_p[1] = src->GetReadPtr(PLANAR_G);
+	src_p[2] = src->GetReadPtr(PLANAR_B);
+	src_stride[0] = src->GetPitch(PLANAR_R);
+	src_stride[1] = src->GetPitch(PLANAR_G);
+	src_stride[2] = src->GetPitch(PLANAR_B);
+	dst_p[0] = dst->GetWritePtr(PLANAR_R);
+	dst_p[1] = dst->GetWritePtr(PLANAR_G);
+	dst_p[2] = dst->GetWritePtr(PLANAR_B);
+	dst_stride[0] = dst->GetPitch(PLANAR_R);
+	dst_stride[1] = dst->GetPitch(PLANAR_G);
+	dst_stride[2] = dst->GetPitch(PLANAR_B);
+
+	std::unique_ptr<void, decltype(&aligned_free)> tmp{ nullptr, aligned_free };
+	tmp.reset(aligned_malloc(timecube_filter_get_tmp_size(current_frame_lut), 64));
+
+	timecube_filter_apply(current_frame_lut, src_p, src_stride, dst_p, dst_stride, tmp.get());
+}
+
+void DoViCubes::applyFrameLut(PVideoFrame& dst, const PVideoFrame& src, uint16_t maxCll) {
+	current_frame_lut = luts[luts.size() - 1].second;
+	for (int i = 1; i < luts.size(); i++) {
+		if (maxCll <= luts[i].first) {
+			current_frame_lut = luts[i - 1].second;
+			break;
+		}
+	}
+	applyLut(dst, src);
+}
+
+PVideoFrame DoViCubes::GetFrame(int n, IScriptEnvironment* env)
+{
+	PVideoFrame src = child->GetFrame(n, env);
+	PVideoFrame dst = env->NewVideoFrameP(vi, &src);
+
+	uint16_t maxCll = env->propGetInt(env->getFramePropsRO(src), "_dovi_max_content_light_level", 0, 0);
+
+	applyFrameLut(dst, src, maxCll);
+
+	return dst;
+}

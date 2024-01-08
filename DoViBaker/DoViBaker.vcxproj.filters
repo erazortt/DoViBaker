@@ -24,6 +24,9 @@
     <ClCompile Include="AvisynthEntry.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DoViCubes.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\DoViBaker.h">
@@ -33,6 +36,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\dovi\rpu_parser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DoViCubes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

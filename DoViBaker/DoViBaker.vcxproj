@@ -29,12 +29,14 @@
   <ItemGroup>
     <ClCompile Include="AvisynthEntry.cpp" />
     <ClCompile Include="DoViBaker.cpp" />
+    <ClCompile Include="DoViCubes.cpp" />
     <ClCompile Include="DoViProcessor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\DoViBaker.h" />
     <ClInclude Include="..\include\DoViProcessor.h" />
     <ClInclude Include="..\include\dovi\rpu_parser.h" />
+    <ClInclude Include="DoViCubes.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

@@ -1,6 +1,7 @@
 #include <sstream>
 
 #include "DoViBaker.h"
+#include "DoViCubes.h"
 
 AVSValue __cdecl Create_RealDoViBaker(
   PClip blclip,
@@ -119,6 +120,56 @@ AVSValue __cdecl Create_DoViBaker(AVSValue args, void* user_data, IScriptEnviron
     &args, env);
 }
 
+AVSValue __cdecl Create_RealDoViCubes(
+  PClip clip,
+  std::string cubeFiles,
+  std::string nits,
+  std::string cubesBasePath, 
+  bool fullrange,
+  const AVSValue* args,
+  IScriptEnvironment* env)
+{
+  
+  std::stringstream ssCubeFiles(cubeFiles);
+  std::vector<std::string> cubesList;
+  std::string segment;
+  while (std::getline(ssCubeFiles, segment, ';'))
+  {
+    segment.insert(0, cubesBasePath);
+    cubesList.push_back(segment);
+  }
+  std::stringstream ssNits(nits);
+  std::vector<uint16_t> nitsList;
+  while (std::getline(ssNits, segment, ';'))
+  {
+    nitsList.push_back(std::atoi(segment.c_str()));
+  }
+  std::vector<std::pair<uint16_t, std::string>> cubeNitsPairs;
+  if (cubesList.size() > 0) {
+    if (cubesList.size() <= nitsList.size()) {
+      env->ThrowError("DoViBaker: List of LUTs must be one entry longer then the list of nits.");
+    }
+    cubeNitsPairs.push_back(std::pair(0, cubesList[0]));
+    for (int i = 0; i < nitsList.size(); i++) {
+      cubeNitsPairs.push_back(std::pair(nitsList[i], cubesList[i + 1]));
+    }
+  }
+
+  return new DoViCubes(clip, cubeNitsPairs, fullrange, env);
+}
+
+AVSValue __cdecl Create_DoViCubes(AVSValue args, void* user_data, IScriptEnvironment* env)
+{
+  //args.ArraySize()
+  return Create_RealDoViCubes(
+    args[0].AsClip(),
+    args[1].AsString(""),
+    args[2].AsString(""),
+    args[3].AsString(""),
+    args[4].AsBool(true),
+    &args, env);
+}
+
 const AVS_Linkage *AVS_linkage = nullptr;
 
 extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScriptEnvironment* env, const AVS_Linkage* const vectors)
@@ -126,6 +177,7 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScri
   AVS_linkage = vectors;
 
   env->AddFunction("DoViBaker", "c[el]c[rpu]s[cubes]s[mclls]s[cubes_basepath]s[trimPq]i[targetMaxNits]f[targetMinNits]f[qnd]b[rgbProof]b[nlqProof]b", Create_DoViBaker, 0);
+  env->AddFunction("DoViCubes", "c[cubes]s[mclls]s[cubes_basepath]s[cpu]i[fullrange]b", Create_DoViCubes, 0);
 
   return "Hey it is just a spectrogram!";
 }
