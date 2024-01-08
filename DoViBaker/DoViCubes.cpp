@@ -1,5 +1,4 @@
 #include "DoViCubes.h"
-#include "DoViProcessor.h"
 #include <filesystem>
 
 AVS_FORCEINLINE void* aligned_malloc(size_t size, size_t align)
@@ -34,37 +33,32 @@ DoViCubes::DoViCubes(
   IScriptEnvironment* env)
   : GenericVideoFilter(child) 
 {
-	if (vi.pixel_type != VideoInfo::CS_RGBP16)
-	{
-		env->ThrowError("DoViCubes: input must be CS_RGBP16");
-	}
-
 	int lutMaxCpuCaps = INT_MAX;
 
 	timecube_filter_params params{};
 	params.width = vi.width;
 	params.height = vi.height;
 	params.src_type = TIMECUBE_PIXEL_WORD;
-	params.src_depth = DoViProcessor::outContainerBitDepth;
+	params.src_depth = vi.BitsPerComponent();
 	params.src_range = TIMECUBE_RANGE_FULL;
 	params.dst_type = TIMECUBE_PIXEL_WORD;
-	params.dst_depth = DoViProcessor::outContainerBitDepth;
-	params.dst_range = TIMECUBE_RANGE_FULL;
+	params.dst_depth = vi.BitsPerComponent();
+	params.dst_range = _fullrange ? TIMECUBE_RANGE_FULL : TIMECUBE_RANGE_LIMITED;
 	params.interp = TIMECUBE_INTERP_TETRA;
 	params.cpu = static_cast<timecube_cpu_type_e>(lutMaxCpuCaps);
 
 	for (int i = 0; i < _cubes.size(); i++) {
 		auto cube_path = _cubes[i].second;
 		if (!std::filesystem::exists(std::filesystem::path(cube_path))) {
-			env->ThrowError((std::string("DoViBaker: cannot find cube file ") + cube_path).c_str());
+			env->ThrowError((std::string("DoViCubes: cannot find cube file ") + cube_path).c_str());
 		}
 		std::unique_ptr<timecube_lut, TimecubeLutFree> cube{ timecube_lut_from_file(cube_path.c_str()) };
 		if (!cube)
-			throw std::runtime_error{ "DoViBaker: error reading LUT from file" };
+			throw std::runtime_error{ "DoViCubes: error reading LUT from file" };
 
 		timecube_filter* lut = timecube_filter_create(cube.get(), &params);
 		if (!lut)
-			throw std::runtime_error{ "DoViBaker: error creating LUT" };
+			throw std::runtime_error{ "DoViCubes: error creating LUT" };
 
 		luts.push_back(std::pair(_cubes[i].first, lut));
 	}

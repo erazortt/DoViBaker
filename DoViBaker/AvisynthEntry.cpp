@@ -7,9 +7,6 @@ AVSValue __cdecl Create_RealDoViBaker(
   PClip blclip,
   PClip elclip,
   const char* rpuPath,
-  std::string cubeFiles,
-  std::string nits,
-  std::string cubesBasePath,
   uint16_t desiredTrimPq,
   float targetMaxNits,
   float targetMinNits,
@@ -66,36 +63,11 @@ AVSValue __cdecl Create_RealDoViBaker(
     }
   }
   
-  std::stringstream ssCubeFiles(cubeFiles);
-  std::vector<std::string> cubesList;
-  std::string segment;
-  while (std::getline(ssCubeFiles, segment, ';'))
-  {
-    segment.insert(0, cubesBasePath);
-    cubesList.push_back(segment);
-  }
-  std::stringstream ssNits(nits);
-  std::vector<uint16_t> nitsList;
-  while (std::getline(ssNits, segment, ';'))
-  {    
-    nitsList.push_back(std::atoi(segment.c_str()));
-  }
-  std::vector<std::pair<uint16_t, std::string>> cubeNitsPairs;
-  if (cubesList.size() > 0) {
-    if (cubesList.size() <= nitsList.size()) {
-      env->ThrowError("DoViBaker: List of LUTs must be one entry longer then the list of nits.");
-    }
-    cubeNitsPairs.push_back(std::pair(0, cubesList[0]));
-    for (int i = 0; i < nitsList.size(); i++) {
-      cubeNitsPairs.push_back(std::pair(nitsList[i], cubesList[i + 1]));
-    }
-  }
-  
   if (quarterResolutionEl == 0) {
-    return new DoViBaker<false>(blclip, elclip, rpuPath, blClipChromaSubSampled, elClipChromaSubSampled, cubeNitsPairs, desiredTrimPq, targetMinNits, targetMaxNits, qnd, rgbProof, nlqProof, env);
+    return new DoViBaker<false>(blclip, elclip, rpuPath, blClipChromaSubSampled, elClipChromaSubSampled, desiredTrimPq, targetMinNits, targetMaxNits, qnd, rgbProof, nlqProof, env);
   }
   if (quarterResolutionEl == 1) {
-    return new DoViBaker<true>(blclip, elclip, rpuPath, blClipChromaSubSampled, elClipChromaSubSampled, cubeNitsPairs, desiredTrimPq, targetMinNits, targetMaxNits, qnd, rgbProof, nlqProof, env);
+    return new DoViBaker<true>(blclip, elclip, rpuPath, blClipChromaSubSampled, elClipChromaSubSampled, desiredTrimPq, targetMinNits, targetMaxNits, qnd, rgbProof, nlqProof, env);
   }
 }
 
@@ -108,9 +80,6 @@ AVSValue __cdecl Create_DoViBaker(AVSValue args, void* user_data, IScriptEnviron
     args[0].AsClip(), 
     elClip, 
     args[2].AsString(""),
-    args[3].AsString(""), 
-    args[4].AsString(""),
-    args[5].AsString(""),
     args[6].AsInt(0),
     args[7].AsFloat(100),
     args[8].AsFloat(0),
@@ -129,6 +98,10 @@ AVSValue __cdecl Create_RealDoViCubes(
   const AVSValue* args,
   IScriptEnvironment* env)
 {
+  if(clip->GetVideoInfo().pixel_type != VideoInfo::CS_RGBP16)
+  {
+    env->ThrowError("DoViCubes: input must be CS_RGBP16");
+  }
   
   std::stringstream ssCubeFiles(cubeFiles);
   std::vector<std::string> cubesList;
