@@ -1,4 +1,5 @@
 #include "DoViCubes.h"
+#include "DoViProcessor.h"
 #include <filesystem>
 
 AVS_FORCEINLINE void* aligned_malloc(size_t size, size_t align)
@@ -28,10 +29,13 @@ AVS_FORCEINLINE void aligned_free(void* ptr)
 
 DoViCubes::DoViCubes(
   PClip child,
-  std::vector<std::pair<uint16_t, std::string>>& _cubes,
-  bool _fullrange,
+  std::vector<std::pair<uint16_t, std::string>>& cubes,
+	std::string sceneCllFile,
+  bool fullrange,
   IScriptEnvironment* env)
   : GenericVideoFilter(child) 
+	, currentScene(0)
+	, previousFrame(0)
 {
 	int lutMaxCpuCaps = INT_MAX;
 
@@ -43,12 +47,12 @@ DoViCubes::DoViCubes(
 	params.src_range = TIMECUBE_RANGE_FULL;
 	params.dst_type = TIMECUBE_PIXEL_WORD;
 	params.dst_depth = vi.BitsPerComponent();
-	params.dst_range = _fullrange ? TIMECUBE_RANGE_FULL : TIMECUBE_RANGE_LIMITED;
+	params.dst_range = fullrange ? TIMECUBE_RANGE_FULL : TIMECUBE_RANGE_LIMITED;
 	params.interp = TIMECUBE_INTERP_TETRA;
 	params.cpu = static_cast<timecube_cpu_type_e>(lutMaxCpuCaps);
 
-	for (int i = 0; i < _cubes.size(); i++) {
-		auto cube_path = _cubes[i].second;
+	for (int i = 0; i < cubes.size(); i++) {
+		auto cube_path = cubes[i].second;
 		if (!std::filesystem::exists(std::filesystem::path(cube_path))) {
 			env->ThrowError((std::string("DoViCubes: cannot find cube file ") + cube_path).c_str());
 		}
@@ -60,8 +64,28 @@ DoViCubes::DoViCubes(
 		if (!lut)
 			throw std::runtime_error{ "DoViCubes: error creating LUT" };
 
-		luts.push_back(std::pair(_cubes[i].first, lut));
+		luts.push_back(std::pair(cubes[i].first, lut));
 	}
+
+	if (sceneCllFile.empty()) return;
+
+	uint32_t frame, lastFrameInScene, pq;
+	uint16_t maxPq = 0;
+	FILE* fp;
+
+	fp = fopen(sceneCllFile.c_str(), "r");
+	if (!fp) {
+		env->ThrowError((std::string("DoViCubes: cannot find scenes file ") + sceneCllFile).c_str());
+	}
+	while (fscanf(fp, "%i %i %i\n", &frame, &lastFrameInScene, &pq) == 3) {
+		if (pq > maxPq) maxPq = pq;
+		if (!lastFrameInScene) continue;
+		uint16_t nits = DoViProcessor::pq2nits(maxPq << (12 - 8));
+		sceneChangeAndCll.push_back(std::pair(frame + 1, nits));
+		maxPq = 0;
+	}
+	uint16_t nits = DoViProcessor::pq2nits(maxPq << (12 - 8));
+	sceneChangeAndCll.push_back(std::pair(frame + 1, nits));
 }
 
 DoViCubes::~DoViCubes() {}
@@ -87,20 +111,9 @@ void DoViCubes::applyLut(PVideoFrame& dst, const PVideoFrame& src) const
 	dst_stride[2] = dst->GetPitch(PLANAR_B);
 
 	std::unique_ptr<void, decltype(&aligned_free)> tmp{ nullptr, aligned_free };
-	tmp.reset(aligned_malloc(timecube_filter_get_tmp_size(current_frame_lut), 64));
+	tmp.reset(aligned_malloc(timecube_filter_get_tmp_size(currentFrameLut), 64));
 
-	timecube_filter_apply(current_frame_lut, src_p, src_stride, dst_p, dst_stride, tmp.get());
-}
-
-void DoViCubes::applyFrameLut(PVideoFrame& dst, const PVideoFrame& src, uint16_t maxCll) {
-	current_frame_lut = luts[luts.size() - 1].second;
-	for (int i = 1; i < luts.size(); i++) {
-		if (maxCll <= luts[i].first) {
-			current_frame_lut = luts[i - 1].second;
-			break;
-		}
-	}
-	applyLut(dst, src);
+	timecube_filter_apply(currentFrameLut, src_p, src_stride, dst_p, dst_stride, tmp.get());
 }
 
 PVideoFrame DoViCubes::GetFrame(int n, IScriptEnvironment* env)
@@ -108,9 +121,29 @@ PVideoFrame DoViCubes::GetFrame(int n, IScriptEnvironment* env)
 	PVideoFrame src = child->GetFrame(n, env);
 	PVideoFrame dst = env->NewVideoFrameP(vi, &src);
 
-	uint16_t maxCll = env->propGetInt(env->getFramePropsRO(src), "_dovi_max_content_light_level", 0, 0);
+	uint16_t maxCll;
+	if (sceneChangeAndCll.empty()) {
+		maxCll = env->propGetInt(env->getFramePropsRO(src), "_dovi_max_content_light_level", 0, 0);
+	}
+	else {
+		if (previousFrame > n) 
+			currentScene = 0;
+		previousFrame = n;
+		while (sceneChangeAndCll.at(currentScene).first <= n) {
+			currentScene++;
+		}
+		maxCll = sceneChangeAndCll.at(currentScene).second;
+		env->propSetInt(env->getFramePropsRW(dst), "_dovi_cubes_max_content_light_level", maxCll, 0);
+	}
 
-	applyFrameLut(dst, src, maxCll);
+	currentFrameLut = luts[luts.size() - 1].second;
+	for (int i = 1; i < luts.size(); i++) {
+		if (maxCll <= luts[i].first) {
+			currentFrameLut = luts[i - 1].second;
+			break;
+		}
+	}
+	applyLut(dst, src);
 
 	return dst;
 }

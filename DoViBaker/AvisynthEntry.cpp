@@ -93,7 +93,8 @@ AVSValue __cdecl Create_RealDoViCubes(
   PClip clip,
   std::string cubeFiles,
   std::string nits,
-  std::string cubesBasePath, 
+  std::string cubesBasePath,
+  std::string sceneCllFile,
   bool fullrange,
   const AVSValue* args,
   IScriptEnvironment* env)
@@ -127,8 +128,7 @@ AVSValue __cdecl Create_RealDoViCubes(
       cubeNitsPairs.push_back(std::pair(nitsList[i], cubesList[i + 1]));
     }
   }
-
-  return new DoViCubes(clip, cubeNitsPairs, fullrange, env);
+  return new DoViCubes(clip, cubeNitsPairs, sceneCllFile, fullrange, env);
 }
 
 AVSValue __cdecl Create_DoViCubes(AVSValue args, void* user_data, IScriptEnvironment* env)
@@ -139,7 +139,8 @@ AVSValue __cdecl Create_DoViCubes(AVSValue args, void* user_data, IScriptEnviron
     args[1].AsString(""),
     args[2].AsString(""),
     args[3].AsString(""),
-    args[4].AsBool(true),
+    args[4].AsString(""),
+    args[5].AsBool(true),
     &args, env);
 }
 
@@ -150,7 +151,7 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScri
   AVS_linkage = vectors;
 
   env->AddFunction("DoViBaker", "c[el]c[rpu]s[cubes]s[mclls]s[cubes_basepath]s[trimPq]i[targetMaxNits]f[targetMinNits]f[qnd]b[rgbProof]b[nlqProof]b", Create_DoViBaker, 0);
-  env->AddFunction("DoViCubes", "c[cubes]s[mclls]s[cubes_basepath]s[cpu]i[fullrange]b", Create_DoViCubes, 0);
+  env->AddFunction("DoViCubes", "c[cubes]s[mclls]s[cubes_basepath]s[scenes]s[cpu]i[fullrange]b", Create_DoViCubes, 0);
 
   return "Hey it is just a spectrogram!";
 }
@@ -320,6 +321,17 @@ int main(int argc, char** argv)
     std::string out(std::to_string(i));
     out += "%: ";
     out += std::to_string(DoViProcessor::pq2nits(4095 * i * 0.01));
+    out += "\n";
+    printf(out.c_str());
+  }
+
+  printf("Self test\n");
+  printf("2081 pq = %i\n", DoViProcessor::pq2nits(2081));
+  printf("3079 pq = %i\n", DoViProcessor::pq2nits(3079));
+  for (int i = 0; i <= 255; i ++) {
+    std::string out(std::to_string(i));
+    out += "%: ";
+    out += std::to_string(DoViProcessor::pq2nits(i << (12 - 8)));
     out += "\n";
     printf(out.c_str());
   }*/
