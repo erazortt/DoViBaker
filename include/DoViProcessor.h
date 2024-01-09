@@ -41,8 +41,9 @@ public:
   inline bool trimProcessingDisabled() const { return skipTrim; }
   inline void forceDisableElProcessing(bool force = true) { disable_residual_flag = force; }
   inline uint16_t getNlqOffset(int cmp) const { return nlq_offset[cmp] << (outContainerBitDepth - el_bit_depth); }
-  inline uint16_t getMaxPq() const { return max_pq; }
-  inline uint16_t getMaxContentLightLevel() const { return max_content_light_level; }
+  inline uint16_t getDynamicMaxPq() const { return dynamic_max_pq; }
+  inline uint16_t getDynamicMaxContentLightLevel() const { return dynamic_max_content_light_level; }
+  inline uint16_t getStaticMaxContentLightLevel() const { return static_max_content_light_level; }
   const std::vector<uint16_t>& getAvailableTrimPqs() const { return availableTrimPqs; }
 
   static inline float pq2nits(uint16_t pq);
@@ -106,10 +107,11 @@ private:
   bool scene_refresh_flag;
   bool signal_full_range_flag;
 
-  uint16_t max_pq;
-  uint16_t min_pq;
-  uint16_t avg_pq;
-  uint16_t max_content_light_level;
+  uint16_t dynamic_max_pq;
+  uint16_t dynamic_min_pq;
+  uint16_t dynamic_avg_pq;
+  uint16_t dynamic_max_content_light_level;
+  uint16_t static_max_content_light_level;
   int16_t ycc_to_rgb_coef[9];
   uint32_t ycc_to_rgb_offset[3];
 

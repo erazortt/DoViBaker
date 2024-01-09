@@ -10,7 +10,7 @@ DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env, uint8
 	, rgbProof(false)
 	, nlqProof(false)
 	, desiredTrimPq(0)
-	, max_content_light_level(1000)
+	, dynamic_max_content_light_level(1000)
 	, rpus(0x0)
 	, blContainerBitDepth(blContainerBits)
 	, elContainerBitDepth(elContainerBits)
@@ -202,16 +202,17 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env, const uin
 			return false;
 		}*/
 
-		min_pq = vdr_dm_data->dm_data.level1->min_pq;
-		max_pq = vdr_dm_data->dm_data.level1->max_pq;
-		//max_content_light_level = pq2nits(vdr_dm_data->source_max_pq);
-		//max_content_light_level = vdr_dm_data->dm_data.level6->max_content_light_level;
-		max_content_light_level = pq2nits(max_pq);
+		dynamic_min_pq = vdr_dm_data->dm_data.level1->min_pq;
+		dynamic_max_pq = vdr_dm_data->dm_data.level1->max_pq;
+		dynamic_max_content_light_level = pq2nits(dynamic_max_pq);
+		if (vdr_dm_data->dm_data.level6) {
+			static_max_content_light_level = vdr_dm_data->dm_data.level6->max_content_light_level;
+		}
 
 		skipTrim = true;
 		if (desiredTrimPq) {
 			skipTrim = false;
-			avg_pq = vdr_dm_data->dm_data.level1->avg_pq;
+			dynamic_avg_pq = vdr_dm_data->dm_data.level1->avg_pq;
 			auto lvl2 = vdr_dm_data->dm_data.level2;
 			availableTrimPqs = std::vector<uint16_t>(lvl2.len);
 			trimInfoMissing = true;
@@ -449,9 +450,9 @@ uint16_t DoViProcessor::signalReconstruction(uint16_t v, int16_t r) const {
 }
 
 void DoViProcessor::prepareTrimCoef() {
-	float x1 = trim.minNits = pq2nits(min_pq);
-	float x2 = pq2nits(avg_pq);
-	float x3 = trim.maxNits = pq2nits(max_pq);
+	float x1 = trim.minNits = pq2nits(dynamic_min_pq);
+	float x2 = pq2nits(dynamic_avg_pq);
+	float x3 = trim.maxNits = pq2nits(dynamic_max_pq);
 
 	float y1 = targetMinNits;
 	float y2 = sqrtf(x2 * sqrtf(targetMaxNits * targetMinNits));

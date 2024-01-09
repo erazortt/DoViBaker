@@ -580,8 +580,9 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 	env->propSetInt(env->getFramePropsRW(dst), "_ColorRange", doviProc->isLimitedRangeOutput(), 0);
 	env->propDeleteKey(env->getFramePropsRW(dst), "_ChromaLocation"); //RGB has no chroma location defined
 	env->propSetInt(env->getFramePropsRW(dst), "_SceneChangePrev", doviProc->isSceneChange(), 0);
-	env->propSetInt(env->getFramePropsRW(dst), "_dovi_max_pq", doviProc->getMaxPq(), 0);
-	env->propSetInt(env->getFramePropsRW(dst), "_dovi_max_content_light_level", doviProc->getMaxContentLightLevel(), 0);
+	env->propSetInt(env->getFramePropsRW(dst), "_dovi_dynamic_max_pq", doviProc->getDynamicMaxPq(), 0);
+	env->propSetInt(env->getFramePropsRW(dst), "_dovi_dynamic_max_content_light_level", doviProc->getDynamicMaxContentLightLevel(), 0);
+	env->propSetInt(env->getFramePropsRW(dst), "_dovi_static_max_content_light_level", doviProc->getStaticMaxContentLightLevel(), 0);
 
 	bool skipTrim = doviProc->trimProcessingDisabled();
 

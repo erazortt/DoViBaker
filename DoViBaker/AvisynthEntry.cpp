@@ -382,7 +382,7 @@ int main(int argc, char** argv)
     if (!dovi.intializeFrame(i, NULL, 0, 0)) {
       return 1;
     }
-    int frame_max_pq = dovi.getMaxPq();
+    int frame_max_pq = dovi.getDynamicMaxPq();
     if (frame_max_pq > clip_max_pq) {
       clip_max_pq = frame_max_pq;
     }

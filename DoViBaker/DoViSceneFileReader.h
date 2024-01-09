@@ -13,8 +13,9 @@ public:
   PVideoFrame GetFrame(int n, IScriptEnvironment* env) override;
 
 private:
-  std::vector<std::pair<uint32_t, uint16_t>> sceneMaxSignal;
+  std::vector<std::tuple<uint32_t, uint16_t, uint16_t>> sceneMaxSignal;
   uint32_t currentScene;
   uint32_t previousFrame;
+  uint16_t staticMaxCll;
 };
 
