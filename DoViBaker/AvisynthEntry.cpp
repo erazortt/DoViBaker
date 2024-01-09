@@ -2,6 +2,7 @@
 
 #include "DoViBaker.h"
 #include "DoViCubes.h"
+#include "DoViSceneFileReader.h"
 
 AVSValue __cdecl Create_RealDoViBaker(
   PClip blclip,
@@ -80,12 +81,12 @@ AVSValue __cdecl Create_DoViBaker(AVSValue args, void* user_data, IScriptEnviron
     args[0].AsClip(), 
     elClip, 
     args[2].AsString(""),
-    args[6].AsInt(0),
-    args[7].AsFloat(100),
-    args[8].AsFloat(0),
-    args[9].AsBool(false),
-    args[10].AsBool(false),
-    args[11].AsBool(false),
+    args[3].AsInt(0),
+    args[4].AsFloat(100),
+    args[5].AsFloat(0),
+    args[6].AsBool(false),
+    args[7].AsBool(false),
+    args[8].AsBool(false),
     &args, env);
 }
 
@@ -94,7 +95,6 @@ AVSValue __cdecl Create_RealDoViCubes(
   std::string cubeFiles,
   std::string nits,
   std::string cubesBasePath,
-  std::string sceneCllFile,
   bool fullrange,
   const AVSValue* args,
   IScriptEnvironment* env)
@@ -128,7 +128,7 @@ AVSValue __cdecl Create_RealDoViCubes(
       cubeNitsPairs.push_back(std::pair(nitsList[i], cubesList[i + 1]));
     }
   }
-  return new DoViCubes(clip, cubeNitsPairs, sceneCllFile, fullrange, env);
+  return new DoViCubes(clip, cubeNitsPairs, fullrange, env);
 }
 
 AVSValue __cdecl Create_DoViCubes(AVSValue args, void* user_data, IScriptEnvironment* env)
@@ -139,8 +139,25 @@ AVSValue __cdecl Create_DoViCubes(AVSValue args, void* user_data, IScriptEnviron
     args[1].AsString(""),
     args[2].AsString(""),
     args[3].AsString(""),
-    args[4].AsString(""),
-    args[5].AsBool(true),
+    args[4].AsBool(true),
+    &args, env);
+}
+
+AVSValue __cdecl Create_RealDoViSceneFileReader(
+  PClip clip,
+  std::string sceneFile,
+  const AVSValue* args,
+  IScriptEnvironment* env)
+{
+  return new DoViSceneFileReader(clip, sceneFile, env);
+}
+
+AVSValue __cdecl Create_DoViSceneFileReader(AVSValue args, void* user_data, IScriptEnvironment* env)
+{
+  //args.ArraySize()
+  return Create_RealDoViSceneFileReader(
+    args[0].AsClip(),
+    args[1].AsString(""),
     &args, env);
 }
 
@@ -150,8 +167,9 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScri
 {
   AVS_linkage = vectors;
 
-  env->AddFunction("DoViBaker", "c[el]c[rpu]s[cubes]s[mclls]s[cubes_basepath]s[trimPq]i[targetMaxNits]f[targetMinNits]f[qnd]b[rgbProof]b[nlqProof]b", Create_DoViBaker, 0);
-  env->AddFunction("DoViCubes", "c[cubes]s[mclls]s[cubes_basepath]s[scenes]s[cpu]i[fullrange]b", Create_DoViCubes, 0);
+  env->AddFunction("DoViBaker", "c[el]c[rpu]s[trimPq]i[targetMaxNits]f[targetMinNits]f[qnd]b[rgbProof]b[nlqProof]b", Create_DoViBaker, 0);
+  env->AddFunction("DoViCubes", "c[cubes]s[mclls]s[cubes_basepath]s[fullrange]b", Create_DoViCubes, 0);
+  env->AddFunction("DoViSceneFileReader", "c[sceneFile]s", Create_DoViSceneFileReader, 0);
 
   return "Hey it is just a spectrogram!";
 }

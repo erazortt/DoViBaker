@@ -1,5 +1,4 @@
 #include "DoViCubes.h"
-#include "DoViProcessor.h"
 #include <filesystem>
 
 AVS_FORCEINLINE void* aligned_malloc(size_t size, size_t align)
@@ -30,12 +29,9 @@ AVS_FORCEINLINE void aligned_free(void* ptr)
 DoViCubes::DoViCubes(
   PClip child,
   std::vector<std::pair<uint16_t, std::string>>& cubes,
-	std::string sceneCllFile,
   bool fullrange,
   IScriptEnvironment* env)
-  : GenericVideoFilter(child) 
-	, currentScene(0)
-	, previousFrame(0)
+  : GenericVideoFilter(child)
 {
 	int lutMaxCpuCaps = INT_MAX;
 
@@ -66,26 +62,6 @@ DoViCubes::DoViCubes(
 
 		luts.push_back(std::pair(cubes[i].first, lut));
 	}
-
-	if (sceneCllFile.empty()) return;
-
-	uint32_t frame, lastFrameInScene, pq;
-	uint16_t maxPq = 0;
-	FILE* fp;
-
-	fp = fopen(sceneCllFile.c_str(), "r");
-	if (!fp) {
-		env->ThrowError((std::string("DoViCubes: cannot find scenes file ") + sceneCllFile).c_str());
-	}
-	while (fscanf(fp, "%i %i %i\n", &frame, &lastFrameInScene, &pq) == 3) {
-		if (pq > maxPq) maxPq = pq;
-		if (!lastFrameInScene) continue;
-		uint16_t nits = DoViProcessor::pq2nits(maxPq << (12 - 8));
-		sceneChangeAndCll.push_back(std::pair(frame + 1, nits));
-		maxPq = 0;
-	}
-	uint16_t nits = DoViProcessor::pq2nits(maxPq << (12 - 8));
-	sceneChangeAndCll.push_back(std::pair(frame + 1, nits));
 }
 
 DoViCubes::~DoViCubes() {}
@@ -121,21 +97,8 @@ PVideoFrame DoViCubes::GetFrame(int n, IScriptEnvironment* env)
 	PVideoFrame src = child->GetFrame(n, env);
 	PVideoFrame dst = env->NewVideoFrameP(vi, &src);
 
-	uint16_t maxCll;
-	if (sceneChangeAndCll.empty()) {
-		maxCll = env->propGetInt(env->getFramePropsRO(src), "_dovi_max_content_light_level", 0, 0);
-	}
-	else {
-		if (previousFrame > n) 
-			currentScene = 0;
-		previousFrame = n;
-		while (sceneChangeAndCll.at(currentScene).first <= n) {
-			currentScene++;
-		}
-		maxCll = sceneChangeAndCll.at(currentScene).second;
-		env->propSetInt(env->getFramePropsRW(dst), "_dovi_cubes_max_content_light_level", maxCll, 0);
-	}
-
+	uint16_t maxCll = env->propGetInt(env->getFramePropsRO(src), "_dovi_max_content_light_level", 0, 0);
+	
 	currentFrameLut = luts[luts.size() - 1].second;
 	for (int i = 1; i < luts.size(); i++) {
 		if (maxCll <= luts[i].first) {

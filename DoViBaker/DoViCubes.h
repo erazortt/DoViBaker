@@ -10,7 +10,6 @@ public:
   DoViCubes(
     PClip child,
     std::vector<std::pair<uint16_t, std::string>>& cubes,
-    std::string sceneCllFile,
     bool fullrange,
     IScriptEnvironment* env);
   virtual ~DoViCubes();
@@ -30,7 +29,4 @@ private:
   bool fullrange;
   std::vector<std::pair<uint16_t, timecube_filter*>> luts;
   const timecube_filter* currentFrameLut;
-  std::vector<std::pair<uint32_t, uint16_t>> sceneChangeAndCll;
-  uint32_t currentScene;
-  uint32_t previousFrame;
 };
