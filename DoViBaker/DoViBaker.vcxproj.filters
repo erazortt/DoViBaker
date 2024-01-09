@@ -27,7 +27,7 @@
     <ClCompile Include="DoViCubes.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DoViSceneFileReader.cpp">
+    <ClCompile Include="DoViMaxPqFileReader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -44,7 +44,7 @@
     <ClInclude Include="DoViCubes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DoViSceneFileReader.h">
+    <ClInclude Include="DoViMaxPqFileReader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -2,7 +2,7 @@
 
 #include "DoViBaker.h"
 #include "DoViCubes.h"
-#include "DoViSceneFileReader.h"
+#include "DoViMaxPqFileReader.h"
 
 AVSValue __cdecl Create_RealDoViBaker(
   PClip blclip,
@@ -143,20 +143,20 @@ AVSValue __cdecl Create_DoViCubes(AVSValue args, void* user_data, IScriptEnviron
     &args, env);
 }
 
-AVSValue __cdecl Create_RealDoViSceneFileReader(
+AVSValue __cdecl Create_RealDoViMaxMqFileReader(
   PClip clip,
   std::string sceneCutFile,
   std::string maxPqFile,
   const AVSValue* args,
   IScriptEnvironment* env)
 {
-  return new DoViSceneFileReader(clip, sceneCutFile, maxPqFile, env);
+  return new DoViMaxPqFileReader(clip, sceneCutFile, maxPqFile, env);
 }
 
-AVSValue __cdecl Create_DoViSceneFileReader(AVSValue args, void* user_data, IScriptEnvironment* env)
+AVSValue __cdecl Create_DoViMaxPqFileReader(AVSValue args, void* user_data, IScriptEnvironment* env)
 {
   //args.ArraySize()
-  return Create_RealDoViSceneFileReader(
+  return Create_RealDoViMaxMqFileReader(
     args[0].AsClip(),
     args[1].AsString(""),
     args[2].AsString(""),
@@ -171,7 +171,7 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScri
 
   env->AddFunction("DoViBaker", "c[el]c[rpu]s[trimPq]i[targetMaxNits]f[targetMinNits]f[qnd]b[rgbProof]b[nlqProof]b", Create_DoViBaker, 0);
   env->AddFunction("DoViCubes", "c[cubes]s[mclls]s[cubes_basepath]s[fullrange]b", Create_DoViCubes, 0);
-  env->AddFunction("DoViSceneFileReader", "c[sceneCutFile]s[maxPqFile]s", Create_DoViSceneFileReader, 0);
+  env->AddFunction("DoViMaxPqFileReader", "c[sceneCutsFile]s[maxPqFile]s", Create_DoViMaxPqFileReader, 0);
 
   return "Hey it is just a spectrogram!";
 }
