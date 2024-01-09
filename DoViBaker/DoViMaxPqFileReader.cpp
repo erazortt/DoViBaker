@@ -41,6 +41,10 @@ DoViMaxPqFileReader::DoViMaxPqFileReader(
 	sceneMaxSignal.push_back(std::tuple(frame + 1, maxPq, maxCll));
 	staticMaxCll = DoViProcessor::pq2nits(staticMaxPq);
 
+	if (child->GetVideoInfo().num_frames != frame + 1) {
+		env->ThrowError((std::string("DoViMaxMqFileReader: clip length does not match maxPq file ") + maxPqFile).c_str());
+	}
+
 	fclose(fpMaxPq);
 	fclose(fpSceneCut);
 }
