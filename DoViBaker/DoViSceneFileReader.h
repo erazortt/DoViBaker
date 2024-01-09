@@ -8,7 +8,8 @@ class DoViSceneFileReader : public GenericVideoFilter
 public:
   DoViSceneFileReader(
     PClip child,
-    std::string sceneFile,
+    std::string sceneCutFile,
+    std::string maxPqFile,
     IScriptEnvironment* env);
   PVideoFrame GetFrame(int n, IScriptEnvironment* env) override;
 

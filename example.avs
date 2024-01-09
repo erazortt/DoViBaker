@@ -9,7 +9,7 @@ DoViCubes(cubes_basepath="C:\lut_",cubes="1000.cube;1414.cube;2000.cube;2828.cub
 z_ConvertFormat(chromaloc_op="center=>top_left",pixel_type="YUV420P16",colorspace_op="rgb:std-b67:2020:full=>2020ncl:std-b67:2020:limited",dither_type="none",resample_filter="spline36",resample_filter_uv="spline36")
 
 ScriptClip("""
-mcll=propGetInt("_dovi_max_content_light_level")
-mpq=propGetInt("_dovi_max_pq")
+mcll=propGetInt("_dovi_dynamic_max_content_light_level")
+mpq=propGetInt("_dovi_dynamic_max_pq")
 subtitle("maxpq = " + string(mpq) + "; maxcll = " + string(mcll))
 """)

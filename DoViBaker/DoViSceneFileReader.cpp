@@ -3,32 +3,46 @@
 
 DoViSceneFileReader::DoViSceneFileReader(
 	PClip child,
-	std::string sceneCllFile,
+	std::string sceneCutFile,
+	std::string maxPqFile,
 	IScriptEnvironment* env)
 	: GenericVideoFilter(child)
 	, currentScene(0)
 	, previousFrame(0)
 {
-	uint32_t frame, lastFrameInScene, pq;
+	uint32_t frame, firstFrameNextScene, pq;
 	uint16_t maxPq = 0;
 	uint16_t staticMaxPq = 0;
-	FILE* fp;
+	FILE *fpSceneCut, *fpMaxPq;
 
-	fp = fopen(sceneCllFile.c_str(), "r");
-	if (!fp) {
-		env->ThrowError((std::string("DoViSceneFileReader: cannot find scenes file ") + sceneCllFile).c_str());
+	fpSceneCut = fopen(sceneCutFile.c_str(), "r");
+	fpMaxPq = fopen(maxPqFile.c_str(), "r");
+	if (!fpSceneCut) {
+		env->ThrowError((std::string("DoViSceneFileReader: cannot find scene cut file ") + sceneCutFile).c_str());
 	}
-	while (fscanf(fp, "%i %i %i\n", &frame, &lastFrameInScene, &pq) == 3) {
+	if (!fpMaxPq) {
+		env->ThrowError((std::string("DoViSceneFileReader: cannot find maxPq file ") + maxPqFile).c_str());
+	}
+	if (fscanf(fpSceneCut, "%i\n", &firstFrameNextScene) != 1) {
+		env->ThrowError((std::string("DoViSceneFileReader: error reading scene cut file ") + sceneCutFile).c_str());
+	}
+	while (fscanf(fpMaxPq, "%i %i\n", &frame, &pq) == 2) {
 		if (pq > maxPq) maxPq = pq;
 		if (maxPq > staticMaxPq) staticMaxPq = maxPq;
-		if (!lastFrameInScene) continue;
+		if (firstFrameNextScene != frame + 1) continue;
 		uint16_t maxCll = DoViProcessor::pq2nits(maxPq);
 		sceneMaxSignal.push_back(std::tuple(frame + 1, maxPq, maxCll));
 		maxPq = 0;
+		if (fscanf(fpSceneCut, "%i\n", &firstFrameNextScene) != 1) {
+			firstFrameNextScene = child->GetVideoInfo().num_frames;
+		}
 	}
 	uint16_t maxCll = DoViProcessor::pq2nits(maxPq);
 	sceneMaxSignal.push_back(std::tuple(frame + 1, maxPq, maxCll));
 	staticMaxCll = DoViProcessor::pq2nits(staticMaxPq);
+
+	fclose(fpMaxPq);
+	fclose(fpSceneCut);
 }
 
 PVideoFrame DoViSceneFileReader::GetFrame(int n, IScriptEnvironment* env)
