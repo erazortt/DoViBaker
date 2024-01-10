@@ -207,6 +207,7 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env, const uin
 		dynamic_max_content_light_level = pq2nits(dynamic_max_pq);
 		if (vdr_dm_data->dm_data.level6) {
 			static_max_content_light_level = vdr_dm_data->dm_data.level6->max_content_light_level;
+			static_max_pq = nits2pq(vdr_dm_data->dm_data.level6->max_content_light_level);
 		}
 
 		skipTrim = true;
@@ -255,12 +256,12 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env, const uin
 		//https://ffmpeg.org/doxygen/trunk/dovi__rpu_8c_source.html
 		showMessage("DoViBaker: Only method NLQ_LINEAR_DZ can be applied, NLQ_MU_LAW is not documented.", env);
 		return false;
-		//alternativlely we could just gracefully disable the nlq processing with disable_residual_flag=true
+		//alternatively we could just gracefully disable the nlq processing with disable_residual_flag=true
 	}
 	if (mapping_data->nlq_num_pivots_minus2 != 0) {
 		showMessage("DoViBaker: Expecting nlq_num_pivots_minus2 to be 0.", env);
 		return false;
-		//alternativlely we could just gracefully disable the nlq processing with disable_residual_flag=true
+		//alternatively we could just gracefully disable the nlq processing with disable_residual_flag=true
 	}
 
 	std::string el_type(header->el_type);

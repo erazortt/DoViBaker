@@ -49,7 +49,7 @@ scd
 #ScriptClip(writeCheck+"""?propSet("_SceneChangeNext",1):propSet("_SceneChangeNext",0)""")
 
 #This line writes frame numbers of scene changes to file. These can be imported into Vegas or other editor
-WriteFileIf("sceneCuts.txt", writeCheck, "current_frame+1", flush=false, append=false)
+#WriteFileIf("sceneCuts.txt", writeCheck, "current_frame+1", flush=false, append=false)
 
 function BitShiftLeft(int value, int shift){
     # bi-directional left shift function with rounding to nearest when downshifting
@@ -61,5 +61,5 @@ function BitShiftRight(int value, int shift){
 }
 
 #This line writes max RGB pixel value for each frame
-WriteFile("maxPq.txt", "current_frame", """ " " """, "BitShiftLeft(Max(RPlaneMax(rgb),GPlaneMax(rgb),BPlaneMax(rgb)),12-BitsPerComponent(rgb))", flush=false, append=false)
+WriteFile("maxPq.txt", "current_frame", """ " " """, "Eval(newSceneNextFrame)", """ " " """, "BitShiftLeft(Max(RPlaneMax(rgb),GPlaneMax(rgb),BPlaneMax(rgb)),12-BitsPerComponent(rgb))", flush=false, append=false)
 

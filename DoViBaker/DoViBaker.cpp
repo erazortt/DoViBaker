@@ -582,7 +582,10 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 	env->propSetInt(env->getFramePropsRW(dst), "_SceneChangePrev", doviProc->isSceneChange(), 0);
 	env->propSetInt(env->getFramePropsRW(dst), "_dovi_dynamic_max_pq", doviProc->getDynamicMaxPq(), 0);
 	env->propSetInt(env->getFramePropsRW(dst), "_dovi_dynamic_max_content_light_level", doviProc->getDynamicMaxContentLightLevel(), 0);
-	env->propSetInt(env->getFramePropsRW(dst), "_dovi_static_max_content_light_level", doviProc->getStaticMaxContentLightLevel(), 0);
+	if (doviProc->getStaticMaxPq() > 0) {
+		env->propSetInt(env->getFramePropsRW(dst), "_dovi_static_max_pq", doviProc->getStaticMaxPq(), 0);
+		env->propSetInt(env->getFramePropsRW(dst), "_dovi_static_max_content_light_level", doviProc->getStaticMaxContentLightLevel(), 0);
+	}
 
 	bool skipTrim = doviProc->trimProcessingDisabled();
 

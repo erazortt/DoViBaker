@@ -145,12 +145,12 @@ AVSValue __cdecl Create_DoViCubes(AVSValue args, void* user_data, IScriptEnviron
 
 AVSValue __cdecl Create_RealDoViMaxMqFileReader(
   PClip clip,
-  std::string sceneCutFile,
   std::string maxPqFile,
+  std::string sceneCutFile,
   const AVSValue* args,
   IScriptEnvironment* env)
 {
-  return new DoViMaxPqFileReader(clip, sceneCutFile, maxPqFile, env);
+  return new DoViMaxPqFileReader(clip, maxPqFile, sceneCutFile, env);
 }
 
 AVSValue __cdecl Create_DoViMaxPqFileReader(AVSValue args, void* user_data, IScriptEnvironment* env)
@@ -171,7 +171,7 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScri
 
   env->AddFunction("DoViBaker", "c[el]c[rpu]s[trimPq]i[targetMaxNits]f[targetMinNits]f[qnd]b[rgbProof]b[nlqProof]b", Create_DoViBaker, 0);
   env->AddFunction("DoViCubes", "c[cubes]s[mclls]s[cubes_basepath]s[fullrange]b", Create_DoViCubes, 0);
-  env->AddFunction("DoViMaxPqFileReader", "c[sceneCutsFile]s[maxPqFile]s", Create_DoViMaxPqFileReader, 0);
+  env->AddFunction("DoViMaxPqFileReader", "c[maxPqFile]s[sceneCutsFile]s", Create_DoViMaxPqFileReader, 0);
 
   return "Hey it is just a spectrogram!";
 }
