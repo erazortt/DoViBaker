@@ -16,9 +16,7 @@ DoViMaxPqFileReader::DoViMaxPqFileReader(
 	uint16_t maxPq = 0;
 	FILE *fpSceneCut = 0x0, *fpMaxPq = 0x0;
 
-	
 	fpMaxPq = fopen(maxPqFile.c_str(), "r");
-	
 	if (!fpMaxPq) {
 		env->ThrowError((std::string("DoViMaxMqFileReader: cannot find maxPq file ") + maxPqFile).c_str());
 	}

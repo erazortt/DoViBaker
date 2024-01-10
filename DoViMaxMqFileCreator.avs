@@ -30,26 +30,26 @@ global bac2_compensated=scd.MCompensate(scd_super, bac2_vec, thSAD=-1, thSCD1=35
 global back_compensated=scd.MCompensate(scd_super, back_vec, thSAD=-1, thSCD1=350, thSCD2=256) 
 global fore_compensated=scd.MCompensate(scd_super, fore_vec, thSAD=-1, thSCD1=350, thSCD2=256) 
 
-global writeCheck = """(YDifferenceToNext(scd)>LumaDiffMin+0.5) && LumaDifference(back_compensated,scd)>LumaDiffMin && (Min(LumaDifference(back_compensated,scd),LumaDifference(bac2_compensated,scd))/LumaDifference(fore_compensated,scd)>LumaDiffFac) || (AverageLuma(scd)<9 && YPlaneMinMaxDifference(scd)<44 && YDifferenceFromPrevious(scd)<0.01 && YDifferenceToNext(scd)>0.01)"""
-#                                                                                                                       ^ scene change when drastic changes in luma-difference, except it the change returns back one frame later.
-#                       ^ no scene change when luma-difference is too low, while YDifferenceToNext processes much faster then LumaDifference
-#                                                                                                                                                                                                                                                            ^ very dark images with low variations and very low differences to previous and next images are fade ins and fade outs, these must also be scene changes
-global newSceneNextFrame = "(" + writeCheck + ")?1:0"
+global newSceneNextFrame = """(YDifferenceToNext(scd)>LumaDiffMin+0.5) && LumaDifference(back_compensated,scd)>LumaDiffMin && (Min(LumaDifference(back_compensated,scd),LumaDifference(bac2_compensated,scd))/LumaDifference(fore_compensated,scd)>LumaDiffFac) || (AverageLuma(scd)<9 && YPlaneMinMaxDifference(scd)<44 && YDifferenceFromPrevious(scd)<0.01 && YDifferenceToNext(scd)>0.01)"""
+#                                                                                                                              ^ scene change when drastic changes in luma-difference, except it the change returns back one frame later.
+#                              ^ no scene change when luma-difference is too low, while YDifferenceToNext processes much faster then LumaDifference
+#                                                                                                                                                                                                                                                                   ^ very dark images with low variations and very low differences to previous and next images are fade ins and fade outs, these must also be scene changes
+global newSceneNextFrameInt = "(" + newSceneNextFrame + ")?1:0"
 scd
 
 #Uncomment following line for troubleshooting. It puts the scene change threshold numbers on the screen.
 #StackHorizontal(fore_compensated,scd,back_compensated)
-#ScriptClip("Subtitle(String("+writeCheck+"),align=8)")
+#ScriptClip("Subtitle(String("+newSceneNextFrame+"),align=8)")
 #ScriptClip("""Subtitle(String(YDifferenceFromPrevious(scd))+" "+String(YDifferenceToNext(scd))+" "+String(YDifferenceToNext(scd)/YDifferenceFromPrevious(scd)),align=4)""")
 #ScriptClip("""Subtitle(String(LumaDifference(fore_compensated,scd))+" "+String(LumaDifference(back_compensated,scd))+" "+String(LumaDifference(bac2_compensated,scd))+" "+String(LumaDifference(back_compensated,scd)/LumaDifference(fore_compensated,scd))+" "+String(LumaDifference(bac2_compensated,scd)/LumaDifference(fore_compensated,scd)),align=6)""")
 #ScriptClip("""Subtitle(String(AverageLuma(scd))+" "+String(YPlaneMinMaxDifference(scd)),align=2)""")
 #MShow(scd_super,fore_vec,thSCD1=350,thSCD2=256)
 
 #This line sets the frame property "_SceneChangeNext"
-#ScriptClip(writeCheck+"""?propSet("_SceneChangeNext",1):propSet("_SceneChangeNext",0)""")
+#ScriptClip(newSceneNextFrame+"""?propSet("_SceneChangeNext",1):propSet("_SceneChangeNext",0)""")
 
 #This line writes frame numbers of scene changes to file. These can be imported into Vegas or other editor
-#WriteFileIf("sceneCuts.txt", writeCheck, "current_frame+1", flush=false, append=false)
+#WriteFileIf("sceneCuts.txt", newSceneNextFrame, "current_frame+1", flush=false, append=false)
 
 function BitShiftLeft(int value, int shift){
     # bi-directional left shift function with rounding to nearest when downshifting
@@ -61,5 +61,5 @@ function BitShiftRight(int value, int shift){
 }
 
 #This line writes max RGB pixel value for each frame
-WriteFile("maxPq.txt", "current_frame", """ " " """, "Eval(newSceneNextFrame)", """ " " """, "BitShiftLeft(Max(RPlaneMax(rgb),GPlaneMax(rgb),BPlaneMax(rgb)),12-BitsPerComponent(rgb))", flush=false, append=false)
+WriteFile("maxPq.txt", "current_frame", """ " " """, "Eval(newSceneNextFrameInt)", """ " " """, "BitShiftLeft(Max(RPlaneMax(rgb),GPlaneMax(rgb),BPlaneMax(rgb)),12-BitsPerComponent(rgb))", flush=false, append=false)
 
