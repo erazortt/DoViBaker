@@ -30,9 +30,9 @@ global bac2_compensated=scd.MCompensate(scd_super, bac2_vec, thSAD=-1, thSCD1=35
 global back_compensated=scd.MCompensate(scd_super, back_vec, thSAD=-1, thSCD1=350, thSCD2=256) 
 global fore_compensated=scd.MCompensate(scd_super, fore_vec, thSAD=-1, thSCD1=350, thSCD2=256) 
 
-global newSceneNextFrame = """(YDifferenceToNext(scd)>LumaDiffMin+0.5) && LumaDifference(back_compensated,scd)>LumaDiffMin && (Min(LumaDifference(back_compensated,scd),LumaDifference(bac2_compensated,scd))/LumaDifference(fore_compensated,scd)>LumaDiffFac) || (AverageLuma(scd)<9 && YPlaneMinMaxDifference(scd)<44 && YDifferenceFromPrevious(scd)<0.01 && YDifferenceToNext(scd)>0.01)"""
-#                                                                                                                              ^ scene change when drastic changes in luma-difference, except it the change returns back one frame later.
-#                              ^ no scene change when luma-difference is too low, while YDifferenceToNext processes much faster then LumaDifference
+global newSceneNextFrame = """(YDifferenceToNext(scd)>LumaDiffMin+0.5) && LumaDifference(back_compensated,scd)>LumaDiffMin && (Min(LumaDifference(back_compensated,scd),LumaDifference(bac2_compensated,scd))/LumaDifference(fore_compensated,scd)>LumaDiffFac) || ((AverageLuma(scd)-YPlaneMin(scd))<1.5 && YPlaneMinMaxDifference(scd)<44 && YDifferenceFromPrevious(scd)<0.005 && YDifferenceToNext(scd)>0.005)"""
+#                                                                                                                              ^ scene change when drastic changes in luma-difference, except when the change returns back one frame later.
+#                              ^ no scene change when luma-difference is too low. YDifferenceToNext processes much faster then LumaDifference thus it is checked first as a filter
 #                                                                                                                                                                                                                                                                   ^ very dark images with low variations and very low differences to previous and next images are fade ins and fade outs, these must also be scene changes
 global newSceneNextFrameInt = "(" + newSceneNextFrame + ")?1:0"
 scd
