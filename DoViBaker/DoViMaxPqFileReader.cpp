@@ -1,5 +1,7 @@
 #include "DoViMaxPqFileReader.h"
 #include "DoViProcessor.h"
+#include <fstream>
+#include <sstream>
 
 DoViMaxPqFileReader::DoViMaxPqFileReader(
 	PClip child,
@@ -12,24 +14,37 @@ DoViMaxPqFileReader::DoViMaxPqFileReader(
 	, staticMaxPq(0)
 	, staticMaxCll(0)
 {
-	uint32_t frame, isLastFrameInScene, pq, firstFrameNextScene = 0;
+	uint32_t frame = 0, isLastFrameInScene, pq, firstFrameNextScene = 0;
 	uint16_t maxPq = 0;
-	FILE *fpSceneCut = 0x0, *fpMaxPq = 0x0;
+	std::ifstream fpMaxPq, fpSceneCut;
+	std::string line, segment;
 
-	fpMaxPq = fopen(maxPqFile.c_str(), "r");
-	if (!fpMaxPq) {
+	fpMaxPq.open(maxPqFile);
+	if (!fpMaxPq.is_open()) {
 		env->ThrowError((std::string("DoViMaxMqFileReader: cannot find maxPq file ") + maxPqFile).c_str());
 	}
 	if (!sceneCutFile.empty()) {
-		fpSceneCut = fopen(sceneCutFile.c_str(), "r");
-		if (!fpSceneCut) {
+		fpSceneCut.open(sceneCutFile);
+		if (!fpSceneCut.is_open()) {
 			env->ThrowError((std::string("DoViMaxMqFileReader: cannot find scene cut file ") + sceneCutFile).c_str());
 		}
-		if (fscanf(fpSceneCut, "%i\n", &firstFrameNextScene) != 1) {
+		if (!(fpSceneCut >> firstFrameNextScene)) {
 			env->ThrowError((std::string("DoViMaxMqFileReader: error reading scene cut file ") + sceneCutFile).c_str());
 		}
 	} 
-	while (fscanf(fpMaxPq, "%i %i %i\n", &frame, &isLastFrameInScene, &pq) == 3) {
+	while (std::getline(fpMaxPq, line))
+	{
+		std::istringstream ssline(line);
+		if (std::getline(ssline, segment, ' ')) {
+			frame = std::atoi(segment.c_str());
+		} else env->ThrowError((std::string("DoViMaxMqFileReader: error reading maxPq file ") + sceneCutFile).c_str());
+		if (std::getline(ssline, segment, ' ')) {
+			isLastFrameInScene = std::atoi(segment.c_str());
+		} else env->ThrowError((std::string("DoViMaxMqFileReader: error reading maxPq file ") + sceneCutFile).c_str());
+		if (std::getline(ssline, segment, ' ')) {
+			pq = std::atoi(segment.c_str());
+		} else env->ThrowError((std::string("DoViMaxMqFileReader: error reading maxPq file ") + sceneCutFile).c_str());
+
 		if (pq > maxPq) maxPq = pq;
 		if (maxPq > staticMaxPq) staticMaxPq = maxPq;
 		if (fpSceneCut) {
@@ -39,8 +54,8 @@ DoViMaxPqFileReader::DoViMaxPqFileReader(
 		uint16_t maxCll = DoViProcessor::pq2nits(maxPq);
 		sceneMaxSignal.push_back(std::tuple(frame + 1, maxPq, maxCll));
 		maxPq = 0;
-		if (fpSceneCut) {
-			if (fscanf(fpSceneCut, "%i\n", &firstFrameNextScene) != 1) {
+		if (fpSceneCut.is_open()) {
+			if (!(fpSceneCut >> firstFrameNextScene)) {
 				firstFrameNextScene = child->GetVideoInfo().num_frames;
 			}
 		}
@@ -53,8 +68,8 @@ DoViMaxPqFileReader::DoViMaxPqFileReader(
 		env->ThrowError((std::string("DoViMaxMqFileReader: clip length does not match maxPq file ") + maxPqFile).c_str());
 	}
 
-	fclose(fpMaxPq);
-	if(fpSceneCut) fclose(fpSceneCut);
+	fpMaxPq.close();
+	if(fpSceneCut.is_open()) fpSceneCut.close();
 }
 
 PVideoFrame DoViMaxPqFileReader::GetFrame(int n, IScriptEnvironment* env)
