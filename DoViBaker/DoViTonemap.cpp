@@ -43,11 +43,11 @@ void DoViTonemap::generateLut()
 		float Y = EOTF(ep) * lumScale;
 		ep = EOTFinv(Y);
 		float e1 = (ep - masterMinEp) / (masterMaxEp - masterMinEp);
-		e1 = fmaxf(fminf(e1, 1), 0);
+		e1 = std::clamp(e1, 0.0f, 1.0f);
 		float e2 = (KS < 1 && e1 > KS) ? EETF(e1, KS, maxLum) : e1;
 		float e3 = e2 + b * powf(1 - e2, 4);
 		float e4 = e3 * (masterMaxEp - masterMinEp) + masterMinEp;
-		e4 = fmaxf(fminf(e4, 1), 0);
+		e4 = std::clamp(e4, 0.0f, 1.0f);
 		uint16_t outPq = e4 * (LUT_SIZE - 1) + 0.5;
 		lut[inPq] = outPq;
 	}

@@ -205,7 +205,7 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env, const uin
 
 		dynamic_min_pq = vdr_dm_data->dm_data.level1->min_pq;
 		dynamic_max_pq = vdr_dm_data->dm_data.level1->max_pq;
-		dynamic_max_content_light_level = DoViTonemap::pq2nits(dynamic_max_pq);
+		dynamic_max_content_light_level = DoViTonemap::pq2nits(dynamic_max_pq) + 0.5;
 		if (vdr_dm_data->dm_data.level6) {
 			static_max_content_light_level = vdr_dm_data->dm_data.level6->max_content_light_level;
 			static_max_pq = DoViTonemap::nits2pq(vdr_dm_data->dm_data.level6->max_content_light_level);

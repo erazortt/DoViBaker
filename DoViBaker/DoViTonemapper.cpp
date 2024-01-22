@@ -1,6 +1,5 @@
 #include "DoViTonemapper.h"
 
-
 // explicitly instantiate the template for the linker
 template class DoViTonemapper<8>;
 template class DoViTonemapper<10>;

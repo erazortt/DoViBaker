@@ -178,12 +178,13 @@ AVSValue __cdecl Create_RealDoViTonemapper(
 
   switch (clip->GetVideoInfo().BitsPerComponent())
   {
+  case 8: return new DoViTonemapper<8>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, env); break;
   case 10: return new DoViTonemapper<10>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, env); break;
   case 12: return new DoViTonemapper<12>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, env); break;
   case 14: return new DoViTonemapper<14>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, env); break;
   case 16: return new DoViTonemapper<16>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, env); break;
   default:
-    env->ThrowError("DoViTonemapper: input must be at least 10 bits deep");
+    env->ThrowError("DoViTonemapper: input bit depth not compatible");
     break;
   }
   return 0x0;
@@ -484,7 +485,7 @@ int main(int argc, char** argv)
   else printf("el-clip processing: disabled\n");
   printf("available trims: ");
   for (int i = 0; i < trimPq.size(); i++) {
-    printf("%i nits (%i)\n", int(DoViTonemap::pq2nits(trimPq[i] + 0.5)), trimPq[i]);
+    printf("%i nits (%i)\n", int(DoViTonemap::pq2nits(trimPq[i]) + 0.5), trimPq[i]);
     printf("                 ");
   }
   (trimPq.size() > 0) ? printf("\n") : printf("none\n");

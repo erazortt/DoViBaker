@@ -16,7 +16,7 @@ public:
   static inline float pq2nits(uint16_t pq);
   static inline uint16_t nits2pq(float nits);
   static inline float EETF(float e1, float KS, float maxLum);
-  uint16_t applyLut(uint16_t pq) const { return lut[pq]; };
+  inline uint16_t applyLut(uint16_t pq) const { return lut[pq]; };
 
 protected:
   void generateLut();
@@ -59,7 +59,7 @@ float DoViTonemap::EOTFinv(float Y)
 float DoViTonemap::pq2nits(uint16_t pq)
 {
   const float ep = pq / 4095.0;
-  return DoViTonemap::EOTF(ep) * 10000 + 0.5;
+  return DoViTonemap::EOTF(ep) * 10000;
 }
 
 uint16_t DoViTonemap::nits2pq(float nits)
