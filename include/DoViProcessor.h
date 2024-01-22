@@ -41,14 +41,12 @@ public:
   inline bool trimProcessingDisabled() const { return skipTrim; }
   inline void forceDisableElProcessing(bool force = true) { disable_residual_flag = force; }
   inline uint16_t getNlqOffset(int cmp) const { return nlq_offset[cmp] << (outContainerBitDepth - el_bit_depth); }
+  inline uint16_t getDynamicMinPq() const { return dynamic_min_pq; }
   inline uint16_t getDynamicMaxPq() const { return dynamic_max_pq; }
   inline uint16_t getDynamicMaxContentLightLevel() const { return dynamic_max_content_light_level; }
   inline uint16_t getStaticMaxPq() const { return static_max_pq; }
   inline uint16_t getStaticMaxContentLightLevel() const { return static_max_content_light_level; }
   const std::vector<uint16_t>& getAvailableTrimPqs() const { return availableTrimPqs; }
-
-  static inline float pq2nits(uint16_t pq);
-  static inline uint16_t nits2pq(float nits);
 
   /*
   * these upsampling functions are not following the paper, but should be correct when assuming top-left chroma location
@@ -77,7 +75,7 @@ public:
   inline void sample2rgb(uint16_t& r, uint16_t& g, uint16_t& b, const uint16_t& y, const uint16_t& u, const uint16_t& v) const;
   void processTrim(uint16_t& ro, uint16_t& go, uint16_t& bo, const uint16_t& ri, const uint16_t& gi, const uint16_t& bi) const;
 
-  static const uint8_t outContainerBitDepth = 16;
+  static constexpr uint8_t outContainerBitDepth = 16;
 private:
   static inline constexpr uint16_t Clip3(int lower, int upper, int value);
   void showMessage(const char* message, IScriptEnvironment* env);
@@ -162,35 +160,6 @@ void DoViProcessor::setTrim(uint16_t trimPq, float targetMinNits, float targetMa
   desiredTrimPq = trimPq;
   this->targetMinNits = std::clamp(targetMinNits, 0.0001f, 5.0f);
   this->targetMaxNits = std::clamp(targetMaxNits, 5.0f, 10000.0f);
-}
-
-float DoViProcessor::pq2nits(uint16_t pq)
-{
-  static const float m1 = 2610.0 / 4096 / 4;
-  static const float m2 = 2523.0 / 4096 * 128;
-  static const float c3 = 2392.0 / 4096 * 32;
-  static const float c2 = 2413.0 / 4096 * 32;
-  static const float c1 = c3 - c2 + 1;
-  const float relPq = pq / 4095.0;
-  const float epower = powf(relPq, 1 / m2);
-  const float num = std::max(epower - c1, 0.0f);
-  const float denom = c2 - c3 * epower;
-  return powf(num / denom, 1 / m1) * 10000;
-}
-
-uint16_t DoViProcessor::nits2pq(float nits)
-{
-  static const float m1 = 2610.0 / 4096 / 4;
-  static const float m2 = 2523.0 / 4096 * 128;
-  static const float c3 = 2392.0 / 4096 * 32;
-  static const float c2 = 2413.0 / 4096 * 32;
-  static const float c1 = c3 - c2 + 1;
-
-  const float relNits = nits / 10000;
-  const float epower = powf(relNits, m1);
-  const float num = c1 + c2 * epower;
-  const float denom = 1 + c3 * epower;
-  return powf(num / denom, m2) * 4095.0;
 }
 
 constexpr uint16_t DoViProcessor::Clip3(int lower, int upper, int value)

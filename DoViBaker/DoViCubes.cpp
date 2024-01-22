@@ -97,7 +97,12 @@ PVideoFrame DoViCubes::GetFrame(int n, IScriptEnvironment* env)
 	PVideoFrame src = child->GetFrame(n, env);
 	PVideoFrame dst = env->NewVideoFrameP(vi, &src);
 
-	uint16_t maxCll = env->propGetInt(env->getFramePropsRO(src), "_dovi_dynamic_max_content_light_level", 0, 0);
+	uint16_t maxCll = 0;
+	try {
+		maxCll = env->propGetInt(env->getFramePropsRO(src), "_dovi_dynamic_max_content_light_level", 0, 0);
+	} catch (...) {
+		env->ThrowError("DoViCubes: Expected frame property not available");
+	}
 	
 	currentFrameLut = luts[luts.size() - 1].second;
 	for (int i = 1; i < luts.size(); i++) {

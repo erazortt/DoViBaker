@@ -7,6 +7,10 @@
 // Code
 //////////////////////////////
 
+// explicitly instantiate the template for the linker
+template class DoViBaker<true>;
+template class DoViBaker<false>;
+
 template<int quarterResolutionEl>
 DoViBaker<quarterResolutionEl>::DoViBaker(
 	PClip _blChild, 
@@ -263,9 +267,7 @@ template<int chromaSubsampling>
 void DoViBaker<quarterResolutionEl>::applyDovi(PVideoFrame& dst, const PVideoFrame& blSrcY, const PVideoFrame& blSrcUV, const PVideoFrame& elSrcY, const PVideoFrame& elSrcUV, IScriptEnvironment* env) const {
 
 	const int blSrcPitchY = blSrcY->GetPitch(PLANAR_Y) / sizeof(uint16_t);
-
 	const int elSrcPitchY = elSrcY->GetPitch(PLANAR_Y) / sizeof(uint16_t);
-
 	const int dstPitchY = dst->GetPitch(PLANAR_Y) / sizeof(uint16_t);
 
 	std::array<const uint16_t*, chromaSubsampling + 1> blSrcYp;
@@ -284,9 +286,7 @@ void DoViBaker<quarterResolutionEl>::applyDovi(PVideoFrame& dst, const PVideoFra
 	const int blSrcHeightUV = blSrcUV->GetHeight(PLANAR_U);
 	const int blSrcWidthUV = blSrcUV->GetRowSize(PLANAR_U) / sizeof(uint16_t);
 	const int blSrcPitchUV = blSrcUV->GetPitch(PLANAR_U) / sizeof(uint16_t);
-
 	const int elSrcPitchUV = elSrcUV->GetPitch(PLANAR_U) / sizeof(uint16_t);
-
 	const int dstPitchUV = dst->GetPitch(PLANAR_U) / sizeof(uint16_t);
 
 	const uint16_t* blSrcUp = (const uint16_t*)blSrcUV->GetReadPtr(PLANAR_U);
@@ -368,13 +368,10 @@ template<int quarterResolutionEl>
 template<int blChromaSubsampling, int elChromaSubsampling>
 void DoViBaker<quarterResolutionEl>::doAllQuickAndDirty(PVideoFrame& dst, const PVideoFrame& blSrc, const PVideoFrame& elSrc, IScriptEnvironment* env) const {
 	const int blSrcPitchY = blSrc->GetPitch(PLANAR_Y) / sizeof(uint16_t);
-
 	const int elSrcPitchY = elSrc->GetPitch(PLANAR_Y) / sizeof(uint16_t);
-
 	const int dstPitch = dst->GetPitch(PLANAR_R) / sizeof(uint16_t);
 
 	const int blSrcPitchUV = blSrc->GetPitch(PLANAR_U) / sizeof(uint16_t);
-
 	const int elSrcHeightUV = elSrc->GetHeight(PLANAR_U);
 	const int elSrcWidthUV = elSrc->GetRowSize(PLANAR_U) / sizeof(uint16_t);
 	const int elSrcPitchUV = elSrc->GetPitch(PLANAR_U) / sizeof(uint16_t);
@@ -483,7 +480,6 @@ template<int quarterResolutionEl>
 void DoViBaker<quarterResolutionEl>::convert2rgb(PVideoFrame& dst, const PVideoFrame& srcY, const PVideoFrame& srcUV) const
 {
 	const int srcPitchY = srcY->GetPitch(PLANAR_Y) / sizeof(uint16_t);
-
 	const int dstPitch = dst->GetPitch(PLANAR_R) / sizeof(uint16_t);
 
 	const uint16_t* srcYp = (const uint16_t*)srcY->GetReadPtr(PLANAR_Y);
@@ -580,6 +576,7 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 	env->propSetInt(env->getFramePropsRW(dst), "_ColorRange", doviProc->isLimitedRangeOutput(), 0);
 	env->propDeleteKey(env->getFramePropsRW(dst), "_ChromaLocation"); //RGB has no chroma location defined
 	env->propSetInt(env->getFramePropsRW(dst), "_SceneChangePrev", doviProc->isSceneChange(), 0);
+	env->propSetInt(env->getFramePropsRW(dst), "_dovi_dynamic_min_pq", doviProc->getDynamicMinPq(), 0);
 	env->propSetInt(env->getFramePropsRW(dst), "_dovi_dynamic_max_pq", doviProc->getDynamicMaxPq(), 0);
 	env->propSetInt(env->getFramePropsRW(dst), "_dovi_dynamic_max_content_light_level", doviProc->getDynamicMaxContentLightLevel(), 0);
 	if (doviProc->getStaticMaxPq() > 0) {
@@ -679,10 +676,6 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 	}
 	return dst;
 }
-
-// explicitly instantiate the template for the linker
-template class DoViBaker<true>;
-template class DoViBaker<false>;
 
 /*PVideoFrame DoViBaker::GetFrame(int n, IScriptEnvironment* env) {
 	PVideoFrame src = elChild->GetFrame(n, env);

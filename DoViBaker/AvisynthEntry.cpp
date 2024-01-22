@@ -2,6 +2,7 @@
 
 #include "DoViBaker.h"
 #include "DoViCubes.h"
+#include "DoViTonemapper.h"
 #include "DoViMaxPqFileReader.h"
 
 AVSValue __cdecl Create_RealDoViBaker(
@@ -76,7 +77,6 @@ AVSValue __cdecl Create_DoViBaker(AVSValue args, void* user_data, IScriptEnviron
 {
   auto elClip = (args[1].Defined() ? args[1].AsClip() : nullptr);
 
-  //args.ArraySize()
   return Create_RealDoViBaker(
     args[0].AsClip(), 
     elClip, 
@@ -133,7 +133,6 @@ AVSValue __cdecl Create_RealDoViCubes(
 
 AVSValue __cdecl Create_DoViCubes(AVSValue args, void* user_data, IScriptEnvironment* env)
 {
-  //args.ArraySize()
   return Create_RealDoViCubes(
     args[0].AsClip(),
     args[1].AsString(""),
@@ -155,11 +154,51 @@ AVSValue __cdecl Create_RealDoViMaxMqFileReader(
 
 AVSValue __cdecl Create_DoViMaxPqFileReader(AVSValue args, void* user_data, IScriptEnvironment* env)
 {
-  //args.ArraySize()
   return Create_RealDoViMaxMqFileReader(
     args[0].AsClip(),
     args[1].AsString(""),
     args[2].AsString(""),
+    &args, env);
+}
+
+AVSValue __cdecl Create_RealDoViTonemapper(
+  PClip clip,
+  float targetMaxNits,
+  float targetMinNits,
+  float masterMaxNits,
+  float masterMinNits,
+  float lumScale,
+  const AVSValue* args,
+  IScriptEnvironment* env)
+{
+  if (!clip->GetVideoInfo().IsPlanarRGB())
+  {
+    env->ThrowError("DoViTonemapper: input must be planar RGB");
+  }
+
+  switch (clip->GetVideoInfo().BitsPerComponent())
+  {
+  case 10: return new DoViTonemapper<10>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, env); break;
+  case 12: return new DoViTonemapper<12>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, env); break;
+  case 14: return new DoViTonemapper<14>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, env); break;
+  case 16: return new DoViTonemapper<16>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, env); break;
+  default:
+    env->ThrowError("DoViTonemapper: input must be at least 10 bits deep");
+    break;
+  }
+  return 0x0;
+}
+
+
+AVSValue __cdecl Create_DoViTonemapper(AVSValue args, void* user_data, IScriptEnvironment* env)
+{
+  return Create_RealDoViTonemapper(
+    args[0].AsClip(),
+    args[1].AsFloat(1000),
+    args[2].AsFloat(0),
+    args[3].AsFloat(10000),
+    args[4].AsFloat(0),
+    args[5].AsFloat(1),
     &args, env);
 }
 
@@ -170,6 +209,7 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScri
   AVS_linkage = vectors;
 
   env->AddFunction("DoViBaker", "c[el]c[rpu]s[trimPq]i[targetMaxNits]f[targetMinNits]f[qnd]b[rgbProof]b[nlqProof]b", Create_DoViBaker, 0);
+  env->AddFunction("DoViTonemapper", "c[targetMaxNits]f[targetMinNits]f[masterMaxNits]f[masterMinNits]f[lumScale]f", Create_DoViTonemapper, 0);
   env->AddFunction("DoViCubes", "c[cubes]s[mclls]s[cubes_basepath]s[fullrange]b", Create_DoViCubes, 0);
   env->AddFunction("DoViMaxPqFileReader", "c[maxPqFile]s[sceneCutsFile]s", Create_DoViMaxPqFileReader, 0);
 
@@ -313,62 +353,90 @@ double Spline64Filter(double value) {
 
 int main(int argc, char** argv)
 {
-  /*
-  printf("Spline64 coefficients\n");
-  for (int i = 0; i < 4; i++) {
-    float val = i + 0.5;
-    printf("%f %i\n", val, int(Spline64Filter(val) * (1 << 12)));
-  }
-  printf("Spline16 coefficients\n");
-  for (int i = 0; i < 2; i++) {
-    float val = i + 0.5;
-    printf("%f %i\n", val, int(Spline16Filter(val) * (1 << 12)));
-  }
-  printf("Spline36 coefficients\n");
-  for (int i = -2; i < 4; i++) {
-    float val = i - 0.25;
-    printf("%f %i\n", val, int(Spline36Filter(val) * (1 << 8)));
-  }
-  printf("Spline16 coefficients\n");
-  for (int i = -1; i < 3; i++) {
-    float val = i - 0.25;
-    printf("%f %i\n", val, int(Spline16Filter(val) * (1 << 7)));
-  }
-
-  printf("Self test\n");
-  printf("2081 pq = %i\n", DoViProcessor::pq2nits(2081));
-  for (int i = 0; i <= 100; i += 10) {
-    std::string out(std::to_string(i));
-    out += "%: ";
-    out += std::to_string(DoViProcessor::pq2nits(4095 * i * 0.01));
-    out += "\n";
-    printf(out.c_str());
-  }
-
-  printf("Self test\n");
-  printf("2081 pq = %i\n", DoViProcessor::pq2nits(2081));
-  printf("3079 pq = %i\n", DoViProcessor::pq2nits(3079));
-  for (int i = 0; i <= 255; i ++) {
-    std::string out(std::to_string(i));
-    out += "%: ";
-    out += std::to_string(DoViProcessor::pq2nits(i << (12 - 8)));
-    out += "\n";
-    printf(out.c_str());
-  }*/
-
+  bool selfTest = false;
+  bool showsSplines = false;
+  bool showNitsTable = false;
+  bool showTonemap = false;
   if (argc < 2) {
     printf("DoViAnalyzer: provide path to RPU.bin file\n");
     return 1;
   }
-  
+  if (argv[1][0] == '-') {
+    selfTest = true;
+    printf("Self test\n");
+    if (strcmp(argv[1], "-showSplines") == 0)
+      showsSplines = true;
+    else if (strcmp(argv[1], "-showNitsTable") == 0)
+      showNitsTable = true;
+    else if (strcmp(argv[1], "-showTonemap") == 0)
+      showTonemap = true;
+    else {
+      printf("DoViAnalyzer: self test not regognized\n");
+      return 1;
+    }
+  }
+  if (showsSplines) {
+    printf("Spline64 coefficients\n");
+    for (int i = 0; i < 4; i++) {
+      float val = i + 0.5;
+      printf("%f %i\n", val, int(Spline64Filter(val) * (1 << 12)));
+    }
+    printf("Spline16 coefficients\n");
+    for (int i = 0; i < 2; i++) {
+      float val = i + 0.5;
+      printf("%f %i\n", val, int(Spline16Filter(val) * (1 << 12)));
+    }
+    printf("Spline36 coefficients\n");
+    for (int i = -2; i < 4; i++) {
+      float val = i - 0.25;
+      printf("%f %i\n", val, int(Spline36Filter(val) * (1 << 8)));
+    }
+    printf("Spline16 coefficients\n");
+    for (int i = -1; i < 3; i++) {
+      float val = i - 0.25;
+      printf("%f %i\n", val, int(Spline16Filter(val) * (1 << 7)));
+    }
+  }
+
+  if (showNitsTable) {
+    printf("2081 pq = %f\n", DoViTonemap::pq2nits(2081));
+    printf("3079 pq = %f\n", DoViTonemap::pq2nits(3079));
+    for (int i = 0; i <= 100; i += 10) {
+      std::string out(std::to_string(i));
+      out += "%: ";
+      out += std::to_string(DoViTonemap::pq2nits(4095 * i * 0.01));
+      out += "\n";
+      printf(out.c_str());
+    }
+
+    for (int i = 0; i <= 255; i++) {
+      std::string out(std::to_string(i));
+      out += "%: ";
+      out += std::to_string(DoViTonemap::pq2nits(i << (12 - 8)));
+      out += "\n";
+      printf(out.c_str());
+    }
+  }
+
+  if (showTonemap) {
+    DoViTonemap tonemap(1000, 0, 4000, 0, 1.0);
+    for (int i = 0; i <= 255; i++) {
+      uint16_t pq = DoViTonemapper<8>::signal2pq(i);
+      uint16_t mappedPq = tonemap.applyLut(pq);
+      printf("%i %i %i %i\n", i, pq, mappedPq, DoViTonemapper<8>::pq2signal(mappedPq));
+    }
+  }
+
+  if (selfTest) { return 1; }
+
+  FILE* fpSceneChange = NULL;
+  if (argc > 2) {
+    fpSceneChange = fopen(argv[2], "w");
+  }
+
   DoViProcessor dovi(argv[1], NULL, DoViProcessor::outContainerBitDepth, DoViProcessor::outContainerBitDepth);
   if (!dovi.wasCreationSuccessful()) {
     return 1;
-  }
-
-  FILE* fp = NULL;
-  if (argc > 2) {
-    fp = fopen(argv[2], "w");
   }
 
   int length = dovi.getClipLength();
@@ -391,8 +459,8 @@ int main(int argc, char** argv)
     unusualMatrix |= checkMatrix(dovi);
     nonIdentityMapping |= checkNonIdentityMapping(dovi);
     elMixing |= checkElProcessing(dovi);
-    if(fp && dovi.isSceneChange()){
-      fputs((std::to_string(i)+" K\n").c_str(), fp);
+    if(fpSceneChange && dovi.isSceneChange()){
+      fputs((std::to_string(i)+" K\n").c_str(), fpSceneChange);
     }
     if (dovi.isLimitedRangeOutput()) {
       limitedRangeOutput = true;
@@ -404,19 +472,19 @@ int main(int argc, char** argv)
     }
   }
 
-  if (fp) {
-    fclose(fp);
+  if (fpSceneChange) {
+    fclose(fpSceneChange);
   }
 
   //printf("clip max pq: %i\n", clip_max_pq);
-  printf("overall max cll: %i\n", int(DoViProcessor::pq2nits(clip_max_pq) + 0.5));
+  printf("overall max cll: %i\n", int(DoViTonemap::pq2nits(clip_max_pq) + 0.5));
   printf("color matrix deviation: %i\n", to8bits(unusualMatrix));
   printf("mapping deviation: %i\n", to8bits(nonIdentityMapping));
   if(elMixing) printf("el-clip processing: enabled\n");
   else printf("el-clip processing: disabled\n");
   printf("available trims: ");
   for (int i = 0; i < trimPq.size(); i++) {
-    printf("%i nits (%i)\n", int(dovi.pq2nits(trimPq[i] + 0.5)), trimPq[i]);
+    printf("%i nits (%i)\n", int(DoViTonemap::pq2nits(trimPq[i] + 0.5)), trimPq[i]);
     printf("                 ");
   }
   (trimPq.size() > 0) ? printf("\n") : printf("none\n");
