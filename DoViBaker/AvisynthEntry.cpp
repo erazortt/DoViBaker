@@ -402,8 +402,8 @@ int main(int argc, char** argv)
   if (showNitsTable) {
     printf("2081 pq = %f\n", DoViTonemap::pq2nits(2081));
     printf("3079 pq = %f\n", DoViTonemap::pq2nits(3079));
-    for (int i = 0; i <= 100; i += 10) {
-      printf("%i: %f\n", i, DoViTonemap::pq2nits(4095 * i * 0.01));
+    for (int i = 0; i <= 120; i += 10) {
+      printf("%i%%: %f\n", i, DoViTonemap::pq2nits(4095 * i * 0.01));
     }
   }
 
