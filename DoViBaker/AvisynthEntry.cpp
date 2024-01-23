@@ -355,7 +355,7 @@ double Spline64Filter(double value) {
 int main(int argc, char** argv)
 {
   bool selfTest = false;
-  bool showsSplines = false;
+  bool showSplines = false;
   bool showNitsTable = false;
   bool showTonemap = false;
   if (argc < 2) {
@@ -366,7 +366,7 @@ int main(int argc, char** argv)
     selfTest = true;
     printf("Self test\n");
     if (strcmp(argv[1], "-showSplines") == 0)
-      showsSplines = true;
+      showSplines = true;
     else if (strcmp(argv[1], "-showNitsTable") == 0)
       showNitsTable = true;
     else if (strcmp(argv[1], "-showTonemap") == 0)
@@ -376,7 +376,7 @@ int main(int argc, char** argv)
       return 1;
     }
   }
-  if (showsSplines) {
+  if (showSplines) {
     printf("Spline64 coefficients\n");
     for (int i = 0; i < 4; i++) {
       float val = i + 0.5;
@@ -403,19 +403,7 @@ int main(int argc, char** argv)
     printf("2081 pq = %f\n", DoViTonemap::pq2nits(2081));
     printf("3079 pq = %f\n", DoViTonemap::pq2nits(3079));
     for (int i = 0; i <= 100; i += 10) {
-      std::string out(std::to_string(i));
-      out += "%: ";
-      out += std::to_string(DoViTonemap::pq2nits(4095 * i * 0.01));
-      out += "\n";
-      printf(out.c_str());
-    }
-
-    for (int i = 0; i <= 255; i++) {
-      std::string out(std::to_string(i));
-      out += "%: ";
-      out += std::to_string(DoViTonemap::pq2nits(i << (12 - 8)));
-      out += "\n";
-      printf(out.c_str());
+      printf("%i: %f\n", i, DoViTonemap::pq2nits(4095 * i * 0.01));
     }
   }
 

@@ -6,19 +6,12 @@ DoViTonemap::DoViTonemap(
 	float masterMaxNits_,
 	float masterMinNits_,
 	float lumScale_)
-	: staticMasterMaxPq(masterMaxNits_ > -1)
-	, staticMasterMinPq(masterMinNits_ > -1)
-	, staticLumScale(lumScale_ > -1)
-	, masterMaxPq(-1)
-	, masterMinPq(-1)
+	: masterMaxPq(nits2pq(masterMaxNits_))
+	, masterMinPq(nits2pq(masterMinNits_))
 	, targetMaxPq(nits2pq(targetMaxNits_))
 	, targetMinPq(nits2pq(targetMinNits_))
-	, lumScale(-1)
+	, lumScale(lumScale_)
 {
-	if (staticMasterMaxPq) masterMaxPq = nits2pq(masterMaxNits_);
-	if (staticMasterMinPq) masterMinPq = nits2pq(masterMinNits_);
-	if (staticLumScale) lumScale = lumScale_;
-	if (staticMasterMaxPq && staticMasterMinPq && staticLumScale)
 		generateLut();
 }
 

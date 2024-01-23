@@ -18,8 +18,8 @@ DoViMaxPqFileReader::DoViMaxPqFileReader(
 {
 	uint32_t frame = 0, isLastFrameInScene, pq, firstFrameNextScene = 0;
 	uint16_t maxPq = 0;
-	uint8_t scale;
-	std::deque<uint8_t> sceneScales;
+	float scale;
+	std::deque<float> sceneScales;
 	std::ifstream fpMaxPq, fpSceneCut;
 	std::string line, segment;
 
@@ -50,7 +50,7 @@ DoViMaxPqFileReader::DoViMaxPqFileReader(
 			pq = std::atoi(segment.c_str());
 		} else env->ThrowError((std::string("DoViMaxMqFileReader: error reading maxPq file ") + sceneCutFile).c_str());
 		if (std::getline(ssline, segment, ' ')) {
-			scale = std::atoi(segment.c_str());
+			scale = std::atof(segment.c_str());
 			sceneScales.push_back(scale);
 		}
 
@@ -60,10 +60,11 @@ DoViMaxPqFileReader::DoViMaxPqFileReader(
 			if (firstFrameNextScene != frame + 1) continue;
 		} else if (!isLastFrameInScene) continue;
 
-		uint8_t sceneScaleMedian = -1;
+		float sceneScaleMedian = 1;
 		if (!sceneScales.empty()) {
 			std::sort(sceneScales.begin(), sceneScales.end());
 			sceneScaleMedian = sceneScales.at(sceneScales.size() / 2);
+			sceneScales.clear();
 		}
 
 		uint16_t maxCll = DoViTonemap::pq2nits(maxPq) + 0.5;
@@ -75,7 +76,7 @@ DoViMaxPqFileReader::DoViMaxPqFileReader(
 			}
 		}
 	}
-	uint8_t sceneScaleMedian = -1;
+	float sceneScaleMedian = 1;
 	if (!sceneScales.empty()) {
 		std::sort(sceneScales.begin(), sceneScales.end());
 		sceneScaleMedian = sceneScales.at(sceneScales.size() / 2);
@@ -112,9 +113,8 @@ PVideoFrame DoViMaxPqFileReader::GetFrame(int n, IScriptEnvironment* env)
 	env->propSetInt(env->getFramePropsRW(src), "_dovi_dynamic_max_content_light_level", maxCll, 0);
 	env->propSetInt(env->getFramePropsRW(src), "_dovi_static_max_pq", staticMaxPq, 0);
 	env->propSetInt(env->getFramePropsRW(src), "_dovi_static_max_content_light_level", staticMaxCll, 0);
-	if (scale > -1) {
-		env->propSetFloat(env->getFramePropsRW(src), "_dovi_dynamic_luminosity_scale", scale/10, 0);
-	}
+	env->propSetFloat(env->getFramePropsRW(src), "_dovi_dynamic_luminosity_scale", scale, 0);
+
 	env->propSetInt(env->getFramePropsRW(src), "_SceneChangeNext", std::get<0>(sceneMaxSignal.at(currentScene)) == n + 1, 0);
 	if (currentScene > 0) {
 		env->propSetInt(env->getFramePropsRW(src), "_SceneChangePrev", std::get<0>(sceneMaxSignal.at(currentScene - 1)) == n, 0);

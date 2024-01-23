@@ -8,10 +8,10 @@ class DoViTonemapper : public DoViTonemap, public GenericVideoFilter
 public:
   DoViTonemapper(
     PClip child,
-    float masterMaxNits,
-    float masterMinNits,
     float targetMaxNits,
     float targetMinNits,
+    float masterMaxNits,
+    float masterMinNits,
     float scale,
     IScriptEnvironment* env);
 
@@ -22,6 +22,10 @@ public:
 private:
   void applyTonemapRGB(PVideoFrame& dst, const PVideoFrame& src) const;
   //void applyTonemapYUV(PVideoFrame& dst, const PVideoFrame& src) const;
+
+  bool dynamicMasterMaxPq;
+  bool dynamicMasterMinPq;
+  bool dynamicLumScale;
 };
 
 template<int bitDepth>

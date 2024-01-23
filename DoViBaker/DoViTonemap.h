@@ -20,13 +20,10 @@ public:
 
 protected:
   void generateLut();
-  bool staticMasterMaxPq;
-  bool staticMasterMinPq;
-  bool staticLumScale;
-  uint16_t masterMaxPq;
-  uint16_t masterMinPq;
   const uint16_t targetMaxPq;
   const uint16_t targetMinPq;
+  uint16_t masterMaxPq;
+  uint16_t masterMinPq;
   float lumScale;
 
 private:

@@ -16,8 +16,16 @@ DoViTonemapper<bitDepth>::DoViTonemapper(
 	float masterMinNits,
 	float lumScale,
 	IScriptEnvironment* env)
-	: DoViTonemap(targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale)
-	, GenericVideoFilter(child) { }
+	: DoViTonemap(
+			targetMaxNits, 
+			targetMinNits, 
+			masterMaxNits < 0 ? 10000 : masterMaxNits,
+			masterMinNits < 0 ? 0 : masterMinNits,
+			lumScale < 0 ? 1 : lumScale)
+	, GenericVideoFilter(child)
+	, dynamicMasterMaxPq(masterMaxNits < 0)
+	, dynamicMasterMinPq(masterMinNits < 0)
+	, dynamicLumScale(lumScale < 0) {}
 
 template<int bitDepth>
 PVideoFrame DoViTonemapper<bitDepth>::GetFrame(int n, IScriptEnvironment* env) {
@@ -30,14 +38,15 @@ PVideoFrame DoViTonemapper<bitDepth>::GetFrame(int n, IScriptEnvironment* env) {
 	float scale = lumScale;
 
 	try {
-		if (!staticMasterMaxPq)
+		if (dynamicMasterMaxPq)
 			maxPq = env->propGetInt(env->getFramePropsRO(src), "_dovi_dynamic_max_pq", 0, 0);
-		if (!staticMasterMinPq)
+		if (dynamicMasterMinPq)
 			minPq = env->propGetInt(env->getFramePropsRO(src), "_dovi_dynamic_min_pq", 0, 0);
-		if (!staticLumScale)
+		if (dynamicLumScale)
 			scale = env->propGetFloat(env->getFramePropsRO(src), "_dovi_dynamic_luminosity_scale", 0, 0);
 	}	catch(...) {
 		env->ThrowError("DoViTonemapper: Expected frame property not available");
+		return dst;
 	}
 
 	if (maxPq != masterMaxPq || minPq != masterMinPq || scale != lumScale) {
