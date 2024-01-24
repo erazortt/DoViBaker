@@ -1,5 +1,5 @@
 #include "DoViMaxPqFileReader.h"
-#include "DoViTonemap.h"
+#include "DoViTransferFunctions.h"
 #include <fstream>
 #include <sstream>
 #include <deque>
@@ -67,7 +67,7 @@ DoViMaxPqFileReader::DoViMaxPqFileReader(
 			sceneScales.clear();
 		}
 
-		uint16_t maxCll = DoViTonemap::pq2nits(maxPq) + 0.5;
+		uint16_t maxCll = DoViTransferFunctions::pq2nits(maxPq) + 0.5;
 		sceneMaxSignal.push_back(std::tuple(frame + 1, maxPq, maxCll, sceneScaleMedian));
 		maxPq = 0;
 		if (fpSceneCut.is_open()) {
@@ -82,9 +82,9 @@ DoViMaxPqFileReader::DoViMaxPqFileReader(
 		sceneScaleMedian = sceneScales.at(sceneScales.size() / 2);
 	}
 
-	uint16_t maxCll = DoViTonemap::pq2nits(maxPq) + 0.5;
+	uint16_t maxCll = DoViTransferFunctions::pq2nits(maxPq) + 0.5;
 	sceneMaxSignal.push_back(std::tuple(frame + 1, maxPq, maxCll, sceneScaleMedian));
-	staticMaxCll = DoViTonemap::pq2nits(staticMaxPq) + 0.5;
+	staticMaxCll = DoViTransferFunctions::pq2nits(staticMaxPq) + 0.5;
 
 	if (child->GetVideoInfo().num_frames != frame + 1) {
 		env->ThrowError((std::string("DoViMaxMqFileReader: clip length does not match maxPq file ") + maxPqFile).c_str());

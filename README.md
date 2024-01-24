@@ -62,14 +62,14 @@ subtitle("maxcll = " + string(mcll))
 """)
 ```
 
-# DoViTonemapper
+# DoViTonemap
 This plugin processes the tonemapping of any HDR PQ streams to lower dynamic range targets. The implementation follows ITU-R BT.2408-7 Annex 5, with the addtion of an optional luminosity factor which scales the brightness linearily.
 There are 5 arguments which control the process: `masterMaxNits`, `masterMinNits`, `targetMaxNits`, `targetMinNits` and `lumScale`. The first two arguments set the white and black brightness value of the source, and next two set the white and black brightness value of the target. The values for the master brightness can be either given explicitly or `masterMaxNits` and `masterMinNits` can both be set to `-1` which will indicate that the actual values are read from the related frame properties set by DoViBaker, leading to a dynamic tonemapping. `lumScale` changes the total brightness, this can be usefull since many HDR PQ and DV streams are actually too dark, darker then the respective SDR streams. To find the proper `lumScale` factor you might use the script `LumScaleFindHelper.avs`.
 
 This example applies a dynamic tonemapping to a 1000nits target reading the current max brightness value off the frame properits which are set by DoViBaker. The luminosity scale used is 1.0. To increase the brightness this factor can be increased to 1.5 or 2.0 or even higher. There have been instances where factors of 4.5 where needed to match the percieved brightness of the SDR stream.
 ```
 DoViBaker(bl,el)
-DoViTonemapper(lumScale=1.0, masterMaxNits=-1, targetMaxNits=1000, masterMinNits=0, targetMinNits=0)
+DoViTonemap(lumScale=1.0, masterMaxNits=-1, targetMaxNits=1000, masterMinNits=0, targetMinNits=0)
 ```
 
 # DoViCubes
@@ -92,7 +92,7 @@ DoViCubes(cubes="lut_1000.cube;lut_2000.cube;lut_4000.cube",mclls="1010;2020",cu
 This avisynth script scans through the clip and writes the maxPq file needed for `DoViMaxPqFileReader`. The maxPq file includes scene cuts and per-frame max brightness values. The scene cut detection algorithm is a rather simple implementation, which is however good enough for most cases.
 
 # LumScaleFindHelper.avs
-Used to find `lumScale` for `DoViTonemapper`. This is the factor by which to mutiply the brightness of the PQ stream such that its base brightness matches that of the SDR stream.
+Used to find `lumScale` for `DoViTonemap`. This is the factor by which to mutiply the brightness of the PQ stream such that its base brightness matches that of the SDR stream.
 
 # RealGrayscale.avsi
 Needed for showing a proper grayscale of PQ and SDR sources.

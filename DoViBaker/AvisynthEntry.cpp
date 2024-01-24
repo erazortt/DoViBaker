@@ -2,7 +2,7 @@
 
 #include "DoViBaker.h"
 #include "DoViCubes.h"
-#include "DoViTonemapper.h"
+#include "DoViTonemap.h"
 #include "DoViMaxPqFileReader.h"
 
 AVSValue __cdecl Create_RealDoViBaker(
@@ -161,7 +161,7 @@ AVSValue __cdecl Create_DoViMaxPqFileReader(AVSValue args, void* user_data, IScr
     &args, env);
 }
 
-AVSValue __cdecl Create_RealDoViTonemapper(
+AVSValue __cdecl Create_RealDoViTonemap(
   PClip clip,
   float targetMaxNits,
   float targetMinNits,
@@ -173,27 +173,27 @@ AVSValue __cdecl Create_RealDoViTonemapper(
 {
   if (!clip->GetVideoInfo().IsPlanarRGB())
   {
-    env->ThrowError("DoViTonemapper: input must be planar RGB");
+    env->ThrowError("DoViTonemap: input must be planar RGB");
   }
 
   switch (clip->GetVideoInfo().BitsPerComponent())
   {
-  case 8: return new DoViTonemapper<8>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, env); break;
-  case 10: return new DoViTonemapper<10>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, env); break;
-  case 12: return new DoViTonemapper<12>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, env); break;
-  case 14: return new DoViTonemapper<14>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, env); break;
-  case 16: return new DoViTonemapper<16>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, env); break;
+  case 8: return new DoViTonemap<8>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, env); break;
+  case 10: return new DoViTonemap<10>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, env); break;
+  case 12: return new DoViTonemap<12>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, env); break;
+  case 14: return new DoViTonemap<14>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, env); break;
+  case 16: return new DoViTonemap<16>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, env); break;
   default:
-    env->ThrowError("DoViTonemapper: input bit depth not compatible");
+    env->ThrowError("DoViTonemap: input bit depth not compatible");
     break;
   }
   return 0x0;
 }
 
 
-AVSValue __cdecl Create_DoViTonemapper(AVSValue args, void* user_data, IScriptEnvironment* env)
+AVSValue __cdecl Create_DoViTonemap(AVSValue args, void* user_data, IScriptEnvironment* env)
 {
-  return Create_RealDoViTonemapper(
+  return Create_RealDoViTonemap(
     args[0].AsClip(),
     args[1].AsFloat(1000),
     args[2].AsFloat(0),
@@ -210,7 +210,7 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScri
   AVS_linkage = vectors;
 
   env->AddFunction("DoViBaker", "c[el]c[rpu]s[trimPq]i[targetMaxNits]f[targetMinNits]f[qnd]b[rgbProof]b[nlqProof]b", Create_DoViBaker, 0);
-  env->AddFunction("DoViTonemapper", "c[targetMaxNits]f[targetMinNits]f[masterMaxNits]f[masterMinNits]f[lumScale]f", Create_DoViTonemapper, 0);
+  env->AddFunction("DoViTonemap", "c[targetMaxNits]f[targetMinNits]f[masterMaxNits]f[masterMinNits]f[lumScale]f", Create_DoViTonemap, 0);
   env->AddFunction("DoViCubes", "c[cubes]s[mclls]s[cubes_basepath]s[fullrange]b", Create_DoViCubes, 0);
   env->AddFunction("DoViMaxPqFileReader", "c[maxPqFile]s[sceneCutsFile]s", Create_DoViMaxPqFileReader, 0);
 
@@ -400,19 +400,19 @@ int main(int argc, char** argv)
   }
 
   if (showNitsTable) {
-    printf("2081 pq = %f\n", DoViTonemap::pq2nits(2081));
-    printf("3079 pq = %f\n", DoViTonemap::pq2nits(3079));
+    printf("2081 pq = %f\n", DoViTransferFunctions::pq2nits(2081));
+    printf("3079 pq = %f\n", DoViTransferFunctions::pq2nits(3079));
     for (int i = 0; i <= 120; i += 10) {
-      printf("%i%%: %f\n", i, DoViTonemap::pq2nits(4095 * i * 0.01));
+      printf("%i%%: %f\n", i, DoViTransferFunctions::pq2nits(4095 * i * 0.01));
     }
   }
 
   if (showTonemap) {
-    DoViTonemap tonemap(1000, 0, 4000, 0, 1.0);
+    DoViTransferFunctions tonemap(1000, 0, 4000, 0, 1.0);
     for (int i = 0; i <= 255; i++) {
-      uint16_t pq = DoViTonemapper<8>::signal2pq(i);
-      uint16_t mappedPq = tonemap.applyLut(pq);
-      printf("%i %i %i %i\n", i, pq, mappedPq, DoViTonemapper<8>::pq2signal(mappedPq));
+      uint16_t pq = DoViTonemap<8>::signal2pq(i);
+      uint16_t mappedPq = tonemap.applyEETF(pq);
+      printf("%i %i %i %i\n", i, pq, mappedPq, DoViTonemap<8>::pq2signal(mappedPq));
     }
   }
 
@@ -466,14 +466,14 @@ int main(int argc, char** argv)
   }
 
   //printf("clip max pq: %i\n", clip_max_pq);
-  printf("overall max cll: %i\n", int(DoViTonemap::pq2nits(clip_max_pq) + 0.5));
+  printf("overall max cll: %i\n", int(DoViTransferFunctions::pq2nits(clip_max_pq) + 0.5));
   printf("color matrix deviation: %i\n", to8bits(unusualMatrix));
   printf("mapping deviation: %i\n", to8bits(nonIdentityMapping));
   if(elMixing) printf("el-clip processing: enabled\n");
   else printf("el-clip processing: disabled\n");
   printf("available trims: ");
   for (int i = 0; i < trimPq.size(); i++) {
-    printf("%i nits (%i)\n", int(DoViTonemap::pq2nits(trimPq[i]) + 0.5), trimPq[i]);
+    printf("%i nits (%i)\n", int(DoViTransferFunctions::pq2nits(trimPq[i]) + 0.5), trimPq[i]);
     printf("                 ");
   }
   (trimPq.size() > 0) ? printf("\n") : printf("none\n");

@@ -30,10 +30,10 @@
     <ClCompile Include="DoViMaxPqFileReader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DoViTonemap.cpp">
+    <ClCompile Include="DoViTransferFunctions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DoViTonemapper.cpp">
+    <ClCompile Include="DoViTonemap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -53,10 +53,10 @@
     <ClInclude Include="DoViMaxPqFileReader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DoViTonemap.h">
+    <ClInclude Include="DoViTransferFunctions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DoViTonemapper.h">
+    <ClInclude Include="DoViTonemap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

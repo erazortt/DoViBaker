@@ -1,74 +1,47 @@
 #pragma once
-#include <algorithm>
+#include "avisynth.h"
+#include "DoViTransferFunctions.h"
 
-class DoViTonemap
+template<int bitDepth>
+class DoViTonemap : public DoViTransferFunctions, public GenericVideoFilter
 {
 public:
   DoViTonemap(
-    float targetMaxNits, 
+    PClip child,
+    float targetMaxNits,
     float targetMinNits,
     float masterMaxNits,
     float masterMinNits,
-    float scale);
+    float scale,
+    IScriptEnvironment* env);
 
-  static inline float EOTF(float ep);
-  static inline float EOTFinv(float fd);
-  static inline float pq2nits(uint16_t pq);
-  static inline uint16_t nits2pq(float nits);
-  static inline float EETF(float e1, float KS, float maxLum);
-  inline uint16_t applyLut(uint16_t pq) const { return lut[pq]; };
-
-protected:
-  void generateLut();
-  const uint16_t targetMaxPq;
-  const uint16_t targetMinPq;
-  uint16_t masterMaxPq;
-  uint16_t masterMinPq;
-  float lumScale;
+  PVideoFrame GetFrame(int n, IScriptEnvironment* env) override;
+  static inline uint16_t signal2pq(uint16_t signal);
+  static inline uint16_t pq2signal(uint16_t pq);
 
 private:
-  static constexpr float m1 = 2610.0 / 4096 / 4;
-  static constexpr float m2 = 2523.0 / 4096 * 128;
-  static constexpr float c3 = 2392.0 / 4096 * 32;
-  static constexpr float c2 = 2413.0 / 4096 * 32;
-  static constexpr float c1 = c3 - c2 + 1;
-  static constexpr int LUT_SIZE = 4096;
+  void applyTonemapRGB(PVideoFrame& dst, const PVideoFrame& src) const;
+  //void applyTonemapYUV(PVideoFrame& dst, const PVideoFrame& src) const;
 
-  uint16_t lut[LUT_SIZE];
+  bool dynamicMasterMaxPq;
+  bool dynamicMasterMinPq;
+  bool dynamicLumScale;
 };
 
-float DoViTonemap::EOTF(float ep)
-{
-  const float epower = powf(ep, 1 / m2);
-  const float num = std::max(epower - c1, 0.0f);
-  const float denom = c2 - c3 * epower;
-  return powf(num / denom, 1 / m1);
+template<int bitDepth>
+uint16_t DoViTonemap<bitDepth>::signal2pq(uint16_t signal) {
+  if (bitDepth < 12) {
+    return signal << (12 - bitDepth);
+  } else {
+    return signal >> (bitDepth - 12);
+  }
 }
 
-float DoViTonemap::EOTFinv(float Y)
-{
-  const float epower = powf(Y, m1);
-  const float num = c1 + c2 * epower;
-  const float denom = 1 + c3 * epower;
-  return powf(num / denom, m2);
-}
-
-float DoViTonemap::pq2nits(uint16_t pq)
-{
-  const float ep = pq / 4095.0;
-  return DoViTonemap::EOTF(ep) * 10000;
-}
-
-uint16_t DoViTonemap::nits2pq(float nits)
-{
-  const float Y = nits / 10000;
-  return DoViTonemap::EOTFinv(Y) * 4095.0 + 0.5;
-}
-
-float DoViTonemap::EETF(float e1, float KS, float maxLum)
-{
-  float t = (e1 - KS) / (1 - KS);
-  float p = (2*t*t*t-3*t*t+1)*KS+(t*t*t-2*t*t+t)*(1-KS)+(-2*t*t*t+3*t*t)*maxLum;
-  float e2 = (e1 < KS) ? e1 : p;
-  return e2;
+template<int bitDepth>
+uint16_t DoViTonemap<bitDepth>::pq2signal(uint16_t pq) {
+  if (bitDepth < 12) {
+    return pq >> (12 - bitDepth);
+  } else {
+    return pq << (bitDepth - 12);
+  }
 }
