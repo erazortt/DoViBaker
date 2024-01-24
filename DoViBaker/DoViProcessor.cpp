@@ -3,6 +3,7 @@
 #include <string>
 
 #include "DoViProcessor.h"
+#include "DoViTransferFunctions.h"
 
 
 DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env, uint8_t blContainerBits, uint8_t elContainerBits)
@@ -10,7 +11,7 @@ DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env, uint8
 	, rgbProof(false)
 	, nlqProof(false)
 	, desiredTrimPq(0)
-	, max_content_light_level(1000)
+	, dynamic_max_content_light_level(1000)
 	, rpus(0x0)
 	, blContainerBitDepth(blContainerBits)
 	, elContainerBitDepth(elContainerBits)
@@ -202,16 +203,18 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env, const uin
 			return false;
 		}*/
 
-		min_pq = vdr_dm_data->dm_data.level1->min_pq;
-		max_pq = vdr_dm_data->dm_data.level1->max_pq;
-		//max_content_light_level = pq2nits(vdr_dm_data->source_max_pq);
-		//max_content_light_level = vdr_dm_data->dm_data.level6->max_content_light_level;
-		max_content_light_level = pq2nits(max_pq);
+		dynamic_min_pq = vdr_dm_data->dm_data.level1->min_pq;
+		dynamic_max_pq = vdr_dm_data->dm_data.level1->max_pq;
+		dynamic_max_content_light_level = DoViTransferFunctions::pq2nits(dynamic_max_pq) + 0.5;
+		if (vdr_dm_data->dm_data.level6) {
+			static_max_content_light_level = vdr_dm_data->dm_data.level6->max_content_light_level;
+			static_max_pq = DoViTransferFunctions::nits2pq(vdr_dm_data->dm_data.level6->max_content_light_level);
+		}
 
 		skipTrim = true;
 		if (desiredTrimPq) {
 			skipTrim = false;
-			avg_pq = vdr_dm_data->dm_data.level1->avg_pq;
+			dynamic_avg_pq = vdr_dm_data->dm_data.level1->avg_pq;
 			auto lvl2 = vdr_dm_data->dm_data.level2;
 			availableTrimPqs = std::vector<uint16_t>(lvl2.len);
 			trimInfoMissing = true;
@@ -254,12 +257,12 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env, const uin
 		//https://ffmpeg.org/doxygen/trunk/dovi__rpu_8c_source.html
 		showMessage("DoViBaker: Only method NLQ_LINEAR_DZ can be applied, NLQ_MU_LAW is not documented.", env);
 		return false;
-		//alternativlely we could just gracefully disable the nlq processing with disable_residual_flag=true
+		//alternatively we could just gracefully disable the nlq processing with disable_residual_flag=true
 	}
 	if (mapping_data->nlq_num_pivots_minus2 != 0) {
 		showMessage("DoViBaker: Expecting nlq_num_pivots_minus2 to be 0.", env);
 		return false;
-		//alternativlely we could just gracefully disable the nlq processing with disable_residual_flag=true
+		//alternatively we could just gracefully disable the nlq processing with disable_residual_flag=true
 	}
 
 	std::string el_type(header->el_type);
@@ -451,9 +454,9 @@ uint16_t DoViProcessor::signalReconstruction(uint16_t v, int16_t r) const {
 }
 
 void DoViProcessor::prepareTrimCoef() {
-	float x1 = trim.minNits = pq2nits(min_pq);
-	float x2 = pq2nits(avg_pq);
-	float x3 = trim.maxNits = pq2nits(max_pq);
+	float x1 = trim.minNits = DoViTransferFunctions::pq2nits(dynamic_min_pq);
+	float x2 = DoViTransferFunctions::pq2nits(dynamic_avg_pq);
+	float x3 = trim.maxNits = DoViTransferFunctions::pq2nits(dynamic_max_pq);
 
 	float y1 = targetMinNits;
 	float y2 = sqrtf(x2 * sqrtf(targetMaxNits * targetMinNits));
@@ -479,18 +482,18 @@ void DoViProcessor::prepareTrimCoef() {
 }
 
 void DoViProcessor::processTrim(uint16_t& ro, uint16_t& go, uint16_t& bo, const uint16_t& ri, const uint16_t& gi, const uint16_t& bi) const  {
-	float dr = pq2nits(ri >> (outContainerBitDepth - out_bit_depth));
-	float dg = pq2nits(gi >> (outContainerBitDepth - out_bit_depth));
-	float db = pq2nits(bi >> (outContainerBitDepth - out_bit_depth));
+	float dr = DoViTransferFunctions::pq2nits(ri >> (outContainerBitDepth - out_bit_depth));
+	float dg = DoViTransferFunctions::pq2nits(gi >> (outContainerBitDepth - out_bit_depth));
+	float db = DoViTransferFunctions::pq2nits(bi >> (outContainerBitDepth - out_bit_depth));
 
 	float er = (trim.ccc[0] + dr * trim.ccc[1]) / (1 + dr * trim.ccc[2]);
 	float eg = (trim.ccc[0] + dg * trim.ccc[1]) / (1 + dg * trim.ccc[2]);
 	float eb = (trim.ccc[0] + db * trim.ccc[1]) / (1 + db * trim.ccc[2]);
 
 	if (trimInfoMissing) {
-		ro = nits2pq(er) << (outContainerBitDepth - out_bit_depth);
-		go = nits2pq(eg) << (outContainerBitDepth - out_bit_depth);
-		bo = nits2pq(eb) << (outContainerBitDepth - out_bit_depth);
+		ro = DoViTransferFunctions::nits2pq(er) << (outContainerBitDepth - out_bit_depth);
+		go = DoViTransferFunctions::nits2pq(eg) << (outContainerBitDepth - out_bit_depth);
+		bo = DoViTransferFunctions::nits2pq(eb) << (outContainerBitDepth - out_bit_depth);
 	}	else {
 		float y3 = targetMaxNits;
 		float fr = powf((std::clamp(((er / y3) * trim.goP[0]) + trim.goP[1], 0.0f, 1.0f)), trim.goP[2]) * y3;
@@ -502,8 +505,8 @@ void DoViProcessor::processTrim(uint16_t& ro, uint16_t& go, uint16_t& bo, const 
 		float gg = fg * powf((1 + trim.cS[0]) * fg / Y, trim.cS[1]);
 		float gb = fb * powf((1 + trim.cS[0]) * fb / Y, trim.cS[1]);
 
-		ro = nits2pq(gr) << (outContainerBitDepth - out_bit_depth);
-		go = nits2pq(gg) << (outContainerBitDepth - out_bit_depth);
-		bo = nits2pq(gb) << (outContainerBitDepth - out_bit_depth);
+		ro = DoViTransferFunctions::nits2pq(gr) << (outContainerBitDepth - out_bit_depth);
+		go = DoViTransferFunctions::nits2pq(gg) << (outContainerBitDepth - out_bit_depth);
+		bo = DoViTransferFunctions::nits2pq(gb) << (outContainerBitDepth - out_bit_depth);
 	}
 }

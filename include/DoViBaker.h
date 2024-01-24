@@ -1,10 +1,7 @@
 #pragma once
 
 #include <string>
-
 #include "DoViProcessor.h"
-#include "timecube/timecube.h"
-
 
 template<int quarterResolutionEl>
 class DoViBaker : public GenericVideoFilter
@@ -16,7 +13,6 @@ public:
     const char* rpuPath, 
     bool blClipChromaSubSampled, 
     bool elClipChromaSubSampled, 
-    std::vector<std::pair<uint16_t, std::string>> &cubes,
     uint16_t desiredTrimPq,
     float targetMinLum,
     float targetMaxLum,
@@ -32,14 +28,6 @@ public:
   }
 
 private:
-  struct TimecubeLutFree {
-    void operator()(timecube_lut* ptr) { timecube_lut_free(ptr); }
-  };
-
-  struct TimecubeFilterFree {
-    void operator()(timecube_filter* ptr) { timecube_filter_free(ptr); }
-  };
-
   void upscaleEl(PVideoFrame& dst, const PVideoFrame& el, VideoInfo dstVi, IScriptEnvironment* env);
   void upsampleChroma(PVideoFrame& dst, const PVideoFrame& el, VideoInfo dstVi, IScriptEnvironment* env);
   //void upsampleElChroma(PVideoFrame& dst, const PVideoFrame& el, VideoInfo dstVi, IScriptEnvironment* env);
@@ -51,7 +39,6 @@ private:
   template<int chromaSubsampling>
   void applyDovi(PVideoFrame& dst, const PVideoFrame& blSrcY, const PVideoFrame& blSrcUV, const PVideoFrame& elSrcY, const PVideoFrame& elSrcUV, IScriptEnvironment* env) const;
   void convert2rgb(PVideoFrame& rgb, const PVideoFrame& y, const PVideoFrame& uv) const;
-  void applyLut(PVideoFrame& dst, const PVideoFrame& src) const;
   void applyTrim(PVideoFrame& dst, const PVideoFrame& src) const;
 
   typedef uint16_t(*upscaler_t)(const uint16_t* srcSamples, int idx0);
@@ -62,11 +49,9 @@ private:
   //void upsampleHorz(PVideoFrame& dst, const PVideoFrame& src, int plane, IScriptEnvironment* env);
 
   PClip elChild;
-  int CPU_FLAG;
   DoViProcessor* doviProc;
+  
   const bool qnd;
   const bool blClipChromaSubSampled;
   const bool elClipChromaSubSampled;
-  std::vector<std::pair<uint16_t, timecube_filter*>> luts;
-  const timecube_filter* current_frame_lut;
 };

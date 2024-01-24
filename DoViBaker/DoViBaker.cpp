@@ -3,35 +3,13 @@
 
 #include "DoViBaker.h"
 
-
-AVS_FORCEINLINE void* aligned_malloc(size_t size, size_t align)
-{
-	void* result = [&]() {
-#ifdef _MSC_VER 
-		return _aligned_malloc(size, align);
-#else 
-		if (posix_memalign(&result, align, size))
-			return result = nullptr;
-		else
-			return result;
-#endif
-	}();
-
-	return result;
-}
-
-AVS_FORCEINLINE void aligned_free(void* ptr)
-{
-#ifdef _MSC_VER 
-	_aligned_free(ptr);
-#else 
-	free(ptr);
-#endif
-}
-
 //////////////////////////////
 // Code
 //////////////////////////////
+
+// explicitly instantiate the template for the linker
+template class DoViBaker<true>;
+template class DoViBaker<false>;
 
 template<int quarterResolutionEl>
 DoViBaker<quarterResolutionEl>::DoViBaker(
@@ -40,7 +18,6 @@ DoViBaker<quarterResolutionEl>::DoViBaker(
 	const char* rpuPath, 
 	bool _blChromaSubSampled, 
 	bool _elChromaSubSampled,
-	std::vector<std::pair<uint16_t, std::string>>& _cubes,
 	uint16_t _desiredTrimPq,
 	float _targetMinLum,
 	float _targetMaxLum,
@@ -72,40 +49,8 @@ DoViBaker<quarterResolutionEl>::DoViBaker(
 		env->ThrowError("DoViBaker: Length of BL clip does not match length of EL clip");
 	}
 
-	CPU_FLAG = env->GetCPUFlags();
-	int lutMaxCpuCaps = INT_MAX;
-
-	timecube_filter_params params{};
-	params.width = vi.width;
-	params.height = vi.height;
-	params.src_type = TIMECUBE_PIXEL_WORD;
-	params.src_depth = doviProc->outContainerBitDepth;
-	params.src_range = TIMECUBE_RANGE_FULL;
-	params.dst_type = TIMECUBE_PIXEL_WORD;
-	params.dst_depth = doviProc->outContainerBitDepth;
-	params.dst_range = TIMECUBE_RANGE_FULL;
-	params.interp = TIMECUBE_INTERP_TETRA;
-	params.cpu = static_cast<timecube_cpu_type_e>(lutMaxCpuCaps);
-
-	for (int i = 0; i < _cubes.size(); i++) {
-		auto cube_path = _cubes[i].second;
-		if (!std::filesystem::exists(std::filesystem::path(cube_path))) {
-			env->ThrowError((std::string("DoViBaker: cannot find cube file ") + cube_path).c_str());
-		}
-		std::unique_ptr<timecube_lut, TimecubeLutFree> cube{ timecube_lut_from_file(cube_path.c_str()) };
-		if (!cube)
-			throw std::runtime_error{ "DoViBaker: error reading LUT from file" };
-
-		timecube_filter* lut = timecube_filter_create(cube.get(), &params);
-		if (!lut)
-			throw std::runtime_error{ "DoViBaker: error creating LUT" };
-
-		luts.push_back(std::pair(_cubes[i].first, lut));
-	}
-
 	// set the output pixel type
 	vi.pixel_type = VideoInfo::CS_RGBP16;
-
 }
 
 template<int quarterResolutionEl>
@@ -322,9 +267,7 @@ template<int chromaSubsampling>
 void DoViBaker<quarterResolutionEl>::applyDovi(PVideoFrame& dst, const PVideoFrame& blSrcY, const PVideoFrame& blSrcUV, const PVideoFrame& elSrcY, const PVideoFrame& elSrcUV, IScriptEnvironment* env) const {
 
 	const int blSrcPitchY = blSrcY->GetPitch(PLANAR_Y) / sizeof(uint16_t);
-
 	const int elSrcPitchY = elSrcY->GetPitch(PLANAR_Y) / sizeof(uint16_t);
-
 	const int dstPitchY = dst->GetPitch(PLANAR_Y) / sizeof(uint16_t);
 
 	std::array<const uint16_t*, chromaSubsampling + 1> blSrcYp;
@@ -343,9 +286,7 @@ void DoViBaker<quarterResolutionEl>::applyDovi(PVideoFrame& dst, const PVideoFra
 	const int blSrcHeightUV = blSrcUV->GetHeight(PLANAR_U);
 	const int blSrcWidthUV = blSrcUV->GetRowSize(PLANAR_U) / sizeof(uint16_t);
 	const int blSrcPitchUV = blSrcUV->GetPitch(PLANAR_U) / sizeof(uint16_t);
-
 	const int elSrcPitchUV = elSrcUV->GetPitch(PLANAR_U) / sizeof(uint16_t);
-
 	const int dstPitchUV = dst->GetPitch(PLANAR_U) / sizeof(uint16_t);
 
 	const uint16_t* blSrcUp = (const uint16_t*)blSrcUV->GetReadPtr(PLANAR_U);
@@ -427,13 +368,10 @@ template<int quarterResolutionEl>
 template<int blChromaSubsampling, int elChromaSubsampling>
 void DoViBaker<quarterResolutionEl>::doAllQuickAndDirty(PVideoFrame& dst, const PVideoFrame& blSrc, const PVideoFrame& elSrc, IScriptEnvironment* env) const {
 	const int blSrcPitchY = blSrc->GetPitch(PLANAR_Y) / sizeof(uint16_t);
-
 	const int elSrcPitchY = elSrc->GetPitch(PLANAR_Y) / sizeof(uint16_t);
-
 	const int dstPitch = dst->GetPitch(PLANAR_R) / sizeof(uint16_t);
 
 	const int blSrcPitchUV = blSrc->GetPitch(PLANAR_U) / sizeof(uint16_t);
-
 	const int elSrcHeightUV = elSrc->GetHeight(PLANAR_U);
 	const int elSrcWidthUV = elSrc->GetRowSize(PLANAR_U) / sizeof(uint16_t);
 	const int elSrcPitchUV = elSrc->GetPitch(PLANAR_U) / sizeof(uint16_t);
@@ -542,7 +480,6 @@ template<int quarterResolutionEl>
 void DoViBaker<quarterResolutionEl>::convert2rgb(PVideoFrame& dst, const PVideoFrame& srcY, const PVideoFrame& srcUV) const
 {
 	const int srcPitchY = srcY->GetPitch(PLANAR_Y) / sizeof(uint16_t);
-
 	const int dstPitch = dst->GetPitch(PLANAR_R) / sizeof(uint16_t);
 
 	const uint16_t* srcYp = (const uint16_t*)srcY->GetReadPtr(PLANAR_Y);
@@ -611,33 +548,6 @@ void DoViBaker<quarterResolutionEl>::applyTrim(PVideoFrame& dst, const PVideoFra
 }
 
 template<int quarterResolutionEl>
-void DoViBaker<quarterResolutionEl>::applyLut(PVideoFrame& dst, const PVideoFrame& src) const
-{
-	const void* src_p[3];
-	ptrdiff_t src_stride[3];
-	void* dst_p[3];
-	ptrdiff_t dst_stride[3];
-
-	src_p[0] = src->GetReadPtr(PLANAR_R);
-	src_p[1] = src->GetReadPtr(PLANAR_G);
-	src_p[2] = src->GetReadPtr(PLANAR_B);
-	src_stride[0] = src->GetPitch(PLANAR_R);
-	src_stride[1] = src->GetPitch(PLANAR_G);
-	src_stride[2] = src->GetPitch(PLANAR_B);
-	dst_p[0] = dst->GetWritePtr(PLANAR_R);
-	dst_p[1] = dst->GetWritePtr(PLANAR_G);
-	dst_p[2] = dst->GetWritePtr(PLANAR_B);
-	dst_stride[0] = dst->GetPitch(PLANAR_R);
-	dst_stride[1] = dst->GetPitch(PLANAR_G);
-	dst_stride[2] = dst->GetPitch(PLANAR_B);
-
-	std::unique_ptr<void, decltype(&aligned_free)> tmp{ nullptr, aligned_free };
-	tmp.reset(aligned_malloc(timecube_filter_get_tmp_size(current_frame_lut), 64));
-
-	timecube_filter_apply(current_frame_lut, src_p, src_stride, dst_p, dst_stride, tmp.get());
-}
-
-template<int quarterResolutionEl>
 PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* env)
 {
 	PVideoFrame blSrc = child->GetFrame(n, env);
@@ -666,19 +576,14 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 	env->propSetInt(env->getFramePropsRW(dst), "_ColorRange", doviProc->isLimitedRangeOutput(), 0);
 	env->propDeleteKey(env->getFramePropsRW(dst), "_ChromaLocation"); //RGB has no chroma location defined
 	env->propSetInt(env->getFramePropsRW(dst), "_SceneChangePrev", doviProc->isSceneChange(), 0);
-	env->propSetInt(env->getFramePropsRW(dst), "_dovi_max_pq", doviProc->getMaxPq(), 0);
-	env->propSetInt(env->getFramePropsRW(dst), "_dovi_max_content_light_level", doviProc->getMaxContentLightLevel(), 0);
-
-	bool skipLut = luts.size() == 0;
-	if (!skipLut) {
-		current_frame_lut = luts[luts.size() - 1].second;
-		for (int i = 1; i < luts.size(); i++) {
-			if (doviProc->getMaxContentLightLevel() <= luts[i].first) {
-				current_frame_lut = luts[i - 1].second;
-				break;
-			}
-		}
+	env->propSetInt(env->getFramePropsRW(dst), "_dovi_dynamic_min_pq", doviProc->getDynamicMinPq(), 0);
+	env->propSetInt(env->getFramePropsRW(dst), "_dovi_dynamic_max_pq", doviProc->getDynamicMaxPq(), 0);
+	env->propSetInt(env->getFramePropsRW(dst), "_dovi_dynamic_max_content_light_level", doviProc->getDynamicMaxContentLightLevel(), 0);
+	if (doviProc->getStaticMaxPq() > 0) {
+		env->propSetInt(env->getFramePropsRW(dst), "_dovi_static_max_pq", doviProc->getStaticMaxPq(), 0);
+		env->propSetInt(env->getFramePropsRW(dst), "_dovi_static_max_content_light_level", doviProc->getStaticMaxContentLightLevel(), 0);
 	}
+
 	bool skipTrim = doviProc->trimProcessingDisabled();
 
 	bool skipElProcessing = false;
@@ -769,15 +674,8 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 	if (!skipTrim) {
 		applyTrim(dst, dst);
 	}
-	if (!skipLut) {
-		applyLut(dst, dst);
-	}
 	return dst;
 }
-
-// explicitly instantiate the template for the linker
-template class DoViBaker<true>;
-template class DoViBaker<false>;
 
 /*PVideoFrame DoViBaker::GetFrame(int n, IScriptEnvironment* env) {
 	PVideoFrame src = elChild->GetFrame(n, env);
