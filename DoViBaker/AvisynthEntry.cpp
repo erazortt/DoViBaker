@@ -3,7 +3,7 @@
 #include "DoViBaker.h"
 #include "DoViCubes.h"
 #include "DoViTonemap.h"
-#include "DoViMaxPqFileReader.h"
+#include "DoViStatsFileLoader.h"
 
 AVSValue __cdecl Create_RealDoViBaker(
   PClip blclip,
@@ -142,19 +142,19 @@ AVSValue __cdecl Create_DoViCubes(AVSValue args, void* user_data, IScriptEnviron
     &args, env);
 }
 
-AVSValue __cdecl Create_RealDoViMaxMqFileReader(
+AVSValue __cdecl Create_RealDoViStatsFileLoader(
   PClip clip,
   std::string maxPqFile,
   std::string sceneCutFile,
   const AVSValue* args,
   IScriptEnvironment* env)
 {
-  return new DoViMaxPqFileReader(clip, maxPqFile, sceneCutFile, env);
+  return new DoViStatsFileLoader(clip, maxPqFile, sceneCutFile, env);
 }
 
-AVSValue __cdecl Create_DoViMaxPqFileReader(AVSValue args, void* user_data, IScriptEnvironment* env)
+AVSValue __cdecl Create_DoViStatsFileLoader(AVSValue args, void* user_data, IScriptEnvironment* env)
 {
-  return Create_RealDoViMaxMqFileReader(
+  return Create_RealDoViStatsFileLoader(
     args[0].AsClip(),
     args[1].AsString(""),
     args[2].AsString(""),
@@ -212,7 +212,7 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScri
   env->AddFunction("DoViBaker", "c[el]c[rpu]s[trimPq]i[targetMaxNits]f[targetMinNits]f[qnd]b[rgbProof]b[nlqProof]b", Create_DoViBaker, 0);
   env->AddFunction("DoViTonemap", "c[targetMaxNits]f[targetMinNits]f[masterMaxNits]f[masterMinNits]f[lumScale]f", Create_DoViTonemap, 0);
   env->AddFunction("DoViCubes", "c[cubes]s[mclls]s[cubes_basepath]s[fullrange]b", Create_DoViCubes, 0);
-  env->AddFunction("DoViMaxPqFileReader", "c[maxPqFile]s[sceneCutsFile]s", Create_DoViMaxPqFileReader, 0);
+  env->AddFunction("DoViStatsFileLoader", "c[statsFile]s[sceneCutsFile]s", Create_DoViStatsFileLoader, 0);
 
   return "Hey it is just a spectrogram!";
 }
@@ -408,11 +408,11 @@ int main(int argc, char** argv)
   }
 
   if (showTonemap) {
-    DoViTransferFunctions tonemap(1000, 0, 4000, 0, 1.0);
+    DoViTransferFunctions tonemap(1000, 2, 2000, 1, 1.0);
     for (int i = 0; i <= 255; i++) {
       uint16_t pq = DoViTonemap<8>::signal2pq(i);
       uint16_t mappedPq = tonemap.applyEETF(pq);
-      printf("%i %i %i %i\n", i, pq, mappedPq, DoViTonemap<8>::pq2signal(mappedPq));
+      printf("%i %i %f %f %i %i\n", i, pq, DoViTransferFunctions::pq2nits(pq), DoViTransferFunctions::pq2nits(mappedPq), mappedPq, DoViTonemap<8>::pq2signal(mappedPq));
     }
   }
 

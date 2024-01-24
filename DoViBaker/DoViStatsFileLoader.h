@@ -3,10 +3,10 @@
 #include <vector>
 #include <string>
 
-class DoViMaxPqFileReader : public GenericVideoFilter
+class DoViStatsFileLoader : public GenericVideoFilter
 {
 public:
-  DoViMaxPqFileReader(
+  DoViStatsFileLoader(
     PClip child,
     std::string maxPqFile,
     std::string sceneCutFile,

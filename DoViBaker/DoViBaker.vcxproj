@@ -31,7 +31,7 @@
     <ClCompile Include="DoViBaker.cpp" />
     <ClCompile Include="DoViCubes.cpp" />
     <ClCompile Include="DoViTransferFunctions.cpp" />
-    <ClCompile Include="DoViMaxPqFileReader.cpp" />
+    <ClCompile Include="DoViStatsFileLoader.cpp" />
     <ClCompile Include="DoViProcessor.cpp" />
     <ClCompile Include="DoViTonemap.cpp" />
   </ItemGroup>
@@ -41,7 +41,7 @@
     <ClInclude Include="..\include\dovi\rpu_parser.h" />
     <ClInclude Include="DoViCubes.h" />
     <ClInclude Include="DoViTransferFunctions.h" />
-    <ClInclude Include="DoViMaxPqFileReader.h" />
+    <ClInclude Include="DoViStatsFileLoader.h" />
     <ClInclude Include="DoViTonemap.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -85,7 +85,7 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>

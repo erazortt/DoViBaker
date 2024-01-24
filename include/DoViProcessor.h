@@ -158,7 +158,7 @@ private:
 void DoViProcessor::setTrim(uint16_t trimPq, float targetMinNits, float targetMaxNits)
 {
   desiredTrimPq = trimPq;
-  this->targetMinNits = std::clamp(targetMinNits, 0.0001f, 5.0f);
+  this->targetMinNits = std::clamp(targetMinNits, 0.00001f, 5.0f);
   this->targetMaxNits = std::clamp(targetMaxNits, 5.0f, 10000.0f);
 }
 

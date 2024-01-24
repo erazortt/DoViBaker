@@ -11,8 +11,6 @@ public:
     float masterMinNits,
     float scale);
 
-  static inline float EOTF(float ep);
-  static inline float EOTFinv(float fd);
   static inline float pq2nits(uint16_t pq);
   static inline uint16_t nits2pq(float nits);
   inline uint16_t applyEETF(uint16_t pq) const { return lut[pq]; };
@@ -26,7 +24,9 @@ protected:
   float lumScale;
 
 private:
-  static inline float spline(float e1, float KS, float maxLum);
+  static inline float EOTF(float ep);
+  static inline float EOTFinv(float fd);
+  static inline float eetfSpline(float e1, float KS, float maxLum);
 
   static constexpr float m1 = 2610.0 / 4096 / 4;
   static constexpr float m2 = 2523.0 / 4096 * 128;
@@ -66,7 +66,7 @@ uint16_t DoViTransferFunctions::nits2pq(float nits)
   return DoViTransferFunctions::EOTFinv(Y) * 4095.0 + 0.5;
 }
 
-float DoViTransferFunctions::spline(float e1, float KS, float maxLum)
+float DoViTransferFunctions::eetfSpline(float e1, float KS, float maxLum)
 {
   float t = (e1 - KS) / (1 - KS);
   float p = (2*t*t*t-3*t*t+1)*KS+(t*t*t-2*t*t+t)*(1-KS)+(-2*t*t*t+3*t*t)*maxLum;
