@@ -72,7 +72,7 @@ function xyzGrayscale(clip xyz){
     lms_to_xyz(lms)
 }
 
-function realGrayscale(clip org, string "primariesIn", string "transferIn", string "scaleIn", string "primariesOut", string "transferOut", string "scaleOut", string "pixelTypeOut", int "outWidth", int "outHeight"){
+function betterGrayscale(clip org, string "primariesIn", string "transferIn", string "scaleIn", string "primariesOut", string "transferOut", string "scaleOut", string "pixelTypeOut", int "outWidth", int "outHeight"){
     primariesOut = default( primariesOut, primariesIn )
     transferOut = default( transferOut, transferIn )
     scaleOut = default( scaleOut, scaleIn )
@@ -88,15 +88,21 @@ function realGrayscale(clip org, string "primariesIn", string "transferIn", stri
     org.IsRGB()?rgb:rgb.z_ConvertFormat(pixel_type=pixelTypeOut,colorspace_op="rgb:linear:"+primariesIn+":full=>"+primariesOut+":"+transferOut+":"+primariesOut+":"+scaleOut,dither_type="none",resample_filter="bilinear",resample_filter_uv="bilinear", chromaloc_op="center=>"+chromaLoc)
 }
 
-function real709Grayscale(clip org){
-    realGrayscale(org, "709", "709", "limited")
+function betterNtscGrayscale(clip org){
+    betterGrayscale(org, "170m", "170m", "limited")
 }
-function real2020Grayscale(clip org){
-    realGrayscale(org, "2020", "2020", "limited")
+function betterPalGrayscale(clip org){
+    betterGrayscale(org, "470bg", "470bg", "limited")
 }
-function realPqGrayscale(clip org){
-    realGrayscale(org, "2020", "st2084", "limited")
+function better709Grayscale(clip org){
+    betterGrayscale(org, "709", "709", "limited")
 }
-function realHlgGrayscale(clip org){
-    realGrayscale(org, "2020", "std-b67","limited")
+function better2020Grayscale(clip org){
+    betterGrayscale(org, "2020", "2020", "limited")
+}
+function betterPqGrayscale(clip org){
+    betterGrayscale(org, "2020", "st2084", "limited")
+}
+function betterHlgGrayscale(clip org){
+    betterGrayscale(org, "2020", "std-b67","limited")
 }

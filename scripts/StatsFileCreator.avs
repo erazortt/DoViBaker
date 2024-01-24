@@ -28,7 +28,7 @@ global LumaDiffFac = 4.5 # 4.0 for SDR, 4.5 for HDR
 global LumaDiffMin = 7.8 # 11.0 for SDR, 8.0 for HDR (the usefull range for this is somewhere between 7 and 9 for HDR)
 
 scdResizeFac = (width()<1100)?1:(width()<2100)?2:4
-cllResizeFac = (width()<1100)?1:(width()<2100)?2:4
+cllResizeFac = (width()<1100)?1:(width()<2100)?1:2
 global scd=z_ConvertFormat(width=width()/scdResizeFac,height=height()/scdResizeFac,pixel_type="Y8",dither_type="none",resample_filter="bilinear",resample_filter_uv="bilinear",chromaloc_op="top_left=>top_left",colorspace_op="2020ncl:st2084:2020:limited=>2020ncl:st2084:2020:full")
 global rgb=z_ConvertFormat(width=width()/cllResizeFac,height=height()/cllResizeFac,pixel_type="RGBP16",dither_type="none",resample_filter="bilinear",resample_filter_uv="bilinear",chromaloc_op="top_left=>center",colorspace_op="2020ncl:st2084:2020:limited=>rgb:st2084:2020:full")
 scd_super = scd.MSuper(pel=2, sharp=0, hpad=16, vpad=16)
@@ -67,12 +67,9 @@ function signal2pq(clip c, int value){
     BitShiftLeft(value, 12-BitsPerComponent(c))
 }
 
-#This line sets the frame property "_SceneChangeNext"
-#ScriptClip(newSceneNextFrame+"""?propSet("_SceneChangeNext",1):propSet("_SceneChangeNext",0)""")
-
 #This line writes the frame numbers where scene changes occur to file. These can be imported into Vegas or other editor
 #WriteFileIf("sceneCuts.txt", newSceneNextFrame, "current_frame+1", flush=false, append=false)
 
 #This line writes max RGB pixel value, scene change detection and max frame brightness for each frame
-WriteFile("maxPq.txt", "current_frame", """ " " """, "Eval(newSceneNextFrameInt)", """ " " """, "rgb.signal2pq(Max(RPlaneMax(rgb),GPlaneMax(rgb),BPlaneMax(rgb)))", flush=false, append=false)
+WriteFile("statsFile.txt", "current_frame", """ " " """, "Eval(newSceneNextFrameInt)", """ " " """, "rgb.signal2pq(Max(RPlaneMax(rgb),GPlaneMax(rgb),BPlaneMax(rgb)))", """ " " """, "rgb.signal2pq(Min(RPlaneMin(rgb),GPlaneMin(rgb),BPlaneMin(rgb)))", flush=false, append=false)
 

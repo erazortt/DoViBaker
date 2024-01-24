@@ -1,10 +1,10 @@
 # compares the base brightness of a pq stream with a sdr stream.
-# needs masktools2, avsresize and RealGrayscale.avsi
+# needs masktools2, avsresize and BetterGrayscale.avsi
 # you might need to use the trim command so that the frames of the two streams match exactly
 
 #LoadPlugin("avsresize.dll")
 #LoadPlugin("masktools2.dll")
-#Import("RealGrayscale.avsi")
+#Import("BetterGrayscale.avsi")
 
 
 #### Select one of the source libraries ####
@@ -25,8 +25,8 @@
 
 
 resizeFac=(pq.width()<1100)?1:(pq.width()<2100)?2:4
-pqg=pq.realGrayscale(primariesIn="2020", transferIn="st2084", scaleIn="limited", scaleOut="full", pixelTypeOut="Y32", outWidth=pq.width()/resizeFac, outHeight=pq.height()/resizeFac)
-sdg=sdr.realGrayscale(primariesIn="709", transferIn="709", scaleIn="limited", scaleOut="full", pixelTypeOut="Y32", outWidth=pq.width()/resizeFac, outHeight=pq.height()/resizeFac)
+pqg=pq.betterGrayscale(primariesIn="2020", transferIn="st2084", scaleIn="limited", scaleOut="full", pixelTypeOut="Y32", outWidth=pq.width()/resizeFac, outHeight=pq.height()/resizeFac)
+sdg=sdr.betterGrayscale(primariesIn="709", transferIn="709", scaleIn="limited", scaleOut="full", pixelTypeOut="Y32", outWidth=pq.width()/resizeFac, outHeight=pq.height()/resizeFac)
 pqLin=mt_lut(pqg,mt_polish("(x>0)?100*(max(x^0.012683314-0.8359375,0)/(18.8515625-18.6875*(x^0.012683314)))^6.277394636:0"),use_expr=2)
 sdLin=mt_lut(sdg,mt_polish("(x>0)?2.676*(x)^2.4:0"),use_expr=2)
 global pqc=mt_lutxy(pqLin,sdg,mt_polish("(y>0&y<0.5)?x:0"),use_expr=2)
