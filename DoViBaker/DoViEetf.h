@@ -51,7 +51,7 @@ uint16_t DoViEetf<signalBitDepth>::signal2lut(uint16_t signal) {
     return (s * 16381 + 32768) >> 16;
   }
   else if (signalBitDepth == 16) {
-    return (s * 4095 + 34815) >> 16;
+    return (s * 4095 + 34822) >> 16;
   }
 }
 
