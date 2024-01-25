@@ -37,6 +37,13 @@ DoViTonemap<signalBitDepth>::DoViTonemap(
 }
 
 template<int signalBitDepth>
+DoViTonemap<signalBitDepth>::~DoViTonemap() 
+{
+	delete doviEetf;
+	doviEetf = 0x0;
+}
+
+template<int signalBitDepth>
 PVideoFrame DoViTonemap<signalBitDepth>::GetFrame(int n, IScriptEnvironment* env) {
 
 	PVideoFrame src = child->GetFrame(n, env);

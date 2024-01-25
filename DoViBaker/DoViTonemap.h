@@ -15,6 +15,8 @@ public:
     float scale,
     IScriptEnvironment* env);
 
+  virtual ~DoViTonemap();
+
   PVideoFrame GetFrame(int n, IScriptEnvironment* env) override;
 
 private:
