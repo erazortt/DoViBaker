@@ -30,7 +30,7 @@
     <ClCompile Include="DoViStatsFileLoader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DoViTransferFunctions.cpp">
+    <ClCompile Include="DoViEetf.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="DoViTonemap.cpp">
@@ -53,7 +53,7 @@
     <ClInclude Include="DoViStatsFileLoader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DoViTransferFunctions.h">
+    <ClInclude Include="DoViEetf.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DoViTonemap.h">

@@ -48,6 +48,10 @@ public:
   inline uint16_t getStaticMaxContentLightLevel() const { return static_max_content_light_level; }
   const std::vector<uint16_t>& getAvailableTrimPqs() const { return availableTrimPqs; }
 
+  static inline float EOTF(float ep);
+  static inline float EOTFinv(float fd);
+  static inline float pq2nits(uint16_t pq);
+  static inline uint16_t nits2pq(float nits);
   /*
   * these upsampling functions are not following the paper, but should be correct when assuming top-left chroma location
   */
@@ -86,6 +90,12 @@ private:
   int16_t nonLinearInverseQuantization(int cmp, uint16_t sample) const;
   uint16_t signalReconstruction(uint16_t v, int16_t r) const;
   void prepareTrimCoef();
+
+  static constexpr float m1 = 2610.0 / 4096 / 4;
+  static constexpr float m2 = 2523.0 / 4096 * 128;
+  static constexpr float c3 = 2392.0 / 4096 * 32;
+  static constexpr float c2 = 2413.0 / 4096 * 32;
+  static constexpr float c1 = c3 - c2 + 1;
 
   const DoviRpuOpaqueList* rpus;
 
@@ -160,6 +170,34 @@ void DoViProcessor::setTrim(uint16_t trimPq, float targetMinNits, float targetMa
   desiredTrimPq = trimPq;
   this->targetMinNits = std::clamp(targetMinNits, 0.00001f, 5.0f);
   this->targetMaxNits = std::clamp(targetMaxNits, 5.0f, 10000.0f);
+}
+
+float DoViProcessor::EOTF(float ep)
+{
+  const float epower = powf(ep, 1 / m2);
+  const float num = std::max(epower - c1, 0.0f);
+  const float denom = c2 - c3 * epower;
+  return powf(num / denom, 1 / m1);
+}
+
+float DoViProcessor::EOTFinv(float Y)
+{
+  const float epower = powf(Y, m1);
+  const float num = c1 + c2 * epower;
+  const float denom = 1 + c3 * epower;
+  return powf(num / denom, m2);
+}
+
+float DoViProcessor::pq2nits(uint16_t pq)
+{
+  const float ep = pq / 4095.0;
+  return EOTF(ep) * 10000;
+}
+
+uint16_t DoViProcessor::nits2pq(float nits)
+{
+  const float Y = nits / 10000;
+  return EOTFinv(Y) * 4095.0 + 0.5;
 }
 
 constexpr uint16_t DoViProcessor::Clip3(int lower, int upper, int value)

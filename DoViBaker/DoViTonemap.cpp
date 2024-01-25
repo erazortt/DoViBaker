@@ -1,4 +1,5 @@
 #include "DoViTonemap.h"
+#include "DoViProcessor.h"
 
 // explicitly instantiate the template for the linker
 template class DoViTonemap<8>;
@@ -7,28 +8,36 @@ template class DoViTonemap<12>;
 template class DoViTonemap<14>;
 template class DoViTonemap<16>;
 
-template<int bitDepth>
-DoViTonemap<bitDepth>::DoViTonemap(
+template<int signalBitDepth>
+DoViTonemap<signalBitDepth>::DoViTonemap(
 	PClip child,
 	float targetMaxNits,
 	float targetMinNits,
 	float masterMaxNits,
 	float masterMinNits,
-	float lumScale,
+	float lumScale_,
 	IScriptEnvironment* env)
-	: DoViTransferFunctions(
-			targetMaxNits, 
-			targetMinNits, 
-			masterMaxNits < 0 ? 10000 : masterMaxNits,
-			masterMinNits < 0 ? 0 : masterMinNits,
-			lumScale < 0 ? 1 : lumScale)
-	, GenericVideoFilter(child)
+	: GenericVideoFilter(child)
+	, targetMaxPq(DoViProcessor::nits2pq(targetMaxNits))
+	, targetMinPq(DoViProcessor::nits2pq(targetMinNits))
+	, masterMaxPq(DoViProcessor::nits2pq(masterMaxNits < 0 ? 10000 : masterMaxNits))
+	, masterMinPq(DoViProcessor::nits2pq(masterMinNits < 0 ? 0 : masterMinNits))
+	, lumScale(lumScale_ < 0 ? 1 : lumScale_)
 	, dynamicMasterMaxPq(masterMaxNits < 0)
 	, dynamicMasterMinPq(masterMinNits < 0)
-	, dynamicLumScale(lumScale < 0) {}
+	, dynamicLumScale(lumScale < 0) 
+{
+	doviEetf = new DoViEetf<signalBitDepth>();
+	doviEetf->generateEETF(
+		targetMaxPq,
+		targetMinPq,
+		masterMaxPq,
+		masterMinPq,
+		lumScale);
+}
 
-template<int bitDepth>
-PVideoFrame DoViTonemap<bitDepth>::GetFrame(int n, IScriptEnvironment* env) {
+template<int signalBitDepth>
+PVideoFrame DoViTonemap<signalBitDepth>::GetFrame(int n, IScriptEnvironment* env) {
 
 	PVideoFrame src = child->GetFrame(n, env);
 	PVideoFrame dst = env->NewVideoFrameP(vi, &src);
@@ -53,7 +62,12 @@ PVideoFrame DoViTonemap<bitDepth>::GetFrame(int n, IScriptEnvironment* env) {
 		masterMinPq = minPq;
 		masterMaxPq = maxPq;
 		lumScale = scale;
-		generateEETF();
+		doviEetf->generateEETF(
+			targetMaxPq,
+			targetMinPq,
+			masterMaxPq,
+			masterMinPq,
+			lumScale);
 	}
 
 	applyTonemapRGB(dst, src);
@@ -61,8 +75,8 @@ PVideoFrame DoViTonemap<bitDepth>::GetFrame(int n, IScriptEnvironment* env) {
 	return dst;
 }
 
-template<int bitDepth>
-void DoViTonemap<bitDepth>::applyTonemapRGB(PVideoFrame& dst, const PVideoFrame& src) const
+template<int signalBitDepth>
+void DoViTonemap<signalBitDepth>::applyTonemapRGB(PVideoFrame& dst, const PVideoFrame& src) const
 {
 	//apply tonemap using R'G'B' scaling
 	const unsigned int height = src->GetHeight(PLANAR_R);
@@ -90,9 +104,7 @@ void DoViTonemap<bitDepth>::applyTonemapRGB(PVideoFrame& dst, const PVideoFrame&
 		for (unsigned h = 0; h < height; ++h)
 		{
 			for (unsigned w = 0; w < width; ++w) {
-				uint16_t pq = signal2pq(srcP[p][w]);
-				uint16_t mappedPq = applyEETF(pq);
-				dstP[p][w] = pq2signal(mappedPq);
+				dstP[p][w] = doviEetf->applyEETF(srcP[p][w]);
 			}
 			srcP[p] += srcPitch[p];
 			dstP[p] += dstPitch[p];
@@ -100,8 +112,8 @@ void DoViTonemap<bitDepth>::applyTonemapRGB(PVideoFrame& dst, const PVideoFrame&
 	}
 }
 
-/*template<int bitDepth>
-void DoViTonemap<bitDepth>::applyTonemapMaxRGB(PVideoFrame& dst, const PVideoFrame& src) const
+/*template<int signalBitDepth>
+void DoViTonemap<signalBitDepth>::applyTonemapMaxRGB(PVideoFrame& dst, const PVideoFrame& src) const
 {
 	//apply tonemap using maxRGB scaling
 	const unsigned int height = src->GetHeight(PLANAR_R);

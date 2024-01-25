@@ -1,25 +1,27 @@
-#include "DoViTransferFunctions.h"
+#include "DoViEetf.h"
+#include "DoViProcessor.h"
 
-DoViTransferFunctions::DoViTransferFunctions(
-	float targetMaxNits_,
-	float targetMinNits_,
-	float masterMaxNits_,
-	float masterMinNits_,
-	float lumScale_)
-	: masterMaxPq(nits2pq(masterMaxNits_))
-	, masterMinPq(nits2pq(masterMinNits_))
-	, targetMaxPq(nits2pq(targetMaxNits_))
-	, targetMinPq(nits2pq(targetMinNits_))
-	, lumScale(lumScale_)
-{
-		generateEETF();
-}
+// explicitly instantiate the template for the linker
+template class DoViEetf<8>;
+template class DoViEetf<10>;
+template class DoViEetf<12>;
+template class DoViEetf<14>;
+template class DoViEetf<16>;
 
-void DoViTransferFunctions::generateEETF()
+template<int signalBitDepth>
+DoViEetf<signalBitDepth>::DoViEetf() {}
+
+template<int signalBitDepth>
+void DoViEetf<signalBitDepth>::generateEETF(
+	uint16_t targetMaxPq,
+	uint16_t targetMinPq,
+	uint16_t masterMaxPq,
+	uint16_t masterMinPq,
+	float lumScale)
 {
 	// based on the report ITU-R BT.2408-7 Annex 5
-	float masterMaxEp = EOTFinv(EOTF(masterMaxPq / 4095.0) * lumScale);
-	float masterMinEp = EOTFinv(EOTF(masterMinPq / 4095.0) * lumScale);
+	float masterMaxEp = DoViProcessor::EOTFinv(DoViProcessor::EOTF(masterMaxPq / 4095.0) * lumScale);
+	float masterMinEp = DoViProcessor::EOTFinv(DoViProcessor::EOTF(masterMinPq / 4095.0) * lumScale);
 	float targetMaxEp = targetMaxPq / 4095.0;
 	float targetMinEp = targetMinPq / 4095.0;
 
@@ -35,8 +37,8 @@ void DoViTransferFunctions::generateEETF()
 
 	for (uint16_t inPq = 0; inPq < LUT_SIZE; inPq++) {
 		float ep = inPq / float(LUT_SIZE - 1);
-		float Y = EOTF(ep) * lumScale;
-		ep = EOTFinv(Y);
+		float Y = DoViProcessor::EOTF(ep) * lumScale;
+		ep = DoViProcessor::EOTFinv(Y);
 		float e1 = (ep - masterMinEp) / (masterMaxEp - masterMinEp);
 
 		// this following claming is not from the report
