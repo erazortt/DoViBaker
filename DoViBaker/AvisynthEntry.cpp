@@ -408,11 +408,16 @@ int main(int argc, char** argv)
   }
 
   if (showTonemap) {
-    DoViTransferFunctions tonemap(1000, 2, 2000, 1, 1.0);
+    uint16_t targetMaxNits = 1000;
+    uint16_t targetMinNits = 2;
+    uint16_t masterMaxNits = 2000;
+    uint16_t masterMinNits = 1;
+    DoViTransferFunctions tonemap(targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, 1.0);
     for (int i = 0; i <= 255; i++) {
-      uint16_t pq = DoViTonemap<8>::signal2pq(i);
+      uint16_t signal = i * 65535.0 / 255 + 0.5;
+      uint16_t pq = DoViTonemap<16>::signal2pq(signal);
       uint16_t mappedPq = tonemap.applyEETF(pq);
-      printf("%i %i %f %f %i %i\n", i, pq, DoViTransferFunctions::pq2nits(pq), DoViTransferFunctions::pq2nits(mappedPq), mappedPq, DoViTonemap<8>::pq2signal(mappedPq));
+      printf("%i %i %i %f %f %i %i %i\n", i, signal, pq, DoViTransferFunctions::pq2nits(pq), DoViTransferFunctions::pq2nits(mappedPq), mappedPq, DoViTonemap<16>::pq2signal(mappedPq), DoViTonemap<8>::pq2signal(mappedPq));
     }
   }
 

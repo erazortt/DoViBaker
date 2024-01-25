@@ -30,18 +30,40 @@ private:
 
 template<int bitDepth>
 uint16_t DoViTonemap<bitDepth>::signal2pq(uint16_t signal) {
-  if (bitDepth < 12) {
-    return signal << (12 - bitDepth);
-  } else {
-    return signal >> (bitDepth - 12);
+  const uint_fast32_t s = signal;
+  if (bitDepth == 8) {
+    return (s * 4111 + 135) >> 8;
+  } 
+  else if (bitDepth == 10) {
+    return (s * 4099 + 513) >> 10;
+  } 
+  else if (bitDepth == 12){
+    return signal;
+  }
+  else if (bitDepth == 14) {
+    return (s * 16381 + 32768) >> 16;
+  }
+  else if (bitDepth == 16) {
+    return (s * 4095 + 34815) >> 16;
   }
 }
 
 template<int bitDepth>
 uint16_t DoViTonemap<bitDepth>::pq2signal(uint16_t pq) {
-  if (bitDepth < 12) {
-    return pq >> (12 - bitDepth);
-  } else {
-    return pq << (bitDepth - 12);
+  const uint_fast32_t p = pq;
+  if (bitDepth == 8) {
+    return (p * 4081 + 32768) >> 16;
+  }
+  else if (bitDepth == 10) {
+    return (p * 4093 + 8192) >> 14;
+  }
+  else if (bitDepth == 12) {
+    return pq;
+  }
+  else if (bitDepth == 14) {
+    return (p * 16387 + 2049) >> 12;
+  }
+  else if (bitDepth == 16) {
+    return (p * 65551 + 2055) >> 12;
   }
 }
