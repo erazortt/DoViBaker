@@ -18,7 +18,7 @@ public:
 private:
   static inline float eetfSpline(float e1, float KS, float maxLum);
   static inline uint16_t signal2lut(uint16_t signal);
-  static inline uint16_t lut2signal(uint16_t pq);
+  static inline uint16_t lut2signal(uint16_t coord);
   static constexpr int LUT_BITS = 12;
   static constexpr int LUT_SIZE = 1 << LUT_BITS;
 
@@ -34,7 +34,6 @@ float DoViEetf<signalBitDepth>::eetfSpline(float e1, float KS, float maxLum)
   return e2;
 }
 
-
 template<int signalBitDepth>
 uint16_t DoViEetf<signalBitDepth>::signal2lut(uint16_t signal) {
   const uint_fast32_t s = signal;
@@ -48,10 +47,10 @@ uint16_t DoViEetf<signalBitDepth>::signal2lut(uint16_t signal) {
     return signal;
   }
   else if (signalBitDepth == 14) {
-    return (s * 16381 + 32768) >> 16;
+    return (s * 16381 + 0x8000) >> 16;
   }
   else if (signalBitDepth == 16) {
-    return (s * 4095 + 34822) >> 16;
+    return (s * 65521 + 0x80000) >> 20;
   }
 }
 
@@ -59,10 +58,10 @@ template<int signalBitDepth>
 uint16_t DoViEetf<signalBitDepth>::lut2signal(uint16_t coord) {
   const uint_fast32_t c = coord;
   if (signalBitDepth == 8) {
-    return (c * 4081 + 32768) >> 16;
+    return (c * 4081 + 0x8000) >> 16;
   }
   else if (signalBitDepth == 10) {
-    return (c * 4093 + 8192) >> 14;
+    return (c * 4093 + 0x2000) >> 14;
   }
   else if (signalBitDepth == 12) {
     return coord;

@@ -417,7 +417,7 @@ int main(int argc, char** argv)
     for (int i = 0; i <= 255; i++) {
       uint16_t signal = i * 4095.0 / 255 + 0.5;
       uint16_t mapped = tonemap.applyEETF(signal);
-      printf("%i %i %f %f %i\n", i, signal, DoViProcessor::pq2nits(signal), DoViProcessor::pq2nits(mapped), mapped);
+      printf("%i %f %f %i\n",signal, DoViProcessor::pq2nits(signal), DoViProcessor::pq2nits(mapped), mapped);
     }
   }
 
