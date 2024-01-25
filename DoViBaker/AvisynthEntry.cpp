@@ -400,19 +400,24 @@ int main(int argc, char** argv)
   }
 
   if (showNitsTable) {
-    printf("2081 pq = %f\n", DoViTransferFunctions::pq2nits(2081));
-    printf("3079 pq = %f\n", DoViTransferFunctions::pq2nits(3079));
+    printf("2081 pq = %f\n", DoViProcessor::pq2nits(2081));
+    printf("3079 pq = %f\n", DoViProcessor::pq2nits(3079));
     for (int i = 0; i <= 120; i += 10) {
-      printf("%i%%: %f\n", i, DoViTransferFunctions::pq2nits(4095 * i * 0.01));
+      printf("%i%%: %f\n", i, DoViProcessor::pq2nits(4095 * i * 0.01));
     }
   }
 
   if (showTonemap) {
-    DoViTransferFunctions tonemap(1000, 2, 2000, 1, 1.0);
+    uint16_t targetMaxPq = DoViProcessor::nits2pq(1000);
+    uint16_t targetMinPq = DoViProcessor::nits2pq(2);
+    uint16_t masterMaxPq = DoViProcessor::nits2pq(2000);
+    uint16_t masterMinPq = DoViProcessor::nits2pq(1);
+    DoViEetf<12> tonemap;
+    tonemap.generateEETF(targetMaxPq, targetMinPq, masterMaxPq, masterMinPq, 1.0);
     for (int i = 0; i <= 255; i++) {
-      uint16_t pq = DoViTonemap<8>::signal2pq(i);
-      uint16_t mappedPq = tonemap.applyEETF(pq);
-      printf("%i %i %f %f %i %i\n", i, pq, DoViTransferFunctions::pq2nits(pq), DoViTransferFunctions::pq2nits(mappedPq), mappedPq, DoViTonemap<8>::pq2signal(mappedPq));
+      uint16_t signal = i * 4095.0 / 255 + 0.5;
+      uint16_t mapped = tonemap.applyEETF(signal);
+      printf("%i %i %f %f %i\n", i, signal, DoViProcessor::pq2nits(signal), DoViProcessor::pq2nits(mapped), mapped);
     }
   }
 
@@ -466,14 +471,14 @@ int main(int argc, char** argv)
   }
 
   //printf("clip max pq: %i\n", clip_max_pq);
-  printf("overall max cll: %i\n", int(DoViTransferFunctions::pq2nits(clip_max_pq) + 0.5));
+  printf("overall max cll: %i\n", int(DoViProcessor::pq2nits(clip_max_pq) + 0.5));
   printf("color matrix deviation: %i\n", to8bits(unusualMatrix));
   printf("mapping deviation: %i\n", to8bits(nonIdentityMapping));
   if(elMixing) printf("el-clip processing: enabled\n");
   else printf("el-clip processing: disabled\n");
   printf("available trims: ");
   for (int i = 0; i < trimPq.size(); i++) {
-    printf("%i nits (%i)\n", int(DoViTransferFunctions::pq2nits(trimPq[i]) + 0.5), trimPq[i]);
+    printf("%i nits (%i)\n", int(DoViProcessor::pq2nits(trimPq[i]) + 0.5), trimPq[i]);
     printf("                 ");
   }
   (trimPq.size() > 0) ? printf("\n") : printf("none\n");

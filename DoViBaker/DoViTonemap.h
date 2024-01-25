@@ -1,9 +1,9 @@
 #pragma once
 #include "avisynth.h"
-#include "DoViTransferFunctions.h"
+#include "DoViEetf.h"
 
-template<int bitDepth>
-class DoViTonemap : public DoViTransferFunctions, public GenericVideoFilter
+template<int signalBitDepth>
+class DoViTonemap : public GenericVideoFilter
 {
 public:
   DoViTonemap(
@@ -16,32 +16,20 @@ public:
     IScriptEnvironment* env);
 
   PVideoFrame GetFrame(int n, IScriptEnvironment* env) override;
-  static inline uint16_t signal2pq(uint16_t signal);
-  static inline uint16_t pq2signal(uint16_t pq);
 
 private:
   void applyTonemapRGB(PVideoFrame& dst, const PVideoFrame& src) const;
   //void applyTonemapYUV(PVideoFrame& dst, const PVideoFrame& src) const;
 
+  uint16_t targetMaxPq;
+  uint16_t targetMinPq;
+  uint16_t masterMaxPq;
+  uint16_t masterMinPq;
+  float lumScale;
+
   bool dynamicMasterMaxPq;
   bool dynamicMasterMinPq;
   bool dynamicLumScale;
+
+  DoViEetf<signalBitDepth>* doviEetf;
 };
-
-template<int bitDepth>
-uint16_t DoViTonemap<bitDepth>::signal2pq(uint16_t signal) {
-  if (bitDepth < 12) {
-    return signal << (12 - bitDepth);
-  } else {
-    return signal >> (bitDepth - 12);
-  }
-}
-
-template<int bitDepth>
-uint16_t DoViTonemap<bitDepth>::pq2signal(uint16_t pq) {
-  if (bitDepth < 12) {
-    return pq >> (12 - bitDepth);
-  } else {
-    return pq << (bitDepth - 12);
-  }
-}

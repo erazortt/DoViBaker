@@ -30,7 +30,7 @@
     <ClCompile Include="AvisynthEntry.cpp" />
     <ClCompile Include="DoViBaker.cpp" />
     <ClCompile Include="DoViCubes.cpp" />
-    <ClCompile Include="DoViTransferFunctions.cpp" />
+    <ClCompile Include="DoViEetf.cpp" />
     <ClCompile Include="DoViStatsFileLoader.cpp" />
     <ClCompile Include="DoViProcessor.cpp" />
     <ClCompile Include="DoViTonemap.cpp" />
@@ -40,7 +40,7 @@
     <ClInclude Include="..\include\DoViProcessor.h" />
     <ClInclude Include="..\include\dovi\rpu_parser.h" />
     <ClInclude Include="DoViCubes.h" />
-    <ClInclude Include="DoViTransferFunctions.h" />
+    <ClInclude Include="DoViEetf.h" />
     <ClInclude Include="DoViStatsFileLoader.h" />
     <ClInclude Include="DoViTonemap.h" />
   </ItemGroup>

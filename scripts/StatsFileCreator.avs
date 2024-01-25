@@ -55,16 +55,8 @@ scd
 #ScriptClip("""Subtitle(String(AverageLuma(scd))+" "+String(YPlaneMinMaxDifference(scd)),align=2)""")
 #MShow(scd_super,fore_vec,thSCD1=350,thSCD2=256)
 
-function BitShiftLeft(int value, int shift){
-    # bi-directional left shift function with rounding to nearest when downshifting
-    (shift < 0) ? BitRShiftU(value + BitLShift(1,-shift-1), -shift) : BitLShift(value, shift)
-}
-function BitShiftRight(int value, int shift){
-    # bi-directional right shift function with rounding to nearest when downshifting
-    (shift > 0) ? BitRShiftU(value + BitLShift(1,shift-1), shift) : BitLShift(value, -shift)
-}
 function signal2pq(clip c, int value){
-    BitShiftLeft(value, 12-BitsPerComponent(c))
+    Int(value/Float(BitLShift(1,BitsPerComponent(c))-1)*4095)
 }
 
 #This line writes the frame numbers where scene changes occur to file. These can be imported into Vegas or other editor
