@@ -20,15 +20,15 @@ DoViStatsFileLoader::DoViStatsFileLoader(
 	uint16_t sceneMaxPq = 0, sceneMinPq = 0;
 	float scale;
 	std::deque<float> sceneScales;
-	std::ifstream fpMaxPq, fpSceneCut;
+	std::ifstream fpStats, fpSceneCut;
 	std::string line, segment;
 
-	fpMaxPq.open(maxPqFile);
-	if (!fpMaxPq.is_open()) {
+	fpStats.open(maxPqFile, std::ifstream::in);
+	if (!fpStats.is_open()) {
 		env->ThrowError((std::string("DoViMaxMqFileReader: cannot find stats file ") + maxPqFile).c_str());
 	}
 	if (!sceneCutFile.empty()) {
-		fpSceneCut.open(sceneCutFile);
+		fpSceneCut.open(sceneCutFile, std::ifstream::in);
 		if (!fpSceneCut.is_open()) {
 			env->ThrowError((std::string("DoViMaxMqFileReader: cannot find scene cut file ") + sceneCutFile).c_str());
 		}
@@ -37,7 +37,7 @@ DoViStatsFileLoader::DoViStatsFileLoader(
 		}
 	} 
 
-	while (std::getline(fpMaxPq, line))
+	while (std::getline(fpStats, line))
 	{
 		std::istringstream ssline(line);
 		if (std::getline(ssline, segment, ' ')) {
@@ -95,7 +95,7 @@ DoViStatsFileLoader::DoViStatsFileLoader(
 		env->ThrowError((std::string("DoViMaxMqFileReader: clip length does not match stats file ") + maxPqFile).c_str());
 	}
 
-	fpMaxPq.close();
+	fpStats.close();
 	if(fpSceneCut.is_open()) fpSceneCut.close();
 }
 

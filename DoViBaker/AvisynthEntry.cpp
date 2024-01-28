@@ -352,7 +352,7 @@ double Spline64Filter(double value) {
   return 0.0;
 }
 
-int main(int argc, char** argv)
+int main(int argc, char* argv[])
 {
   bool selfTest = false;
   bool showSplines = false;
