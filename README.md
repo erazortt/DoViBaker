@@ -99,7 +99,7 @@ The format of each line of the optional alternative scene cut file file needs to
 
 In this example the input stats file is read feeding DoViTonemap.
 ```
-DoViStatsFileReader("maxPq.txt")
+DoViStatsFileReader("statsFile.txt")
 DoViTonemap(lumScale=1.0, masterMaxNits=-1, targetMaxNits=1000, masterMinNits=0, targetMinNits=0)
 ```
 
