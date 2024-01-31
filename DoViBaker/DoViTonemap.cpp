@@ -2,7 +2,6 @@
 #include "DoViProcessor.h"
 
 // explicitly instantiate the template for the linker
-template class DoViTonemap<8>;
 template class DoViTonemap<10>;
 template class DoViTonemap<12>;
 template class DoViTonemap<14>;

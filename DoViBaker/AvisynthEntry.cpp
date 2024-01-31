@@ -178,7 +178,6 @@ AVSValue __cdecl Create_RealDoViTonemap(
 
   switch (clip->GetVideoInfo().BitsPerComponent())
   {
-  case 8: return new DoViTonemap<8>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, env); break;
   case 10: return new DoViTonemap<10>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, env); break;
   case 12: return new DoViTonemap<12>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, env); break;
   case 14: return new DoViTonemap<14>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, env); break;
