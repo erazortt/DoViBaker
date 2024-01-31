@@ -73,7 +73,7 @@ DoViBaker(bl,el)
 DoViTonemap(lumScale=1.0, masterMaxNits=-1, targetMaxNits=1000, masterMinNits=0, targetMinNits=0)
 ```
 ## Frame Properties
-The following frame properties will be consumed:
+The following frame properties will be consumed, if the related arguments are set to -1:
 - `_dovi_dynamic_max_pq` the max_pq value of the current scene
 - `_dovi_dynamic_min_pq` the min_pq value of the current scene
 - `_dovi_dynamic_luminosity_scale` the luminosity scaling factor of the current scene
