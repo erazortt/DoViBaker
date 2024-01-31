@@ -65,9 +65,9 @@ subtitle("maxcll = " + string(mcll))
 # DoViTonemap
 This plugin processes the tonemapping of any HDR PQ streams to lower dynamic range targets. The implementation follows ITU-R BT.2408-7 Annex 5, with the addtion of an optional luminosity factor which scales the brightness linearily.
 
-There are 5 arguments which control the process: `masterMaxNits`, `masterMinNits`, `targetMaxNits`, `targetMinNits` and `lumScale`. The first two arguments set the white and black brightness value of the source, and next two set the white and black brightness value of the target. The values for the master brightness can be either given explicitly or `masterMaxNits` and `masterMinNits` can both be set to `-1` which will indicate that the actual values are read from the related frame properties set by DoViBaker, leading to a dynamic tonemapping. `lumScale` changes the total brightness, this can be usefull since many HDR PQ and DV streams are actually too dark, darker then the respective SDR streams. To find the proper `lumScale` factor you might use the script `LumScaleFindHelper.avs`.
+There are 5 arguments which control the process: `masterMaxNits`, `masterMinNits`, `targetMaxNits`, `targetMinNits` and `lumScale`. The first two arguments set the white and black brightness value of the source, and next two set the white and black brightness value of the target. The values for the master brightness can be either given explicitly or `masterMaxNits` and `masterMinNits` can both be set to `-1` which will indicate that the actual values are read from the related frame properties `_dovi_dynamic_max_pq` and `_dovi_dynamic_min_pq` which are set by `DoViBaker` or `DoViStatsFileLoader`, leading to a dynamic tonemapping. `lumScale` changes the total brightness, this can be usefull since many HDR PQ and DV streams are actually too dark, darker then the respective SDR streams. To find the proper `lumScale` factor you might use the script `LumScaleFindHelper.avs`. It is also possible to read the luminosity factor from the frame property `_dovi_dynamic_luminosity_scale` by setting `lumSacle` to -1.
 
-This example applies a dynamic tonemapping to a 1000nits target reading the current max brightness value off the frame properits which are set by DoViBaker. The luminosity scale used is 1.0. To increase the brightness this factor can be increased to 1.5 or 2.0 or even higher. There have been instances where factors of 4.5 where needed to match the percieved brightness of the SDR stream.
+This example applies a dynamic tonemapping to a 1000nits target reading the current max brightness value off the frame properits which are set by DoViBaker. The luminosity scale used is 1.0. In order to increase the perceived total brightness, this factor can be increased to 1.5 or 2.0 or even higher. 
 ```
 DoViBaker(bl,el)
 DoViTonemap(lumScale=1.0, masterMaxNits=-1, targetMaxNits=1000, masterMinNits=0, targetMinNits=0)
@@ -76,7 +76,7 @@ DoViTonemap(lumScale=1.0, masterMaxNits=-1, targetMaxNits=1000, masterMinNits=0,
 The following frame properties will be consumed:
 - `_dovi_dynamic_max_pq` the max_pq value of the current scene
 - `_dovi_dynamic_min_pq` the min_pq value of the current scene
-- `_dovi_dynamic_luminosity_scale` the luminosity of the current scene scaling factor
+- `_dovi_dynamic_luminosity_scale` the luminosity scaling factor of the current scene
 
 # DoViCubes
 This plugin provides LUT processing capabilites based on the frame property `_dovi_dynamic_max_content_light_level` set by either `DoViBaker` or `DoViStatsFileReader`. Different LUTs are applied based adjustable thresholds. This is done by providing a collection of LUTs and limits of validity measured in nits of max-content-light-level. (The LUT processing implentation is based on: https://github.com/sekrit-twc/timecube).
@@ -111,7 +111,7 @@ The following frame properties will be set:
 - `_dovi_dynamic_min_pq` the min_pq value of the current scene
 - `_dovi_dynamic_max_pq` the max_pq value of the current scene
 - `_dovi_dynamic_max_content_light_level` the equivalend value of maximal nits of the current scene
-- `_dovi_dynamic_luminosity_scale` the optional luminosity of the current scene scaling factor
+- `_dovi_dynamic_luminosity_scale` the optional luminosity scaling factor of the current scene
 - `_dovi_static_max_pq` the max_pq value of the whole stream
 - `_dovi_static_max_content_light_level` the value of maximal nits of the whole stream
 
