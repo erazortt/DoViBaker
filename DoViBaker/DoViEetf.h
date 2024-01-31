@@ -5,7 +5,7 @@ template<int signalBitDepth>
 class DoViEetf
 {
 public:
-  DoViEetf();
+  DoViEetf(bool normalizeOutput);
 
   inline uint16_t applyEETF(uint16_t s) const { return lut2signal(lut[signal2lut(s)]); };
   void generateEETF(
@@ -24,6 +24,7 @@ private:
   static constexpr int LUT_BITS = (signalBitDepth < 12) ? signalBitDepth : 12;
   static constexpr int LUT_SIZE = 1 << LUT_BITS;
 
+  const bool normalizeOutput;
   uint16_t lut[LUT_SIZE];
 };
 

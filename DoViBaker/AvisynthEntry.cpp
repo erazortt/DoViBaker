@@ -168,6 +168,7 @@ AVSValue __cdecl Create_RealDoViTonemap(
   float masterMaxNits,
   float masterMinNits,
   float lumScale,
+  bool normalizeOutput,
   const AVSValue* args,
   IScriptEnvironment* env)
 {
@@ -178,10 +179,10 @@ AVSValue __cdecl Create_RealDoViTonemap(
 
   switch (clip->GetVideoInfo().BitsPerComponent())
   {
-  case 10: return new DoViTonemap<10>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, env); break;
-  case 12: return new DoViTonemap<12>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, env); break;
-  case 14: return new DoViTonemap<14>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, env); break;
-  case 16: return new DoViTonemap<16>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, env); break;
+  case 10: return new DoViTonemap<10>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, normalizeOutput, env); break;
+  case 12: return new DoViTonemap<12>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, normalizeOutput, env); break;
+  case 14: return new DoViTonemap<14>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, normalizeOutput, env); break;
+  case 16: return new DoViTonemap<16>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, normalizeOutput, env); break;
   default:
     env->ThrowError("DoViTonemap: input bit depth not compatible");
     break;
@@ -199,6 +200,7 @@ AVSValue __cdecl Create_DoViTonemap(AVSValue args, void* user_data, IScriptEnvir
     args[3].AsFloat(10000),
     args[4].AsFloat(0),
     args[5].AsFloat(1),
+    args[6].AsBool(false),
     &args, env);
 }
 
@@ -209,7 +211,7 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScri
   AVS_linkage = vectors;
 
   env->AddFunction("DoViBaker", "c[el]c[rpu]s[trimPq]i[targetMaxNits]f[targetMinNits]f[qnd]b[rgbProof]b[nlqProof]b", Create_DoViBaker, 0);
-  env->AddFunction("DoViTonemap", "c[targetMaxNits]f[targetMinNits]f[masterMaxNits]f[masterMinNits]f[lumScale]f", Create_DoViTonemap, 0);
+  env->AddFunction("DoViTonemap", "c[targetMaxNits]f[targetMinNits]f[masterMaxNits]f[masterMinNits]f[lumScale]f[normalize]b", Create_DoViTonemap, 0);
   env->AddFunction("DoViCubes", "c[cubes]s[mclls]s[cubes_basepath]s[fullrange]b", Create_DoViCubes, 0);
   env->AddFunction("DoViStatsFileLoader", "c[statsFile]s[sceneCutsFile]s", Create_DoViStatsFileLoader, 0);
 
@@ -411,7 +413,7 @@ int main(int argc, char* argv[])
     uint16_t targetMinPq = DoViProcessor::nits2pq(2);
     uint16_t masterMaxPq = DoViProcessor::nits2pq(2000);
     uint16_t masterMinPq = DoViProcessor::nits2pq(1);
-    DoViEetf<12> tonemap;
+    DoViEetf<12> tonemap(false);
     tonemap.generateEETF(targetMaxPq, targetMinPq, masterMaxPq, masterMinPq, 1.0);
     for (int i = 0; i <= 255; i++) {
       uint16_t signal = i * 4095.0 / 255 + 0.5;

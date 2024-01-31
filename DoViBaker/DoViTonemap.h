@@ -13,6 +13,7 @@ public:
     float masterMaxNits,
     float masterMinNits,
     float scale,
+    bool normalize,
     IScriptEnvironment* env);
 
   virtual ~DoViTonemap();

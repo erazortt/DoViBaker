@@ -8,7 +8,8 @@ template class DoViEetf<14>;
 template class DoViEetf<16>;
 
 template<int signalBitDepth>
-DoViEetf<signalBitDepth>::DoViEetf() {}
+DoViEetf<signalBitDepth>::DoViEetf(bool normalizeOutput_)
+	: normalizeOutput(normalizeOutput_) {}
 
 template<int signalBitDepth>
 void DoViEetf<signalBitDepth>::generateEETF(
@@ -55,6 +56,9 @@ void DoViEetf<signalBitDepth>::generateEETF(
 		
 		float e4 = e3 * (masterMaxEp - masterMinEp) + masterMinEp;
 		e4 = std::clamp(e4, 0.0f, 1.0f);
+		if (normalizeOutput) {
+			e4 /= targetMaxEp;
+		}
 		uint16_t outSignal = e4 * (LUT_SIZE - 1) + 0.5;
 		lut[inSignal] = outSignal;
 	}

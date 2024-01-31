@@ -15,6 +15,7 @@ DoViTonemap<signalBitDepth>::DoViTonemap(
 	float masterMaxNits,
 	float masterMinNits,
 	float lumScale_,
+	bool normalizeOutput,
 	IScriptEnvironment* env)
 	: GenericVideoFilter(child)
 	, targetMaxPq(DoViProcessor::nits2pq(targetMaxNits))
@@ -26,7 +27,7 @@ DoViTonemap<signalBitDepth>::DoViTonemap(
 	, dynamicMasterMinPq(masterMinNits < 0)
 	, dynamicLumScale(lumScale < 0) 
 {
-	doviEetf = new DoViEetf<signalBitDepth>();
+	doviEetf = new DoViEetf<signalBitDepth>(normalizeOutput);
 	doviEetf->generateEETF(
 		targetMaxPq,
 		targetMinPq,
