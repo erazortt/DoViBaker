@@ -69,7 +69,7 @@ There are 6 arguments which control the process: `masterMaxNits`, `masterMinNits
 - `masterMaxNits` and `masterMinNits` set the white and black brightness value of the source. The values for the master brightness can be either given explicitly or `masterMaxNits` and `masterMinNits` can both be set to `-1` which will indicate that the actual values are read from the related frame properties `_dovi_dynamic_max_pq` and `_dovi_dynamic_min_pq` which are set by `DoViBaker` or `DoViStatsFileLoader`, leading to a dynamic tonemapping. 
 - `targetMaxNits` and `targetMinNits` set the desired target capabilities. These must be given explicitly.
 - `lumScale` changes the total brightness, this can be usefull since many HDR PQ and DV streams are actually too dark, darker then the respective SDR streams. To find the proper `lumScale` factor you might use the script `LumScaleFindHelper.avs`. It is also possible to read the luminosity factor from the frame property `_dovi_dynamic_luminosity_scale` by setting `lumSacle` to -1.
-- `normalize` normalizes to output to `targetMaxNits`. This can be usefull when the further processing is needed, since the usage of the full value range decreases rounding errors.
+- `normalize` normalizes to output to `targetMaxNits`. This can be usefull when output is just an intermediate result and further processing is needed, since the usage of the full value range decreases rounding errors.
 
 This example applies a dynamic tonemapping to a 1000nits target reading the current max brightness value off the frame properties which are set by DoViBaker. The luminosity scale used is 1.0. In order to increase the perceived total brightness, this factor can be increased to 1.5 or 2.0 or even higher.
 ```
