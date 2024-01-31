@@ -19,6 +19,8 @@ private:
   static inline float eetfSpline(float e1, float KS, float maxLum);
   static inline uint16_t signal2lut(uint16_t signal);
   static inline uint16_t lut2signal(uint16_t coord);
+
+  // the LUT becomes unnecessarily big for higher bit depths, cut at 12 bits
   static constexpr int LUT_BITS = (signalBitDepth < 12) ? signalBitDepth : 12;
   static constexpr int LUT_SIZE = 1 << LUT_BITS;
 
