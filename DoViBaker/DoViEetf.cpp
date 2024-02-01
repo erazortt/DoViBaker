@@ -35,7 +35,7 @@ void DoViEetf<signalBitDepth>::generateEETF(
 	float KS = 1.5 * maxLum - 0.5;
 	float b = minLum;
 
-	for (uint16_t inSignal = 0; inSignal < LUT_SIZE; inSignal++) {
+	for (int_fast32_t inSignal = 0; inSignal < LUT_SIZE; inSignal++) {
 		float ep = inSignal / float(LUT_SIZE - 1);
 		float Y = DoViProcessor::EOTF(ep) * lumScale;
 		ep = DoViProcessor::EOTFinv(Y);
