@@ -37,8 +37,8 @@ void DoViEetf<signalBitDepth>::generateEETF(
 
 	for (int inSignal = 0; inSignal < LUT_SIZE; inSignal++) {
 		float ep = inSignal / float(LUT_SIZE - 1);
-		float Y = DoViProcessor::EOTF(ep) * lumScale;
-		ep = DoViProcessor::EOTFinv(Y);
+		float e = DoViProcessor::EOTF(ep) * lumScale;
+		ep = DoViProcessor::EOTFinv(e);
 		float e1 = (ep - masterMinEp) / (masterMaxEp - masterMinEp);
 
 		// this following claming is not from the report
