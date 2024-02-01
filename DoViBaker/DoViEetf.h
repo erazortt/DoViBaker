@@ -30,7 +30,7 @@ template<int signalBitDepth>
 float DoViEetf<signalBitDepth>::eetfSpline(float e1, float KS, float maxLum)
 {
   float t = (e1 - KS) / (1 - KS);
-  float p = (2*t*t*t-3*t*t+1)*KS+(t*t*t-2*t*t+t)*(1-KS)+(-2*t*t*t+3*t*t)*maxLum;
+  float p = ((2*t-3)*t*t+1)*KS + (((t-2)*t+1)*(1-KS) + (-2*t+3)*t*maxLum) * t;
   float e2 = (e1 < KS) ? e1 : p;
   return e2;
 }
