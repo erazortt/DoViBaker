@@ -86,7 +86,7 @@ private:
   uint16_t processSample(int cmp, uint16_t bl, uint16_t el, uint16_t mmrBlY, uint16_t mmrBlU, uint16_t mmrBlV) const;
   int getPivotIndex(int cmp, uint16_t sample) const;
   uint16_t polynompialMapping(int cmp, int pivot_idx, uint16_t sample) const;
-  uint16_t mmrMapping(int cmp, int pivot_idx, uint16_t sampleY, uint16_t sampleU, uint16_t sampleV) const;
+  uint16_t mmrMapping(int cmp, int pivot_idx, uint64_t sampleY, uint64_t sampleU, uint64_t sampleV) const;
   int16_t nonLinearInverseQuantization(int cmp, uint16_t sample) const;
   uint16_t signalReconstruction(uint16_t v, int16_t r) const;
   void prepareTrimCoef();

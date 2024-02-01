@@ -349,7 +349,7 @@ uint16_t DoViProcessor::polynompialMapping(int cmp, int pivot_idx, uint16_t s) c
 	return v;
 }
 
-uint16_t DoViProcessor::mmrMapping(int cmp, int pivot_idx, uint16_t s0, uint16_t s1, uint16_t s2) const {
+uint16_t DoViProcessor::mmrMapping(int cmp, int pivot_idx, uint64_t s0, uint64_t s1, uint64_t s2) const {
 	if (s0 < pivot_value[0][0])
 		s0 = pivot_value[0][0];
 	if (s0 > pivot_value[0][num_pivots_minus1[0]])

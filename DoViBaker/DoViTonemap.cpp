@@ -86,8 +86,8 @@ template<int signalBitDepth>
 void DoViTonemap<signalBitDepth>::applyTonemapRGB(PVideoFrame& dst, const PVideoFrame& src) const
 {
 	//apply tonemap using R'G'B' scaling
-	const unsigned int height = src->GetHeight(PLANAR_R);
-	const unsigned int width = src->GetRowSize(PLANAR_R) / sizeof(uint16_t);
+	const int height = src->GetHeight(PLANAR_R);
+	const int width = src->GetRowSize(PLANAR_R) / sizeof(uint16_t);
 	const uint16_t* srcP[3];
 	int srcPitch[3];
 	uint16_t* dstP[3];
@@ -106,11 +106,11 @@ void DoViTonemap<signalBitDepth>::applyTonemapRGB(PVideoFrame& dst, const PVideo
 	dstPitch[1] = dst->GetPitch(PLANAR_G) / sizeof(uint16_t);
 	dstPitch[2] = dst->GetPitch(PLANAR_B) / sizeof(uint16_t);
 
-	for (unsigned p = 0; p < 3; ++p)
+	for (int p = 0; p < 3; ++p)
 	{
-		for (unsigned h = 0; h < height; ++h)
+		for (int h = 0; h < height; ++h)
 		{
-			for (unsigned w = 0; w < width; ++w) {
+			for (int w = 0; w < width; ++w) {
 				dstP[p][w] = doviEetf->applyEETF(srcP[p][w]);
 			}
 			srcP[p] += srcPitch[p];

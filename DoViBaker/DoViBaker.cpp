@@ -513,8 +513,8 @@ void DoViBaker<quarterResolutionEl>::convert2rgb(PVideoFrame& dst, const PVideoF
 template<int quarterResolutionEl>
 void DoViBaker<quarterResolutionEl>::applyTrim(PVideoFrame& dst, const PVideoFrame& src) const
 {
-	unsigned int width = vi.width;
-	unsigned int height = vi.height;
+	const int width = vi.width;
+	const int height = vi.height;
 
 	const uint16_t* srcP[3];
 	int srcPitch[3];
@@ -534,12 +534,12 @@ void DoViBaker<quarterResolutionEl>::applyTrim(PVideoFrame& dst, const PVideoFra
 	dstPitch[1] = dst->GetPitch(PLANAR_G) / sizeof(uint16_t);
 	dstPitch[2] = dst->GetPitch(PLANAR_B) / sizeof(uint16_t);
 
-	for (unsigned h = 0; h < height; ++h)
+	for (int h = 0; h < height; ++h)
 	{
-		for (unsigned w = 0; w < width; ++w)
+		for (int w = 0; w < width; ++w)
 		doviProc->processTrim(dstP[0][w], dstP[1][w], dstP[2][w], srcP[0][w], srcP[1][w], srcP[2][w]);
 
-		for (unsigned p = 0; p < 3; ++p)
+		for (int p = 0; p < 3; ++p)
 		{
 			srcP[p] += srcPitch[p];
 			dstP[p] += dstPitch[p];
