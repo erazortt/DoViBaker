@@ -48,9 +48,9 @@ class AVSCube : public GenericVideoFilter
 public:
 	AVSCube(PClip _child, char* _cube_path, int _cpu, bool _fullrange, IScriptEnvironment* env) : GenericVideoFilter(_child)
 	{
-		if (vi.pixel_type != VideoInfo::CS_RGBP16)
+		if (!vi.IsPlanarRGB())
 		{
-			env->ThrowError("AVSCube: input must be CS_RGBP16");
+			env->ThrowError("AVSCube: input must be planar RGB");
 		}
 		has_at_least_v8 = true;
 		try { env->CheckVersion(8); }
