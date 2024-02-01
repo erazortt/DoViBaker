@@ -20,10 +20,10 @@ void DoViEetf<signalBitDepth>::generateEETF(
 	float lumScale)
 {
 	// based on the report ITU-R BT.2408-7 Annex 5
-	float masterMaxEp = DoViProcessor::EOTFinv(DoViProcessor::EOTF(masterMaxPq / 4095.0) * lumScale);
-	float masterMinEp = DoViProcessor::EOTFinv(DoViProcessor::EOTF(masterMinPq / 4095.0) * lumScale);
-	float targetMaxEp = targetMaxPq / 4095.0;
-	float targetMinEp = targetMinPq / 4095.0;
+	float masterMaxEp = DoViProcessor::EOTFinv(DoViProcessor::EOTF(masterMaxPq / 4095.0f) * lumScale);
+	float masterMinEp = DoViProcessor::EOTFinv(DoViProcessor::EOTF(masterMinPq / 4095.0f) * lumScale);
+	float targetMaxEp = targetMaxPq / 4095.0f;
+	float targetMinEp = targetMinPq / 4095.0f;
 
 	// this is not from the report
 	// any mapping is unnecessary while inside the range of tragets capabilities
@@ -32,7 +32,7 @@ void DoViEetf<signalBitDepth>::generateEETF(
 
 	float maxLum = (targetMaxEp - masterMinEp) / (masterMaxEp - masterMinEp);
 	float minLum = (targetMinEp - masterMinEp) / (masterMaxEp - masterMinEp);
-	float KS = 1.5 * maxLum - 0.5;
+	float KS = 1.5f * maxLum - 0.5f;
 	float b = minLum;
 
 	for (int inSignal = 0; inSignal < LUT_SIZE; inSignal++) {
@@ -52,14 +52,14 @@ void DoViEetf<signalBitDepth>::generateEETF(
 		// there the tapring factor is b*(1-e2)^4. this is however incorrect, 
 		// since this increases the brightness also in the high end above KS.
 		// using e1 instead of e2 works only together with the change above
-		float e3 = e2 + b * powf(1 - e1, 4); 
+		float e3 = e2 + b * powf(1 - e1, 4);
 		
 		float e4 = e3 * (masterMaxEp - masterMinEp) + masterMinEp;
 		e4 = std::clamp(e4, 0.0f, 1.0f);
 		if (normalizeOutput) {
 			e4 /= targetMaxEp;
 		}
-		uint16_t outSignal = e4 * (LUT_SIZE - 1) + 0.5;
+		uint16_t outSignal = e4 * (LUT_SIZE - 1) + 0.5f;
 		lut[inSignal] = outSignal;
 	}
 }

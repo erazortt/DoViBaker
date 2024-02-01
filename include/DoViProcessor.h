@@ -190,14 +190,14 @@ float DoViProcessor::EOTFinv(float Y)
 
 float DoViProcessor::pq2nits(uint16_t pq)
 {
-  const float ep = pq / 4095.0;
+  const float ep = pq / 4095.0f;
   return EOTF(ep) * 10000;
 }
 
 uint16_t DoViProcessor::nits2pq(float nits)
 {
   const float Y = nits / 10000;
-  return EOTFinv(Y) * 4095.0 + 0.5;
+  return EOTFinv(Y) * 4095.0f + 0.5f;
 }
 
 constexpr uint16_t DoViProcessor::Clip3(int lower, int upper, int value)

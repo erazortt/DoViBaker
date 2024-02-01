@@ -71,7 +71,6 @@ DoViStatsFileLoader::DoViStatsFileLoader(
 			sceneScales.clear();
 		}
 
-		//uint16_t maxCll = DoViTransferFunctions::pq2nits(sceneMaxPq) + 0.5;
 		sceneMaxSignal.push_back(std::tuple(frame + 1, sceneMaxPq, sceneMinPq, sceneScaleMedian));
 		sceneMaxPq = 0;
 		sceneMinPq = 0;
@@ -87,9 +86,8 @@ DoViStatsFileLoader::DoViStatsFileLoader(
 		sceneScaleMedian = sceneScales.at(sceneScales.size() / 2);
 	}
 
-	//uint16_t maxCll = DoViTransferFunctions::pq2nits(sceneMaxPq) + 0.5;
 	sceneMaxSignal.push_back(std::tuple(frame + 1, sceneMaxPq, sceneMinPq, sceneScaleMedian));
-	staticMaxCll = DoViProcessor::pq2nits(staticMaxPq) + 0.5;
+	staticMaxCll = DoViProcessor::pq2nits(staticMaxPq) + 0.5f;
 
 	if (child->GetVideoInfo().num_frames != frame + 1) {
 		env->ThrowError((std::string("DoViMaxMqFileReader: clip length does not match stats file ") + maxPqFile).c_str());
@@ -112,7 +110,7 @@ PVideoFrame DoViStatsFileLoader::GetFrame(int n, IScriptEnvironment* env)
 	}
 
 	uint16_t maxPq = std::get<1>(sceneMaxSignal.at(currentScene));
-	uint16_t maxCll = DoViProcessor::pq2nits(maxPq) + 0.5;
+	uint16_t maxCll = DoViProcessor::pq2nits(maxPq) + 0.5f;
 	uint16_t minPq = std::get<2>(sceneMaxSignal.at(currentScene));
 	float scale = std::get<3>(sceneMaxSignal.at(currentScene));
 	env->propSetInt(env->getFramePropsRW(src), "_dovi_dynamic_min_pq", minPq, 0);

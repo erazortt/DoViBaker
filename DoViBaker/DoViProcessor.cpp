@@ -204,7 +204,7 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env, const uin
 
 		dynamic_min_pq = vdr_dm_data->dm_data.level1->min_pq;
 		dynamic_max_pq = vdr_dm_data->dm_data.level1->max_pq;
-		dynamic_max_content_light_level = pq2nits(dynamic_max_pq) + 0.5;
+		dynamic_max_content_light_level = pq2nits(dynamic_max_pq) + 0.5f;
 		if (vdr_dm_data->dm_data.level6) {
 			static_max_content_light_level = vdr_dm_data->dm_data.level6->max_content_light_level;
 			static_max_pq = nits2pq(vdr_dm_data->dm_data.level6->max_content_light_level);
@@ -472,11 +472,11 @@ void DoViProcessor::prepareTrimCoef() {
 	trim.ccc[2] = (m[6] * y1 + m[7] * y2 + m[8] * y3) / m[9];
 
 	if (!trimInfoMissing) {
-		trim.goP[0] = trim.slope / 4096.0 + 0.5;
-		trim.goP[1] = trim.offset / 4096.0 - 0.5;
-		trim.goP[2] = trim.power / 4096.0 + 0.5;
-		trim.cS[0] = trim.chroma_weight / 4096.0 - 0.5;
-		trim.cS[1] = trim.saturation_gain / 4096.0 - 0.5;
+		trim.goP[0] = trim.slope / 4096.0f + 0.5f;
+		trim.goP[1] = trim.offset / 4096.0f - 0.5f;
+		trim.goP[2] = trim.power / 4096.0f + 0.5f;
+		trim.cS[0] = trim.chroma_weight / 4096.0f - 0.5f;
+		trim.cS[1] = trim.saturation_gain / 4096.0f - 0.5f;
 	}
 }
 
@@ -499,7 +499,7 @@ void DoViProcessor::processTrim(uint16_t& ro, uint16_t& go, uint16_t& bo, const 
 		float fg = powf((std::clamp(((eg / y3) * trim.goP[0]) + trim.goP[1], 0.0f, 1.0f)), trim.goP[2]) * y3;
 		float fb = powf((std::clamp(((eb / y3) * trim.goP[0]) + trim.goP[1], 0.0f, 1.0f)), trim.goP[2]) * y3;
 
-		float Y = 0.22897 * fr + 0.69174 * fg + fb * 0.07929;
+		float Y = 0.22897f * fr + 0.69174f * fg + 0.07929f * fb;
 		float gr = fr * powf((1 + trim.cS[0]) * fr / Y, trim.cS[1]);
 		float gg = fg * powf((1 + trim.cS[0]) * fg / Y, trim.cS[1]);
 		float gb = fb * powf((1 + trim.cS[0]) * fb / Y, trim.cS[1]);

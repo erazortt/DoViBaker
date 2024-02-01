@@ -16,7 +16,7 @@ public:
     float lumScale);
 
 private:
-  static inline float eetfSpline(float e1, float KS, float maxLum);
+  static inline constexpr float eetfSpline(float e1, float KS, float maxLum);
 
   // the LUT becomes unnecessarily big for higher bit depths, cut at 12 bits
   static constexpr int LUT_BITS = signalBitDepth;
@@ -27,7 +27,7 @@ private:
 };
 
 template<int signalBitDepth>
-float DoViEetf<signalBitDepth>::eetfSpline(float e1, float KS, float maxLum)
+constexpr float DoViEetf<signalBitDepth>::eetfSpline(float e1, float KS, float maxLum)
 {
   float t = (e1 - KS) / (1 - KS);
   float p = ((2*t-3)*t*t+1)*KS + (((t-2)*t+1)*(1-KS) + (-2*t+3)*t*maxLum) * t;
