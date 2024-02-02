@@ -17,7 +17,7 @@ DoViStatsFileLoader::DoViStatsFileLoader(
 	, staticMaxCll(0)
 {
 	uint32_t frame = 0, isLastFrameInScene, frameMaxPq, frameMinPq, firstFrameNextScene = 0;
-	uint16_t sceneMaxPq = 0, sceneMinPq = 0;
+	uint16_t sceneMaxPq = 0, sceneMinPq = -1;
 	float scale;
 	std::deque<float> sceneScales;
 	std::ifstream fpStats, fpSceneCut;
@@ -73,7 +73,7 @@ DoViStatsFileLoader::DoViStatsFileLoader(
 
 		sceneMaxSignal.push_back(std::tuple(frame + 1, sceneMaxPq, sceneMinPq, sceneScaleMedian));
 		sceneMaxPq = 0;
-		sceneMinPq = 0;
+		sceneMinPq = -1;
 		if (fpSceneCut.is_open()) {
 			if (!(fpSceneCut >> firstFrameNextScene)) {
 				firstFrameNextScene = child->GetVideoInfo().num_frames;
