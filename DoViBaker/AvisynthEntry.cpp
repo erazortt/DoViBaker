@@ -99,9 +99,9 @@ AVSValue __cdecl Create_RealDoViCubes(
   const AVSValue* args,
   IScriptEnvironment* env)
 {
-  if(clip->GetVideoInfo().pixel_type != VideoInfo::CS_RGBP16)
+  if (!clip->GetVideoInfo().IsPlanarRGB())
   {
-    env->ThrowError("DoViCubes: input must be CS_RGBP16");
+    env->ThrowError("DoViTonemap: input must be planar RGB");
   }
   
   std::stringstream ssCubeFiles(cubeFiles);
