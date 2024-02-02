@@ -8,8 +8,9 @@ template class DoViEetf<14>;
 template class DoViEetf<16>;
 
 template<int signalBitDepth>
-DoViEetf<signalBitDepth>::DoViEetf(bool normalizeOutput_)
-	: normalizeOutput(normalizeOutput_) {}
+DoViEetf<signalBitDepth>::DoViEetf(float kneeOffset_, bool normalizeOutput_)
+	: kneeOffset(kneeOffset_),
+		normalizeOutput(normalizeOutput_) {}
 
 template<int signalBitDepth>
 void DoViEetf<signalBitDepth>::generateEETF(
@@ -19,7 +20,7 @@ void DoViEetf<signalBitDepth>::generateEETF(
 	uint16_t masterMinPq,
 	float lumScale)
 {
-	// based on the report ITU-R BT.2408-7 Annex 5
+	// based on report ITU-R BT.2408-7 Annex 5 (was in ITU-R BT.2390 until revision 7)
 	float masterMaxEp = DoViProcessor::EOTFinv(DoViProcessor::EOTF(masterMaxPq / 4095.0f) * lumScale);
 	float masterMinEp = DoViProcessor::EOTFinv(DoViProcessor::EOTF(masterMinPq / 4095.0f) * lumScale);
 	float targetMaxEp = targetMaxPq / 4095.0f;
@@ -32,7 +33,7 @@ void DoViEetf<signalBitDepth>::generateEETF(
 
 	float maxLum = (targetMaxEp - masterMinEp) / (masterMaxEp - masterMinEp);
 	float minLum = (targetMinEp - masterMinEp) / (masterMaxEp - masterMinEp);
-	float KS = 1.5f * maxLum - 0.5f;
+	float kneeStart = (1 + kneeOffset) * maxLum - kneeOffset;
 	float b = minLum;
 
 	for (int inSignal = 0; inSignal < LUT_SIZE; inSignal++) {
@@ -46,7 +47,7 @@ void DoViEetf<signalBitDepth>::generateEETF(
 		// this works only in conjunction with the change above
 		e1 = std::clamp(e1, 0.0f, 1.0f); 
 
-		float e2 = (KS < 1 && e1 > KS) ? eetfSpline(e1, KS, maxLum) : e1;
+		float e2 = (kneeStart < 1 && e1 > kneeStart) ? eetfSpline(e1, kneeStart, maxLum) : e1;
 
 		// following code line is not like in the report
 		// there the tapring factor is b*(1-e2)^4. this is however incorrect, 

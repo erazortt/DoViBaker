@@ -12,8 +12,9 @@ public:
     float targetMinNits,
     float masterMaxNits,
     float masterMinNits,
-    float scale,
-    bool normalize,
+    float lumScale,
+    float kneeOffset,
+    bool normalizeOutput,
     IScriptEnvironment* env);
 
   virtual ~DoViTonemap();
