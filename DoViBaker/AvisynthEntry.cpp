@@ -178,6 +178,10 @@ AVSValue __cdecl Create_RealDoViTonemap(
     env->ThrowError("DoViTonemap: input must be planar RGB");
   }
 
+  if (kneeOffset < 0.5 || kneeOffset > 2){
+    env->ThrowError("DoViTonemap: valid range of knee offset is [0.5; 2.0]");
+  }
+
   switch (clip->GetVideoInfo().BitsPerComponent())
   {
   case 10: return new DoViTonemap<10>(clip, targetMaxNits, targetMinNits, masterMaxNits, masterMinNits, lumScale, kneeOffset, normalizeOutput, env); break;

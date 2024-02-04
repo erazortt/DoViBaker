@@ -34,6 +34,6 @@ global sdc=mt_lutxy(sdLin,sdg,mt_polish("(y>0&y<0.5)?x:0"),use_expr=2)
 
 pqLinMultiplied=mt_lut(pqLin,use_expr=2,mt_polish("x*1.00")) #<---- change multiplication factor here to the shown value of lumScale to see the resulting brightness comparison
 
-rePq=mt_lut(pqLinMultiplied,mt_polish("(x<0.5)?max(x/2.676,0)^(1/2.4):0.5"),use_expr=2).Subtitle("multiplied PQ")
-reSdr=mt_lut(sdLin,mt_polish("(x<0.5)?max(x/2.676,0)^(1/2.4):0.5"),use_expr=2).Subtitle("sdr")
+rePq=mt_lut(pqLinMultiplied,mt_polish("(x<0.5)?max(x/2.676,0)^(1/2.4):0.5"),use_expr=2).Subtitle("scaled PQ")
+reSdr=mt_lut(sdLin,mt_polish("(x<0.5)?max(x/2.676,0)^(1/2.4):0.5"),use_expr=2).Subtitle("SDR")
 Interleave(reSdr,rePq).SelectEvery(4,0,1).ScriptClip("""Subtitle(align=8,"lumScale="+String(AverageLuma(pqc)>0?Float(AverageLuma(sdc))/AverageLuma(pqc):1.0))""")
