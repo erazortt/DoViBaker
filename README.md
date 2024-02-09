@@ -63,7 +63,7 @@ subtitle("maxcll = " + string(mcll))
 ```
 
 # DoViTonemap
-This plugin processes the tonemapping of any HDR PQ streams to lower dynamic range targets. The implementation follows ITU-R BT.2408-7 Annex 5 (was in ITU-R BT.2390 until revision 7), with the addtion of an optional luminosity factor which scales the brightness linearily.
+This plugin processes the tonemapping of any HDR PQ streams to lower dynamic range targets. The implementation follows ITU-R BT.2408-7 Annex 5 (was in ITU-R BT.2390 until revision 7), with the addition of an optional luminosity factor which scales the brightness linearily.
 
 The following arguments control the tonemapping function: 
 - `masterMaxNits` and `masterMinNits` set the white and black brightness value of the source. The values for the master brightness can be either given explicitly or `masterMaxNits` and `masterMinNits` can both be set to `-1` which will indicate that the actual values are read from the related frame properties `_dovi_dynamic_max_pq` and `_dovi_dynamic_min_pq` which are set by `DoViBaker` or `DoViStatsFileLoader`, leading to a dynamic tonemapping. 
