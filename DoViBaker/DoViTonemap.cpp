@@ -1,5 +1,6 @@
 #include "DoViTonemap.h"
 #include "DoViProcessor.h"
+#include <stdexcept>
 
 // explicitly instantiate the template for the linker
 template class DoViTonemap<10>;
@@ -55,14 +56,23 @@ PVideoFrame DoViTonemap<signalBitDepth>::GetFrame(int n, IScriptEnvironment* env
 	float scale = lumScale;
 
 	try {
-		if (dynamicMasterMaxPq)
-			maxPq = env->propGetInt(env->getFramePropsRO(src), "_dovi_dynamic_max_pq", 0, 0);
-		if (dynamicMasterMinPq)
-			minPq = env->propGetInt(env->getFramePropsRO(src), "_dovi_dynamic_min_pq", 0, 0);
-		if (dynamicLumScale)
-			scale = env->propGetFloat(env->getFramePropsRO(src), "_dovi_dynamic_luminosity_scale", 0, 0);
-	}	catch(...) {
-		env->ThrowError("DoViTonemap: Expected frame property not available");
+		if (dynamicMasterMaxPq) {
+			if (env->propNumElements(env->getFramePropsRO(src), "_dovi_dynamic_max_pq") > -1) {
+				maxPq = env->propGetInt(env->getFramePropsRO(src), "_dovi_dynamic_max_pq", 0, 0);
+			} else throw std::runtime_error("DoViTonemap: Expected frame property not available. Set 'masterMaxNits' explicitly.");
+		}
+		if (dynamicMasterMinPq) {
+			if (env->propNumElements(env->getFramePropsRO(src), "_dovi_dynamic_min_pq") > -1) {
+				minPq = env->propGetInt(env->getFramePropsRO(src), "_dovi_dynamic_min_pq", 0, 0);
+			} else throw std::runtime_error("DoViTonemap: Expected frame property not available. Set 'masterMinNits' explicitly.");
+		}
+		if (dynamicLumScale) {
+			if (env->propNumElements(env->getFramePropsRO(src), "_dovi_dynamic_luminosity_scale") > -1) {
+				scale = env->propGetFloat(env->getFramePropsRO(src), "_dovi_dynamic_luminosity_scale", 0, 0);
+			}	else throw std::runtime_error("DoViTonemap: Expected frame property not available. Set 'lumSacle' explicitly.");
+		}
+	}	catch(std::exception &e) {
+		env->ThrowError(e.what());
 		return dst;
 	}
 

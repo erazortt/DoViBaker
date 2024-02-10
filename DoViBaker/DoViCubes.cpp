@@ -99,7 +99,9 @@ PVideoFrame DoViCubes::GetFrame(int n, IScriptEnvironment* env)
 
 	uint16_t maxCll = 0;
 	try {
-		maxCll = env->propGetInt(env->getFramePropsRO(src), "_dovi_dynamic_max_content_light_level", 0, 0);
+		if (env->propNumElements(env->getFramePropsRO(src), "_dovi_dynamic_max_content_light_level") > -1) {
+			maxCll = env->propGetInt(env->getFramePropsRO(src), "_dovi_dynamic_max_content_light_level", 0, 0);
+		}	else throw std::runtime_error("");
 	} catch (...) {
 		env->ThrowError("DoViCubes: Expected frame property not available");
 	}
