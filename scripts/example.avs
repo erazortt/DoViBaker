@@ -6,7 +6,7 @@ bl=bl.z_ConvertFormat(chromaloc_op="top_left=>top_left",width=bl.Width()/2,heigh
 #the el clip does not need downsizing since its usually already at that size
 
 DoViBaker(bl,el)
-DoViTonemap(masterMaxNits=-1, masterMinNits=0, targetMaxNits=1000, targetMinNits=0, lumScale=1.0).AVSCube("PQ2HLG.cube")
+DoViTonemap(targetMaxNits=1000, targetMinNits=0).AVSCube("PQ2HLG.cube")
 z_ConvertFormat(chromaloc_op="center=>top_left",pixel_type="YUV420P16",colorspace_op="rgb:std-b67:2020:full=>2020ncl:std-b67:2020:limited",dither_type="none",resample_filter="spline36",resample_filter_uv="spline36")
 
 ScriptClip("""

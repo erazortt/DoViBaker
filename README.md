@@ -74,14 +74,18 @@ The following arguments control the tonemapping function:
 - `kneeOffset` is a parameter of the tonemapping function, which governs the size of the region where the tonemapping function is flattened (see figure below). The mathematical validity range is [0.5, 2.0]. In the report BT.2408 this value is fixed at 0.5, which leads to very low contrast in the high range favoring max brightness. Here the default value used is 0.75 which should be a better compromise overall, especially when using dynamic tonemapping.
 - `normalizeOutput` normalizes the output from [`targetMinNits`, `targetMaxNits`] to the full range. This can be usefull when the output is just an intermediate result which is further processed, since the usage of the full value range decreases rounding errors down the line. Default is `false`.
 
-This example applies a dynamic tonemapping to a 1000nits target reading the current max brightness value off the frame properties which are set by DoViBaker. The luminosity scale used is 1.0. In order to increase the perceived total brightness, this factor can be increased to 1.5 or 2.0 or even higher.
+This example applies a dynamic tonemapping to a 1000nits target while reading the current max and min brightness values off the frame properties which are set by DoViBaker. The luminosity scale is not given thus the default of 1.0 is used. In order to increase the perceived total brightness, this factor can be increased to 1.5 or 2.0 or even higher.
 ```
 DoViBaker(bl,el)
-DoViTonemap(lumScale=1.0, masterMaxNits=-1, targetMaxNits=1000, masterMinNits=0, targetMinNits=0)
+DoViTonemap(targetMaxNits=1000, targetMinNits=0)
 ```
 
-This is the functional form of the tonemapping function with the following parameters: masterMaxNits=10000, targetMaxNits=1000, masterMinNits=0, targetMinNits=0.1, lumscale=1.
+If your source is just PQ and doesn't have a DolbyVision stream, there are two options:
+- use static tonemapping by explicitly defining `masterMaxNits` and `masterMinNits` to `DoViTonemap`
+- analyse the source using `StatsFileCreator.avs` and provide the created files to `DoViStatsFileLoader` for a dynamic tonemapping with `DoViTonemap`
+
 ![Tonemapping function](EETF.png "Tonemapping function")
+Above shown is the functional form of the tonemapping function with the following parameters: masterMaxNits=10000, targetMaxNits=1000, masterMinNits=0, targetMinNits=0.1, lumscale=1.
 ## Frame Properties
 The following frame properties will be consumed, if the related arguments are set to -1:
 - `_dovi_dynamic_max_pq` the max_pq value of the current scene
