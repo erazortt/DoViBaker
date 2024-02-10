@@ -4,7 +4,7 @@ Bake the DoVi into your clip
 This avisynth plugin reads the Base Layer, Enhancement Layer and RPU data from a profile 7 DolbyVision stream to create a clip with the DolbyVision data baked in.
 
 ## General information
-This plugin uses the metadata from and RPU file or from the inside stream itself to compose the DolbyVision HDR picture out of the Base Layer (BL) and Enhancement Layer (EL). Display Management (DM) metadata will not be processed per default. It is however possible to use level 1 maximal pixel brightness data from DM by providing it to DoViCubes which can apply different LUTs depding on threshold values. 
+This plugin uses the metadata from and RPU file or from the inside stream itself to compose the DolbyVision HDR picture out of the Base Layer (BL) and Enhancement Layer (EL). Display Management (DM) metadata will not be processed per default. It is however possible to further process the clip using DM data by explicitly enabling `trims` or by the means of `DoViTonemap` or `DoViCubes`. 
 
 ## Feeding the plugin 
 To my knowledge there are currently three source libraries that can be used. It is advisable to choose one of them in a speed test on your machine.
@@ -42,6 +42,7 @@ DoViBaker(bl,el,rpu="RPU.bin")
 
 ## Trims
 Also it is possible to apply the trims available in the stream. Select which trim to apply using the `trimPq` argument and set `targetMaxNits` and `targetMinNits` as necessary. Be warned however, only the typical CM v2.9 processing is implemented thus far, and most streams have not very optimized parameters, producing suboptimal results. Thus this feature is experimental only!
+Instead of using the trims usually the results will be better using DoViTonemap with both `masterMaxNits` and `masterMinNits` set to -1.
 
 ## Frame Properties
 The following frame properties will be set:
