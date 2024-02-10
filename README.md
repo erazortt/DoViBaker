@@ -4,7 +4,7 @@ Bake the DoVi into your clip
 This avisynth plugin reads the Base Layer, Enhancement Layer and RPU data from a profile 7 DolbyVision stream to create a clip with the DolbyVision data baked in.
 
 ## General information
-This plugin uses the metadata from and RPU file or from the inside stream itself to compose the DolbyVision HDR picture out of the Base Layer (BL) and Enhancement Layer (EL). Display Management (DM) metadata will not be processed per default. It is however possible to use level 1 maximal pixel brightness data from DM by providing it to DoViCubes which can apply different LUTs depding on threshold values. 
+This plugin uses the metadata from and RPU file or from the inside stream itself to compose the DolbyVision HDR picture out of the Base Layer (BL) and Enhancement Layer (EL). Display Management (DM) metadata will not be processed per default. It is however possible to further process the clip using DM data by explicitly enabling `trims` or by the means of `DoViTonemap` or `DoViCubes`. 
 
 ## Feeding the plugin 
 To my knowledge there are currently three source libraries that can be used. It is advisable to choose one of them in a speed test on your machine.
@@ -43,6 +43,8 @@ DoViBaker(bl,el,rpu="RPU.bin")
 ## Trims
 Also it is possible to apply the trims available in the stream. Select which trim to apply using the `trimPq` argument and set `targetMaxNits` and `targetMinNits` as necessary. Be warned however, only the typical CM v2.9 processing is implemented thus far, and most streams have not very optimized parameters, producing suboptimal results. Thus this feature is experimental only!
 
+Instead of using the trims usually the results will be better using DoViTonemap with both `masterMaxNits` and `masterMinNits` set to -1.
+
 ## Frame Properties
 The following frame properties will be set:
 - `_Matrix` set to 0, representing that the output is RGB
@@ -66,11 +68,11 @@ subtitle("maxcll = " + string(mcll))
 This plugin processes the tonemapping of any HDR PQ streams to lower dynamic range targets. The implementation is based on ITU-R BT.2408-7 Annex 5 (was in ITU-R BT.2390 until revision 7), with the addition of an optional luminosity factor which scales the brightness linearily.
 
 The following arguments control the tonemapping function: 
-- `masterMaxNits` and `masterMinNits` set the white and black brightness value of the source. The values for the master brightness can be either given explicitly or `masterMaxNits` and `masterMinNits` can both be set to `-1` which will indicate that the actual values are read from the related frame properties `_dovi_dynamic_max_pq` and `_dovi_dynamic_min_pq` which are set by `DoViBaker` or `DoViStatsFileLoader`, leading to a dynamic tonemapping. 
+- `masterMaxNits` and `masterMinNits` set the white and black brightness value of the source. The values for the master brightness can be either given explicitly or `masterMaxNits` and `masterMinNits` can both be set to `-1` which will indicate that the actual values are read from the related frame properties `_dovi_dynamic_max_pq` and `_dovi_dynamic_min_pq` which are set by `DoViBaker` or `DoViStatsFileLoader`, leading to a dynamic tonemapping. If not given these will default to `-1`.
 - `targetMaxNits` and `targetMinNits` set the desired target capabilities. These must be given explicitly.
-- `lumScale` changes the total brightness, this can be usefull since many HDR PQ and DV streams are actually too dark, darker then the respective SDR streams. To find the proper `lumScale` factor you might use the script `LumScaleFindHelper.avs`. It is also possible to read the luminosity factor from the frame property `_dovi_dynamic_luminosity_scale` by setting `lumSacle` to -1.
+- `lumScale` changes the total brightness, this can be usefull since many HDR PQ and DV streams are actually too dark, darker then the respective SDR streams. To find the proper `lumScale` factor you might use the script `LumScaleFindHelper.avs`. It is also possible to read the luminosity factor from the frame property `_dovi_dynamic_luminosity_scale` by setting `lumSacle` to -1. When not given explicitly the default of `1.0` is used.
 - `kneeOffset` is a parameter of the tonemapping function, which governs the size of the region where the tonemapping function is flattened (see figure below). The mathematical validity range is [0.5, 2.0]. In the report BT.2408 this value is fixed at 0.5, which leads to very low contrast in the high range favoring max brightness. Here the default value used is 0.75 which should be a better compromise overall, especially when using dynamic tonemapping.
-- `normalizeOutput` normalizes the output from [`targetMinNits`, `targetMaxNits`] to the full range. This can be usefull when the output is just an intermediate result which is further processed, since the usage of the full value range decreases rounding errors down the line.
+- `normalizeOutput` normalizes the output from [`targetMinNits`, `targetMaxNits`] to the full range. This can be usefull when the output is just an intermediate result which is further processed, since the usage of the full value range decreases rounding errors down the line. Default is `false`.
 
 This example applies a dynamic tonemapping to a 1000nits target reading the current max brightness value off the frame properties which are set by DoViBaker. The luminosity scale used is 1.0. In order to increase the perceived total brightness, this factor can be increased to 1.5 or 2.0 or even higher.
 ```
