@@ -17,7 +17,7 @@ bl=LWLibavVideoSource("clip.ts", format="YUV420P10", stream_index=0)
 el=LWLibavVideoSource("clip.ts", format="YUV420P10", stream_index=1)
 DoViBaker(bl,el)
 ```
-### [FFmpegSource](http://avisynth.nl/index.php/FFmpegSource)
+### [FFmpegSource](https://codeberg.org/StvG/ffms2)
 
 example.avs:
 ```
