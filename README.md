@@ -85,7 +85,7 @@ If your source is just PQ and doesn't have a DolbyVision stream, there are two o
 - analyse the source using `StatsFileCreator.avs` and provide the created files to `DoViStatsFileLoader` for a dynamic tonemapping with `DoViTonemap`
 
 ![Tonemapping function](EETF.png "Tonemapping function")
-Shown above is the functional form of the tonemapping function with the following parameters: masterMaxNits=10000, targetMaxNits=1000, masterMinNits=0, targetMinNits=0.1, lumscale=1.
+Shown above is the functional form of the tonemapping curve with the following parameters: masterMaxNits=10000, targetMaxNits=1000, masterMinNits=0, targetMinNits=0.1, lumscale=1.
 ## Frame Properties
 The following frame properties will be consumed, if the related arguments are set to -1:
 - `_dovi_dynamic_max_pq` the max_pq value of the current scene
