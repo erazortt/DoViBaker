@@ -416,6 +416,7 @@ int main(int argc, char* argv[])
 
   if (showNitsTable) {
     printf("2081 pq = %f\n", DoViProcessor::pq2nits(2081));
+    printf("2851 pq = %f\n", DoViProcessor::pq2nits(2851));
     printf("3079 pq = %f\n", DoViProcessor::pq2nits(3079));
     for (int i = 0; i <= 120; i += 10) {
       printf("%i%%: %f\n", i, DoViProcessor::pq2nits(4095 * i * 0.01));
