@@ -169,7 +169,7 @@ The output will show the following attributes:
 
 Pay attention to 3-5 since these will indicate if the look of the clip will be different when DolbyVision is taken into account compared to just playing the Base Layer clip. If you are using LUTs, pay attention to 7) since in this case the LUTs provided will need to be different.
 
-Additionally it is possible to generate a scenecutfile based on the information from the RPU file. This might be used as the optional scene cut file by `DoViStatsFileLoader`. Or this might be given to the encoder to improve the scene detection (using the parameter --qpfile for x265). In this case add " K" to each line of the file.
+Additionally it is possible to generate a scenecutfile based on the information from the RPU file. This might be used as the optional scene cut file by `DoViStatsFileLoader`. Or this might be given to the encoder to improve the scene detection (using the parameter --qpfile for x265). In this case add " K" to the end of each line of the file.
 
 # AVSCube
 There is also a simple implementation of AVSCube, which provides the same image processing as the integrated LUT processing as `DoViCubes`.

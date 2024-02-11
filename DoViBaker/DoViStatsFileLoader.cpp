@@ -47,7 +47,7 @@ DoViStatsFileLoader::DoViStatsFileLoader(
 		} else env->ThrowError((std::string("DoViMaxMqFileReader: error reading frame number from stats file ") + sceneCutFile).c_str());
 		if (std::getline(ssline, segment, ' ')) {
 			isLastFrameInScene = std::atoi(segment.c_str());
-		} else env->ThrowError((std::string("DoViMaxMqFileReader: error reading scene change from tats file ") + sceneCutFile).c_str());
+		} else env->ThrowError((std::string("DoViMaxMqFileReader: error reading scene change from stats file ") + sceneCutFile).c_str());
 		if (std::getline(ssline, segment, ' ')) {
 			frameMaxPq = std::atoi(segment.c_str());
 		} else env->ThrowError((std::string("DoViMaxMqFileReader: error reading maxPq from stats file ") + sceneCutFile).c_str());
