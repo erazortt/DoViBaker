@@ -114,7 +114,7 @@ The format of each line of the stats file needs to be, last entry is optional:
 Additionally it is also possible to provide another scene cut file, created by other means than through `StatsFileCreator.avs`. In this case the scene cuts are going to be taken for that file and the stream statistics from the stats file. The format of each line of the optional alternative scene cut file needs to be:  
 `<frame_number_of_first_frame_after_scene_cut>`
 
-In this example the input stats file is read feeding DoViTonemap.
+In this example the input stats file is read feeding DoViTonemap:
 ```
 DoViStatsFileReader("statsFile.txt")
 DoViTonemap(targetMaxNits=1000, targetMinNits=0)
