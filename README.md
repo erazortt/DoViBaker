@@ -89,7 +89,7 @@ If your source is just PQ and doesn't have a DolbyVision substream, there are tw
 Shown below is the functional form of the tonemapping curve with the following parameters: masterMaxNits=10000, targetMaxNits=1000, masterMinNits=0, targetMinNits=0.1, lumscale=1.
 ![Tonemapping function](EETF.png "Tonemapping function")
 ## Frame Properties
-The following frame properties will be consumed, if the related arguments are set to -1:
+The following frame properties will be consumed, if the related arguments `masterMaxNits`, `masterMinNits` and `lumScale` are set to `-1`:
 - `_dovi_dynamic_max_pq` the max_pq value of the current scene
 - `_dovi_dynamic_min_pq` the min_pq value of the current scene
 - `_dovi_dynamic_luminosity_scale` the luminosity scaling factor of the current scene
