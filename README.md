@@ -76,7 +76,7 @@ The following arguments control the tonemapping function:
 - `kneeOffset` is a parameter of the tonemapping curve, which governs the size of the region where the tonemapping function is flattened (see figure below). The mathematical validity range is [0.5, 2.0]. In report BT.2408 this value is fixed at 0.5, which leads to very low contrast in the high range favoring max brightness. Here the default value used is `0.75` which should be a better compromise overall, especially when using dynamic tonemapping.
 - `normalizeOutput` normalizes the output from the range `[targetMinNits, targetMaxNits]` to the full range. This can be usefull when the output is just an intermediate result which is further processed, since the usage of the full value range decreases rounding errors down the line. Default is `false`.
 
-This example applies a dynamic tonemapping to a 1000nits target while reading the current max and min brightness values off the frame properties which are set by `DoViBaker`. The luminosity scale is not given thus the default of 1.0 is used. In order to increase the perceived total brightness, this factor can be increased to 1.5 or 2.0 or even higher.
+The following example applies a dynamic tonemapping to a 1000nits target while reading the current max and min brightness values off the frame properties which are set by `DoViBaker`. The luminosity scale is not given thus the default of 1.0 is used. In order to increase the perceived total brightness, this factor can be increased to 1.5 or 2.0 or even higher.
 ```
 DoViBaker(bl,el)
 DoViTonemap(targetMaxNits=1000, targetMinNits=0)
