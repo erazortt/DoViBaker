@@ -82,7 +82,7 @@ DoViBaker(bl,el)
 DoViTonemap(targetMaxNits=1000, targetMinNits=0)
 ```
 
-If your source is just PQ and doesn't have a DolbyVision stream, there are two options:
+If your source is just PQ and doesn't have a DolbyVision substream, there are two options:
 - use static tonemapping by explicitly defining `masterMaxNits` and `masterMinNits` to `DoViTonemap`
 - analyse the source using `StatsFileCreator.avs` and provide the created files to `DoViStatsFileLoader` for a dynamic tonemapping with `DoViTonemap`
 
