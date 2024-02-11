@@ -41,7 +41,7 @@ DoViBaker(bl,el,rpu="RPU.bin")
 ```
 
 ## Trims
-Also it is possible to apply the trims available in the stream. Select which trim to apply using the `trimPq` argument and set `targetMaxNits` and `targetMinNits` as necessary. Be warned however, only the typical CM v2.9 processing is implemented thus far, and most streams don't have very optimized parameters, producing suboptimal results. Thus this feature is experimental only!
+Also it is possible to apply the trims available in the DolbyVision substream. Select which trim to apply using the `trimPq` argument and set `targetMaxNits` and `targetMinNits` as necessary. Be warned however, only the typical CM v2.9 processing is implemented thus far, and most streams don't have very optimized parameters, producing suboptimal results. Thus this feature is experimental only!
 
 In comparison to trims and especially for higher brightness targets like 600 nits and above, results might be better using `DoViTonemap` with both `masterMaxNits` and `masterMinNits` set to `-1`.
 
