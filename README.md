@@ -84,7 +84,7 @@ DoViTonemap(targetMaxNits=1000, targetMinNits=0)
 
 If your source is just PQ and doesn't have a DolbyVision substream, there are two options:
 - use static tonemapping by explicitly defining `masterMaxNits` and `masterMinNits` to `DoViTonemap`
-- analyse the source using `StatsFileCreator.avs` and provide the created files to `DoViStatsFileLoader` for a dynamic tonemapping with `DoViTonemap`
+- analyse the source using `StatsFileCreator.avs` and provide the create stats file to `DoViStatsFileLoader` for a dynamic tonemapping with `DoViTonemap`
 
 Shown below is the functional form of the tonemapping curve with the following parameters: masterMaxNits=10000, targetMaxNits=1000, masterMinNits=0, targetMinNits=0.1, lumscale=1.
 ![Tonemapping function](EETF.png "Tonemapping function")
