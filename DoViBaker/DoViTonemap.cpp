@@ -82,7 +82,7 @@ PVideoFrame DoViTonemap<signalBitDepth>::GetFrame(int n, IScriptEnvironment* env
 		return dst;
 	}
 
-	if (maxPq != masterMaxPq || minPq != masterMinPq || scale != lumScale) {
+	if (maxPq != masterMaxPq || minPq != masterMinPq || std::abs(scale-lumScale)>0.001f) {
 		masterMinPq = minPq;
 		masterMaxPq = maxPq;
 		lumScale = scale;
@@ -102,7 +102,7 @@ PVideoFrame DoViTonemap<signalBitDepth>::GetFrame(int n, IScriptEnvironment* env
 template<int signalBitDepth>
 void DoViTonemap<signalBitDepth>::applyTonemapRGB(PVideoFrame& dst, const PVideoFrame& src) const
 {
-	//apply tonemap using R'G'B' scaling
+	//apply tonemap using R'G'B' scaling (see p.59 of ITU-R BT.2408-7)
 	const int height = src->GetHeight(PLANAR_R);
 	const int width = src->GetRowSize(PLANAR_R) / sizeof(uint16_t);
 	const uint16_t* srcP[3];

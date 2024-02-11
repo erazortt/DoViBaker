@@ -25,15 +25,15 @@ private:
   void applyTonemapRGB(PVideoFrame& dst, const PVideoFrame& src) const;
   //void applyTonemapYUV(PVideoFrame& dst, const PVideoFrame& src) const;
 
-  uint16_t targetMaxPq;
-  uint16_t targetMinPq;
+  const uint16_t targetMaxPq;
+  const uint16_t targetMinPq;
   uint16_t masterMaxPq;
   uint16_t masterMinPq;
   float lumScale;
 
-  bool dynamicMasterMaxPq;
-  bool dynamicMasterMinPq;
-  bool dynamicLumScale;
+  const bool dynamicMasterMaxPq;
+  const bool dynamicMasterMinPq;
+  const bool dynamicLumScale;
 
   DoViEetf<signalBitDepth>* doviEetf;
 };
