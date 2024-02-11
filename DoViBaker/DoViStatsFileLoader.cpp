@@ -32,8 +32,10 @@ DoViStatsFileLoader::DoViStatsFileLoader(
 		if (!fpSceneCut.is_open()) {
 			env->ThrowError((std::string("DoViMaxMqFileReader: cannot find scene cut file ") + sceneCutFile).c_str());
 		}
-		if (!(fpSceneCut >> firstFrameNextScene)) {
-			env->ThrowError((std::string("DoViMaxMqFileReader: error reading scene cut file ") + sceneCutFile).c_str());
+		while (firstFrameNextScene == 0) {
+			if (!(fpSceneCut >> firstFrameNextScene)) {
+				env->ThrowError((std::string("DoViMaxMqFileReader: error reading scene cut file ") + sceneCutFile).c_str());
+			}
 		}
 	} 
 

@@ -470,7 +470,7 @@ int main(int argc, char* argv[])
     nonIdentityMapping |= checkNonIdentityMapping(dovi);
     elMixing |= checkElProcessing(dovi);
     if(fpSceneChange && dovi.isSceneChange()){
-      fputs((std::to_string(i)+" K\n").c_str(), fpSceneChange);
+      fputs((std::to_string(i)+"\n").c_str(), fpSceneChange);
     }
     if (dovi.isLimitedRangeOutput()) {
       limitedRangeOutput = true;
@@ -494,7 +494,7 @@ int main(int argc, char* argv[])
   else printf("el-clip processing: disabled\n");
   printf("available trims: ");
   for (int i = 0; i < trimPq.size(); i++) {
-    printf("%i nits (%i)\n", int(DoViProcessor::pq2nits(trimPq[i]) + 0.5), trimPq[i]);
+    printf("%i nits (trimPq: %i)\n", int(DoViProcessor::pq2nits(trimPq[i]) + 0.5), trimPq[i]);
     printf("                 ");
   }
   (trimPq.size() > 0) ? printf("\n") : printf("none\n");
