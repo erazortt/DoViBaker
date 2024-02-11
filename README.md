@@ -41,9 +41,14 @@ DoViBaker(bl,el,rpu="RPU.bin")
 ```
 
 ## Trims
-Also it is possible to apply the trims available in the stream. Select which trim to apply using the `trimPq` argument and set `targetMaxNits` and `targetMinNits` as necessary. Be warned however, only the typical CM v2.9 processing is implemented thus far, and most streams don't have very optimized parameters, producing suboptimal results. Thus this feature is experimental only!
+Also it is possible to apply the trims available in the DolbyVision substream. Select which trim to apply using the `trimPq` argument and set `targetMaxNits` and `targetMinNits` as necessary. Be warned however, only the typical CM v2.9 processing is implemented thus far, and most streams don't have very optimized parameters, producing suboptimal results. Thus this feature is experimental only!
 
-In comparison to trims and especially for higher brightness targets like 600 nits and above, results might be better using DoViTonemap with both `masterMaxNits` and `masterMinNits` set to `-1`.
+Typical trim targets usually available are:
+* 100 nits, with a `trimPq` of 2081
+* 600 nits, with a `trimPq` of 2851
+* 1000 nits, with a `trimPq` of 3079
+
+In comparison to trims and especially for higher brightness targets like 600 nits and above, results might be better using `DoViTonemap` with both `masterMaxNits` and `masterMinNits` set to `-1`.
 
 ## Frame Properties
 The following frame properties will be set:
@@ -74,22 +79,22 @@ The following arguments control the tonemapping function:
 - `targetMaxNits` and `targetMinNits` set the desired target capabilities. These must be given explicitly.
 - `lumScale` changes the total brightness, this can be usefull since many HDR PQ and DV streams are actually too dark, darker then the respective SDR streams. To find the proper `lumScale` factor you might use the script `LumScaleFindHelper.avs`. It is also possible to read the luminosity factor from the frame property `_dovi_dynamic_luminosity_scale` by setting `lumSacle` to `-1`. When not given explicitly the default of `1.0` is used.
 - `kneeOffset` is a parameter of the tonemapping curve, which governs the size of the region where the tonemapping function is flattened (see figure below). The mathematical validity range is [0.5, 2.0]. In report BT.2408 this value is fixed at 0.5, which leads to very low contrast in the high range favoring max brightness. Here the default value used is `0.75` which should be a better compromise overall, especially when using dynamic tonemapping.
-- `normalizeOutput` normalizes the output from the range [`targetMinNits`, `targetMaxNits`] to the full range. This can be usefull when the output is just an intermediate result which is further processed, since the usage of the full value range decreases rounding errors down the line. Default is `false`.
+- `normalizeOutput` normalizes the output from the range `[targetMinNits, targetMaxNits]` to the full range. This can be usefull when the output is just an intermediate result which is further processed, since the usage of the full value range decreases rounding errors down the line. Default is `false`.
 
-This example applies a dynamic tonemapping to a 1000nits target while reading the current max and min brightness values off the frame properties which are set by DoViBaker. The luminosity scale is not given thus the default of 1.0 is used. In order to increase the perceived total brightness, this factor can be increased to 1.5 or 2.0 or even higher.
+The following example applies a dynamic tonemapping to a 1000nits target while reading the current max and min brightness values off the frame properties which are set by `DoViBaker`. The luminosity scale is not given thus the default of 1.0 is used. In order to increase the perceived total brightness, this factor can be increased to 1.5 or 2.0 or even higher.
 ```
 DoViBaker(bl,el)
 DoViTonemap(targetMaxNits=1000, targetMinNits=0)
 ```
 
-If your source is just PQ and doesn't have a DolbyVision stream, there are two options:
+If your source is just PQ and doesn't have a DolbyVision substream, there are two options:
 - use static tonemapping by explicitly defining `masterMaxNits` and `masterMinNits` to `DoViTonemap`
-- analyse the source using `StatsFileCreator.avs` and provide the created files to `DoViStatsFileLoader` for a dynamic tonemapping with `DoViTonemap`
+- analyse the source using `StatsFileCreator.avs` and provide the create stats file to `DoViStatsFileLoader` for a dynamic tonemapping with `DoViTonemap`
 
 Shown below is the functional form of the tonemapping curve with the following parameters: masterMaxNits=10000, targetMaxNits=1000, masterMinNits=0, targetMinNits=0.1, lumscale=1.
 ![Tonemapping function](EETF.png "Tonemapping function")
 ## Frame Properties
-The following frame properties will be consumed, if the related arguments are set to -1:
+The following frame properties will be consumed, if the related arguments `masterMaxNits`, `masterMinNits` and `lumScale` are set to `-1`:
 - `_dovi_dynamic_max_pq` the max_pq value of the current scene
 - `_dovi_dynamic_min_pq` the min_pq value of the current scene
 - `_dovi_dynamic_luminosity_scale` the luminosity scaling factor of the current scene
@@ -107,17 +112,17 @@ The following frame properties will be consumed:
 - `_dovi_dynamic_max_content_light_level` the maximal nits value of the current scene
 
 # DoViStatsFileLoader
-This plugin reads the stats file generated by the avisynth script `StatsFileCreator.avs`. It can be used for sources which do not have any DolbyVision substream, but where a the LUT processing by DoViCubes is still necessary. Additionally it is possible to provide an alternative scene cut file, created by other means.
+This plugin reads the stats file generated by the avisynth script `StatsFileCreator.avs`. It can be used for sources which do not have any DolbyVision substream, but where a processing by `DoViCubes` or `DoViTonemap` is still desired.
 The format of each line of the stats file needs to be, last entry is optional:  
 `<frame_number> <decision_if_frame_is_last_in_scene> <frame_max_pq> <frame_min_pq> <frame_lum_scale>`
 
-The format of each line of the optional alternative scene cut file file needs to be:  
+Additionally it is also possible to provide another scene cut file, created by other means than through `StatsFileCreator.avs`. In this case the scene cuts are going to be taken for that file and the stream statistics from the stats file. The format of each line of the optional alternative scene cut file needs to be:  
 `<frame_number_of_first_frame_after_scene_cut>`
 
-In this example the input stats file is read feeding DoViTonemap.
+In this example the input stats file is read feeding DoViTonemap:
 ```
 DoViStatsFileReader("statsFile.txt")
-DoViTonemap(lumScale=1.0, masterMaxNits=-1, targetMaxNits=1000, masterMinNits=0, targetMinNits=0)
+DoViTonemap(targetMaxNits=1000, targetMinNits=0)
 ```
 
 ## Frame Properties
@@ -148,7 +153,7 @@ Used to find `lumScale` for `DoViTonemap` manually. This is the factor by which 
 Needed by `LumScaleHelper.avs` for showing a more correct and better comparable grayscale of PQ and SDR sources.
 
 # DoViAnalyzer
-This application analyzes the RPU.bin file in order to show information relevant to deciding whether it is worth to use DoViBaker or if this can be skipped completely and the Base Layer can be used directly.
+This application analyzes the RPU.bin file in order to show information relevant to deciding whether it is worth to use `DoViBaker` or if this can be skipped completely and the Base Layer can be used directly.
 
 ```
 usage: DoViAnalyzer.exe <path_to_rpu.bin_file> <optional_scenecutfile.txt>
