@@ -17,7 +17,7 @@ bl=LWLibavVideoSource("clip.ts", format="YUV420P10", stream_index=0)
 el=LWLibavVideoSource("clip.ts", format="YUV420P10", stream_index=1)
 DoViBaker(bl,el)
 ```
-### [FFmpegSource](http://avisynth.nl/index.php/FFmpegSource)
+### [FFmpegSource](https://codeberg.org/StvG/ffms2)
 
 example.avs:
 ```
@@ -70,8 +70,8 @@ This plugin processes the tonemapping of any HDR PQ streams to lower dynamic ran
 The following arguments control the tonemapping function: 
 - `masterMaxNits` and `masterMinNits` set the white and black brightness value of the source. The values for the master brightness can be either given explicitly or `masterMaxNits` and `masterMinNits` can both be set to `-1` which will indicate that the actual values are read from the related frame properties `_dovi_dynamic_max_pq` and `_dovi_dynamic_min_pq` which are set by `DoViBaker` or `DoViStatsFileLoader`, leading to a dynamic tonemapping. If not given these will default to `-1`.
 - `targetMaxNits` and `targetMinNits` set the desired target capabilities. These must be given explicitly.
-- `lumScale` changes the total brightness, this can be usefull since many HDR PQ and DV streams are actually too dark, darker then the respective SDR streams. To find the proper `lumScale` factor you might use the script `LumScaleFindHelper.avs`. It is also possible to read the luminosity factor from the frame property `_dovi_dynamic_luminosity_scale` by setting `lumSacle` to -1. When not given explicitly the default of `1.0` is used.
-- `kneeOffset` is a parameter of the tonemapping function, which governs the size of the region where the tonemapping function is flattened (see figure below). The mathematical validity range is [0.5, 2.0]. In the report BT.2408 this value is fixed at 0.5, which leads to very low contrast in the high range favoring max brightness. Here the default value used is 0.75 which should be a better compromise overall, especially when using dynamic tonemapping.
+- `lumScale` changes the total brightness, this can be usefull since many HDR PQ and DV streams are actually too dark, darker then the respective SDR streams. To find the proper `lumScale` factor you might use the script `LumScaleFindHelper.avs`. It is also possible to read the luminosity factor from the frame property `_dovi_dynamic_luminosity_scale` by setting `lumSacle` to `-1`. When not given explicitly the default of `1.0` is used.
+- `kneeOffset` is a parameter of the tonemapping curve, which governs the size of the region where the tonemapping function is flattened (see figure below). The mathematical validity range is [0.5, 2.0]. In report BT.2408 this value is fixed at 0.5, which leads to very low contrast in the high range favoring max brightness. Here the default value used is `0.75` which should be a better compromise overall, especially when using dynamic tonemapping.
 - `normalizeOutput` normalizes the output from [`targetMinNits`, `targetMaxNits`] to the full range. This can be usefull when the output is just an intermediate result which is further processed, since the usage of the full value range decreases rounding errors down the line. Default is `false`.
 
 This example applies a dynamic tonemapping to a 1000nits target while reading the current max and min brightness values off the frame properties which are set by DoViBaker. The luminosity scale is not given thus the default of 1.0 is used. In order to increase the perceived total brightness, this factor can be increased to 1.5 or 2.0 or even higher.
@@ -85,7 +85,7 @@ If your source is just PQ and doesn't have a DolbyVision stream, there are two o
 - analyse the source using `StatsFileCreator.avs` and provide the created files to `DoViStatsFileLoader` for a dynamic tonemapping with `DoViTonemap`
 
 ![Tonemapping function](EETF.png "Tonemapping function")
-Shown above is the functional form of the tonemapping function with the following parameters: masterMaxNits=10000, targetMaxNits=1000, masterMinNits=0, targetMinNits=0.1, lumscale=1.
+Shown above is the functional form of the tonemapping curve with the following parameters: masterMaxNits=10000, targetMaxNits=1000, masterMinNits=0, targetMinNits=0.1, lumscale=1.
 ## Frame Properties
 The following frame properties will be consumed, if the related arguments are set to -1:
 - `_dovi_dynamic_max_pq` the max_pq value of the current scene
