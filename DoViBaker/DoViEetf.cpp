@@ -35,7 +35,9 @@ void DoViEetf<signalBitDepth>::generateEETF(
 	const float minLum = (targetMinEp - masterMinEp) / (masterMaxEp - masterMinEp);
 	const float kneeStart = (1 + kneeOffset) * maxLum - kneeOffset;
 	const float b = minLum;
-	const float taperPwr = 1 / std::clamp(b, 0.01f, 0.3333333f);
+
+	// we don't need unnecessarily big values of the taper power, thus b is limited
+	const float taperPwr = 1 / std::max(b, 0.01f);
 
 	for (int inSignal = 0; inSignal < LUT_SIZE; inSignal++) {
 		float ep = inSignal / float(LUT_SIZE - 1);
@@ -48,15 +50,16 @@ void DoViEetf<signalBitDepth>::generateEETF(
 		// This works only in conjunction with the change above
 		e1 = std::clamp(e1, 0.0f, 1.0f); 
 
-		const float e2 = (kneeStart < 1 && e1 > kneeStart) ? eetfSpline(e1, kneeStart, maxLum) : e1;
+		const float e2 = (e1 > kneeStart) ? eetfSpline(e1, kneeStart, maxLum) : e1;
 
 		// Following code line is not like in the report.
 		// There the tapering factor is b*(1-e2)^4. This is however incorrect, 
-		// since the dependence on e2 increases the brightness also in the high end.
+		// since the dependence on e2 increases the brightness also in the high-end.
 		// Using e1 instead of e2 works only together with all the changes above.
-		// Additionally the fixed power of 4 is unnecessarily low and thus increases 
-		// the low end brightness too much. It can be set to 1/b, so long it's above 3.
-		const float e3 = e2 + b * powf(1 - e1, taperPwr);
+		// Additionally the fixed power of 4 is unnecessarily low and thus increases the 
+		// low-end brightness too much. It can be set to 1/b, so long targetMinEp/targetMaxEp<0.5.
+		const float taper = b * powf(1 - e1, taperPwr);
+		const float e3 = e2 + taper;
 		
 		float e4 = e3 * (masterMaxEp - masterMinEp) + masterMinEp;
 		if (normalizeOutput) {

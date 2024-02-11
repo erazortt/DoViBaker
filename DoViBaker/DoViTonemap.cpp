@@ -29,6 +29,12 @@ DoViTonemap<signalBitDepth>::DoViTonemap(
 	, dynamicMasterMinPq(masterMinNits < 0)
 	, dynamicLumScale(lumScale < 0) 
 {
+	if (targetMinPq * 2 > targetMaxPq) {
+		// prevent EETF tapering to fail from a too low value of the taper power
+		env->ThrowError("DoViTonemap: Value for 'targetMinNits' is too large to process");
+		return;
+	}
+
 	doviEetf = new DoViEetf<signalBitDepth>(kneeOffset, normalizeOutput);
 	doviEetf->generateEETF(
 		targetMaxPq,
