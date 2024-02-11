@@ -117,7 +117,7 @@ Additionally it is also possible to provide another scene cut file, created by o
 In this example the input stats file is read feeding DoViTonemap.
 ```
 DoViStatsFileReader("statsFile.txt")
-DoViTonemap(lumScale=1.0, masterMaxNits=-1, targetMaxNits=1000, masterMinNits=0, targetMinNits=0)
+DoViTonemap(targetMaxNits=1000, targetMinNits=0)
 ```
 
 ## Frame Properties
