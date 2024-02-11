@@ -53,12 +53,14 @@ DoViCubes::DoViCubes(
 			env->ThrowError((std::string("DoViCubes: cannot find cube file ") + cube_path).c_str());
 		}
 		std::unique_ptr<timecube_lut, TimecubeLutFree> cube{ timecube_lut_from_file(cube_path.c_str()) };
-		if (!cube)
-			throw std::runtime_error{ "DoViCubes: error reading LUT from file" };
+		if (!cube) {
+			env->ThrowError((std::string("DoViCubes: error reading LUT from file ") + cube_path).c_str());
+		}
 
 		timecube_filter* lut = timecube_filter_create(cube.get(), &params);
-		if (!lut)
-			throw std::runtime_error{ "DoViCubes: error creating LUT" };
+		if (!lut) {
+			env->ThrowError((std::string("DoViCubes: error creating LUT from file ") + cube_path).c_str());
+		}
 
 		luts.push_back(std::pair(cubes[i].first, lut));
 	}
@@ -98,13 +100,9 @@ PVideoFrame DoViCubes::GetFrame(int n, IScriptEnvironment* env)
 	PVideoFrame dst = env->NewVideoFrameP(vi, &src);
 
 	uint16_t maxCll = 0;
-	try {
-		if (env->propNumElements(env->getFramePropsRO(src), "_dovi_dynamic_max_content_light_level") > -1) {
-			maxCll = env->propGetInt(env->getFramePropsRO(src), "_dovi_dynamic_max_content_light_level", 0, 0);
-		}	else throw std::runtime_error("");
-	} catch (...) {
-		env->ThrowError("DoViCubes: Expected frame property not available");
-	}
+	if (env->propNumElements(env->getFramePropsRO(src), "_dovi_dynamic_max_content_light_level") > -1) {
+		maxCll = env->propGetInt(env->getFramePropsRO(src), "_dovi_dynamic_max_content_light_level", 0, 0);
+	}	else env->ThrowError("DoViCubes: Expected frame property not available");
 	
 	currentFrameLut = luts[luts.size() - 1].second;
 	for (int i = 1; i < luts.size(); i++) {

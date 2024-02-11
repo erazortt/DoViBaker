@@ -47,16 +47,16 @@
     <ClInclude Include="..\include\dovi\rpu_parser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DoViCubes.h">
+    <ClInclude Include="..\include\DoViCubes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DoViStatsFileLoader.h">
+    <ClInclude Include="..\include\DoViEetf.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DoViEetf.h">
+    <ClInclude Include="..\include\DoViStatsFileLoader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DoViTonemap.h">
+    <ClInclude Include="..\include\DoViTonemap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

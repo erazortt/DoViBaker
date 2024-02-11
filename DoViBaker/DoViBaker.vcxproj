@@ -37,12 +37,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\DoViBaker.h" />
+    <ClInclude Include="..\include\DoViCubes.h" />
+    <ClInclude Include="..\include\DoViEetf.h" />
     <ClInclude Include="..\include\DoViProcessor.h" />
+    <ClInclude Include="..\include\DoViStatsFileLoader.h" />
+    <ClInclude Include="..\include\DoViTonemap.h" />
     <ClInclude Include="..\include\dovi\rpu_parser.h" />
-    <ClInclude Include="DoViCubes.h" />
-    <ClInclude Include="DoViEetf.h" />
-    <ClInclude Include="DoViStatsFileLoader.h" />
-    <ClInclude Include="DoViTonemap.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
