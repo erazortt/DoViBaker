@@ -31,7 +31,12 @@ DoViTonemap<signalBitDepth>::DoViTonemap(
 	if (targetMinPq * 2 > targetMaxPq) {
 		// prevent EETF tapering to fail from a too low value of the taper power
 		env->ThrowError("DoViTonemap: Value for 'targetMinNits' is too large to process");
-		return;
+	}
+	if (targetMaxPq < targetMinPq) {
+		env->ThrowError("DoViTonemap: target capabilities given are invalid");
+	}
+	if (masterMaxPq < masterMinPq) {
+		env->ThrowError("DoViTonemap: master capabilities given are invalid");
 	}
 
 	doviEetf = new DoViEetf<signalBitDepth>(kneeOffset, normalizeOutput);
@@ -79,12 +84,12 @@ PVideoFrame DoViTonemap<signalBitDepth>::GetFrame(int n, IScriptEnvironment* env
 	if (dynamicLumScale) {
 		if (env->propNumElements(env->getFramePropsRO(src), "_dovi_dynamic_luminosity_scale") > -1) {
 			scale = env->propGetFloat(env->getFramePropsRO(src), "_dovi_dynamic_luminosity_scale", 0, 0);
-		}	else env->ThrowError("DoViTonemap: Expected frame property not available. Set 'lumSacle' explicitly.");
+		}	else env->ThrowError("DoViTonemap: Expected frame property not available. Set 'lumScale' explicitly.");
 	}
 
 	if (maxPq != masterMaxPq || minPq != masterMinPq || std::abs(scale-lumScale)>0.001f) {
-		masterMinPq = minPq;
 		masterMaxPq = maxPq;
+		masterMinPq = minPq;
 		lumScale = scale;
 		doviEetf->generateEETF(
 			targetMaxPq,
