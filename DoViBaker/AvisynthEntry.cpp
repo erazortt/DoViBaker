@@ -426,7 +426,7 @@ int main(int argc, char* argv[])
     DoViEetf<bitDepth> tonemap(0.75, false);
     tonemap.generateEETF(targetMaxPq, targetMinPq, masterMaxPq, masterMinPq, 1.0, false);
     for (int i = 0; i <= 255; i++) {
-      uint16_t signal = i * ((1<<bitDepth)-1) / 255.0 + 0.5;
+      uint16_t signal = i * ((1 << bitDepth) - 1) / 255.0 + 0.5;
       uint16_t signalPq = i * 4095 / 255.0 + 0.5;
       uint16_t mapped = tonemap.applyEETF(signal);
       uint16_t mappedPq = mapped * 4095.0 / ((1 << bitDepth) - 1) + 0.5;

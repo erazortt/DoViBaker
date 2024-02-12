@@ -75,7 +75,7 @@ void DoViEetf<signalBitDepth>::generateEETF(
 		// This following clamping is not from the report.
 		// It serves to stop using the spline above where it is supposed to be used.
 		// This works only in conjunction with the change above
-		e1 = std::clamp(e1, 0.0f, 1.0f); 
+		e1 = std::clamp(e1, 0.0f, 1.0f);
 
 		const float e2 = (e1 > kneeStart) ? eetfSpline(e1, kneeStart, maxLum) : e1;
 
@@ -106,4 +106,3 @@ void DoViEetf<signalBitDepth>::generateEETF(
 		lut[inSignal] = outWhite;
 	}
 }
-
