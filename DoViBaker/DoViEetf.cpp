@@ -47,8 +47,8 @@ void DoViEetf<signalBitDepth>::generateEETF(
 		inBlack = 16 << (signalBitDepth - 8);
 		inWhite = (235 << (signalBitDepth - 8));
 	}
-	int inMinSignal = masterMinEp * (inWhite - inBlack) + inBlack + 0.5;
-	int inMaxSignal = masterMaxEp * (inWhite - inBlack) + inBlack + 0.5;
+	int inMinSignal = masterMinEp * (inWhite - inBlack) + inBlack + 0.5f;
+	int inMaxSignal = masterMaxEp * (inWhite - inBlack) + inBlack + 0.5f;
 
 	// limiting is needed since masterMaxEp can be above 1 due to lumScale
 	inMinSignal = std::min(inMinSignal, LUT_SIZE);
