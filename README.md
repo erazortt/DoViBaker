@@ -151,7 +151,7 @@ The format of each line of the optional alternative scene cut file created is:
 
 
 # LumScaleHelper.avs
-Used to find `lumScale` for `DoViTonemap` manually. This is the factor by which to mutiply the brightness of the PQ stream such that its base brightness matches that of the SDR stream. Typical factors can be 1.0 all the way to up 5.0 for very extreme cases.
+Used to find `lumScale` for `DoViTonemap` manually. This is the factor by which to mutiply the brightness of the PQ stream such that its base brightness matches that of the SDR stream. Typical factors can be 1.0 all the way to up 5.0 in very extreme cases. Also this factor might fluctuate from scene to scene. In this case it is advisable to use one best fitting factor thoughout the whole stream in order to maintain the creator's intent. For low brightness targets it might however be necessary have the factor adjusted from scene to scene.
 
 # BetterGrayscale.avsi
 Needed by `LumScaleHelper.avs` for showing a more correct and better comparable grayscale of PQ and SDR sources.
