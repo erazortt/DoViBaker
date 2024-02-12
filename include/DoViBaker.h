@@ -20,6 +20,7 @@ public:
     bool rgbProof, 
     bool nlqProof,
     int sourceProfile,
+    bool outYUV,
     IScriptEnvironment* env);
   virtual ~DoViBaker();
   PVideoFrame GetFrame(int n, IScriptEnvironment* env) override;
@@ -53,6 +54,7 @@ private:
   DoViProcessor* doviProc;
   
   const bool qnd;
+  const bool outYUV;
   const bool blClipChromaSubSampled;
   const bool elClipChromaSubSampled;
 };

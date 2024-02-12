@@ -17,6 +17,7 @@ AVSValue __cdecl Create_RealDoViBaker(
   bool rgbProof,
   bool nlqProof,
   int sourceProfile,
+  bool outYUV,
   IScriptEnvironment* env)
 {
   if (!blclip->GetVideoInfo().HasVideo() || (elclip && !elclip->GetVideoInfo().HasVideo())) {
@@ -52,6 +53,18 @@ AVSValue __cdecl Create_RealDoViBaker(
     }
   }
 
+  if (outYUV) {
+      if (blClipChromaSubSampled != elClipChromaSubSampled) {
+          env->ThrowError("DoViBaker: Both BL and EL must have same chroma subsampling when outYUV=true");
+      }
+      if (qnd) {
+          env->ThrowError("DoViBaker: qnd cannot be true when outYUV=true");
+      }
+      if (rgbProof) {
+          env->ThrowError("DoViBaker: rgbProof cannot be true when outYUV=true");
+      }
+  }
+
   int quarterResolutionEl = 0;
   if (elclip) {
     quarterResolutionEl = -1;
@@ -71,10 +84,10 @@ AVSValue __cdecl Create_RealDoViBaker(
   }
 
   if (quarterResolutionEl == 0) {
-    return new DoViBaker<false>(blclip, elclip, rpuPath, blClipChromaSubSampled, elClipChromaSubSampled, desiredTrimPq, targetMinNits, targetMaxNits, qnd, rgbProof, nlqProof, sourceProfile, env);
+    return new DoViBaker<false>(blclip, elclip, rpuPath, blClipChromaSubSampled, elClipChromaSubSampled, desiredTrimPq, targetMinNits, targetMaxNits, qnd, rgbProof, nlqProof, sourceProfile, outYUV, env);
   }
   if (quarterResolutionEl == 1) {
-    return new DoViBaker<true>(blclip, elclip, rpuPath, blClipChromaSubSampled, elClipChromaSubSampled, desiredTrimPq, targetMinNits, targetMaxNits, qnd, rgbProof, nlqProof, sourceProfile, env);
+    return new DoViBaker<true>(blclip, elclip, rpuPath, blClipChromaSubSampled, elClipChromaSubSampled, desiredTrimPq, targetMinNits, targetMaxNits, qnd, rgbProof, nlqProof, sourceProfile, outYUV, env);
   }
 }
 
@@ -93,6 +106,7 @@ AVSValue __cdecl Create_DoViBaker(AVSValue args, void* user_data, IScriptEnviron
     args[7].AsBool(false),
     args[8].AsBool(false),
     args[9].AsInt(7),
+    args[10].AsBool(false),
     env);
 }
 
@@ -224,7 +238,7 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScri
 {
   AVS_linkage = vectors;
 
-  env->AddFunction("DoViBaker", "c[el]c[rpu]s[trimPq]i[targetMaxNits]f[targetMinNits]f[qnd]b[rgbProof]b[nlqProof]b[sourceProfile]i", Create_DoViBaker, 0);
+  env->AddFunction("DoViBaker", "c[el]c[rpu]s[trimPq]i[targetMaxNits]f[targetMinNits]f[qnd]b[rgbProof]b[nlqProof]b[sourceProfile]i[outYUV]b", Create_DoViBaker, 0);
   env->AddFunction("DoViTonemap", "c[targetMaxNits]f[targetMinNits]f[masterMaxNits]f[masterMinNits]f[lumScale]f[kneeOffset]f[normalizeOutput]b", Create_DoViTonemap, 0);
   env->AddFunction("DoViCubes", "c[cubes]s[mclls]s[cubes_basepath]s[fullrange]b", Create_DoViCubes, 0);
   env->AddFunction("DoViStatsFileLoader", "c[statsFile]s[sceneCutsFile]s", Create_DoViStatsFileLoader, 0);

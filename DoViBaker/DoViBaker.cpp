@@ -25,10 +25,12 @@ DoViBaker<quarterResolutionEl>::DoViBaker(
 	bool _rgbProof,
 	bool _nlqProof,
 	int sourceProfile,
+    bool _outYUV,
 	IScriptEnvironment* env)
 	: GenericVideoFilter(_blChild)
 	, elChild(_elChild)
 	, qnd(_qnd)
+    , outYUV(_outYUV)
 	, blClipChromaSubSampled(_blChromaSubSampled)
 	, elClipChromaSubSampled(_elChromaSubSampled)
 {
@@ -51,7 +53,8 @@ DoViBaker<quarterResolutionEl>::DoViBaker(
 	}
 
 	// set the output pixel type
-	vi.pixel_type = VideoInfo::CS_RGBP16;
+	if (!outYUV)
+		vi.pixel_type = VideoInfo::CS_RGBP16;
 }
 
 template<int quarterResolutionEl>
@@ -553,7 +556,9 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 {
 	PVideoFrame blSrc = child->GetFrame(n, env);
 	PVideoFrame elSrc = elChild ? elChild->GetFrame(n, env) : blSrc;
-	PVideoFrame dst = env->NewVideoFrameP(vi, &blSrc);
+	PVideoFrame dst;
+	if (!outYUV)
+		dst = env->NewVideoFrameP(vi, &blSrc);
 
 	const char* rpubuf = 0x0;
 	size_t rpusize = 0;
@@ -573,17 +578,19 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 	if (!doviInitialized) {
 		return dst;
 	}
-	env->propSetInt(env->getFramePropsRW(dst), "_Matrix", 0, 0);      //output is RGB
-	env->propSetInt(env->getFramePropsRW(dst), "_ColorRange", doviProc->isLimitedRangeOutput(), 0);
-	env->propDeleteKey(env->getFramePropsRW(dst), "_ChromaLocation"); //RGB has no chroma location defined
-	env->propSetInt(env->getFramePropsRW(dst), "_SceneChangePrev", doviProc->isSceneChange(), 0);
-	env->propSetInt(env->getFramePropsRW(dst), "_dovi_dynamic_min_pq", doviProc->getDynamicMinPq(), 0);
-	env->propSetInt(env->getFramePropsRW(dst), "_dovi_dynamic_max_pq", doviProc->getDynamicMaxPq(), 0);
-	env->propSetInt(env->getFramePropsRW(dst), "_dovi_dynamic_max_content_light_level", doviProc->getDynamicMaxContentLightLevel(), 0);
-	if (doviProc->getStaticMaxPq() > 0) {
-		env->propSetInt(env->getFramePropsRW(dst), "_dovi_static_max_pq", doviProc->getStaticMaxPq(), 0);
-		env->propSetInt(env->getFramePropsRW(dst), "_dovi_static_max_content_light_level", doviProc->getStaticMaxContentLightLevel(), 0);
-	}
+    if (!outYUV) {
+        env->propSetInt(env->getFramePropsRW(dst), "_Matrix", 0, 0);      //output is RGB
+        env->propSetInt(env->getFramePropsRW(dst), "_ColorRange", doviProc->isLimitedRangeOutput(), 0);
+        env->propDeleteKey(env->getFramePropsRW(dst), "_ChromaLocation"); //RGB has no chroma location defined
+        env->propSetInt(env->getFramePropsRW(dst), "_SceneChangePrev", doviProc->isSceneChange(), 0);
+        env->propSetInt(env->getFramePropsRW(dst), "_dovi_dynamic_min_pq", doviProc->getDynamicMinPq(), 0);
+        env->propSetInt(env->getFramePropsRW(dst), "_dovi_dynamic_max_pq", doviProc->getDynamicMaxPq(), 0);
+        env->propSetInt(env->getFramePropsRW(dst), "_dovi_dynamic_max_content_light_level", doviProc->getDynamicMaxContentLightLevel(), 0);
+        if (doviProc->getStaticMaxPq() > 0) {
+            env->propSetInt(env->getFramePropsRW(dst), "_dovi_static_max_pq", doviProc->getStaticMaxPq(), 0);
+            env->propSetInt(env->getFramePropsRW(dst), "_dovi_static_max_content_light_level", doviProc->getStaticMaxContentLightLevel(), 0);
+        }
+    }
 
 	if (qnd) {
 		if (blClipChromaSubSampled && elClipChromaSubSampled)
@@ -650,6 +657,20 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 			applyDovi<true>(mez, blSrc, (!blSrc444) ? blSrc : blSrc444, elSrcR, (!elSrc444) ? elSrcR : elSrc444, env);
 		else
 			applyDovi<false>(mez, blSrc, (!blSrc444) ? blSrc : blSrc444, elSrcR, (!elSrc444) ? elSrcR : elSrc444, env);
+
+		if (outYUV) {
+			env->copyFrameProps(blSrc, mez);
+            AVSMap* mez_props = env->getFramePropsRW(mez);
+            env->propSetInt(mez_props, "_SceneChangePrev", doviProc->isSceneChange(), 0);
+            env->propSetInt(mez_props, "_dovi_dynamic_min_pq", doviProc->getDynamicMinPq(), 0);
+            env->propSetInt(mez_props, "_dovi_dynamic_max_pq", doviProc->getDynamicMaxPq(), 0);
+            env->propSetInt(mez_props, "_dovi_dynamic_max_content_light_level", doviProc->getDynamicMaxContentLightLevel(), 0);
+            if (doviProc->getStaticMaxPq() > 0) {
+                env->propSetInt(mez_props, "_dovi_static_max_pq", doviProc->getStaticMaxPq(), 0);
+                env->propSetInt(mez_props, "_dovi_static_max_content_light_level", doviProc->getStaticMaxContentLightLevel(), 0);
+            }
+			return mez;
+		}
 
 		PVideoFrame mez444;
 		if (frameChromaSubSampled) {
