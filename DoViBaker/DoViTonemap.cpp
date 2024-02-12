@@ -34,9 +34,6 @@ DoViTonemap<signalBitDepth>::DoViTonemap(
 		// prevent EETF tapering to fail from a too low value of the taper power
 		env->ThrowError("DoViTonemap: Value for 'targetMinNits' is too large to process");
 	}
-	if (targetMaxPq <= targetMinPq) {
-		env->ThrowError("DoViTonemap: target capabilities given are invalid");
-	}
 	if (masterMaxPq <= masterMinPq) {
 		env->ThrowError("DoViTonemap: master capabilities given are invalid");
 	}
