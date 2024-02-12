@@ -89,10 +89,15 @@ void DoViEetf<signalBitDepth>::generateEETF(
 		const float e3 = e2 + taper;
 		
 		float e4 = e3 * (masterMaxEp - masterMinEp) + masterMinEp;
+
+		// Following code line is not like in the report.
+		// This clamping ensures that even in unexpected situations the result is not outside the value range.
+		// (like too low kneeOffsets and/or taperPowers and/or too high luminosity factors)
+		e4 = std::clamp(e4, targetMinEp, targetMaxEp);
+
 		if (normalizeOutput) {
 			e4 = (e4 - targetMinEp) / (targetMaxEp - targetMinEp);
 		}
-		e4 = std::clamp(e4, 0.0f, 1.0f);
 		uint16_t outSignal = e4 * (LUT_SIZE - 1) + 0.5f;
 		lut[inSignal] = outSignal;
 	}
