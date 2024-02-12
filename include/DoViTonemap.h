@@ -30,6 +30,7 @@ private:
   uint16_t masterMaxPq;
   uint16_t masterMinPq;
   float lumScale;
+  bool limitedInput;
 
   const bool dynamicMasterMaxPq;
   const bool dynamicMasterMinPq;

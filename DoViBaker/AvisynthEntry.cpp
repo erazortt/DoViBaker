@@ -422,12 +422,15 @@ int main(int argc, char* argv[])
     uint16_t targetMinPq = DoViProcessor::nits2pq(2);
     uint16_t masterMaxPq = DoViProcessor::nits2pq(2000);
     uint16_t masterMinPq = DoViProcessor::nits2pq(1);
-    DoViEetf<12> tonemap(0.75, false);
-    tonemap.generateEETF(targetMaxPq, targetMinPq, masterMaxPq, masterMinPq, 1.0);
+    const int bitDepth = 12;
+    DoViEetf<bitDepth> tonemap(0.75, false);
+    tonemap.generateEETF(targetMaxPq, targetMinPq, masterMaxPq, masterMinPq, 1.0, false);
     for (int i = 0; i <= 255; i++) {
-      uint16_t signal = i * 4095.0 / 255 + 0.5;
+      uint16_t signal = i * ((1<<bitDepth)-1) / 255.0 + 0.5;
+      uint16_t signalPq = i * 4095 / 255.0 + 0.5;
       uint16_t mapped = tonemap.applyEETF(signal);
-      printf("%i %f %f %i\n",signal, DoViProcessor::pq2nits(signal), DoViProcessor::pq2nits(mapped), mapped);
+      uint16_t mappedPq = mapped * 4095.0 / ((1 << bitDepth) - 1) + 0.5;
+      printf("%i %f %f %i\n",signal, DoViProcessor::pq2nits(signalPq), DoViProcessor::pq2nits(mappedPq), mapped);
     }
   }
 

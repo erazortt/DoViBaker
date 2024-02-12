@@ -2,6 +2,7 @@
 #include "DoViProcessor.h"
 
 // explicitly instantiate the template for the linker
+// 8 bit inputs are not supported and don't make much sense anyhow
 template class DoViTonemap<10>;
 template class DoViTonemap<12>;
 template class DoViTonemap<14>;
@@ -24,6 +25,7 @@ DoViTonemap<signalBitDepth>::DoViTonemap(
 	, masterMaxPq(DoViProcessor::nits2pq(masterMaxNits < 0 ? 10000 : masterMaxNits))
 	, masterMinPq(DoViProcessor::nits2pq(masterMinNits < 0 ? 0 : masterMinNits))
 	, lumScale(lumScale_ < 0 ? 1 : lumScale_)
+	, limitedInput(false)
 	, dynamicMasterMaxPq(masterMaxNits < 0)
 	, dynamicMasterMinPq(masterMinNits < 0)
 	, dynamicLumScale(lumScale < 0) 
@@ -32,10 +34,10 @@ DoViTonemap<signalBitDepth>::DoViTonemap(
 		// prevent EETF tapering to fail from a too low value of the taper power
 		env->ThrowError("DoViTonemap: Value for 'targetMinNits' is too large to process");
 	}
-	if (targetMaxPq < targetMinPq) {
+	if (targetMaxPq <= targetMinPq) {
 		env->ThrowError("DoViTonemap: target capabilities given are invalid");
 	}
-	if (masterMaxPq < masterMinPq) {
+	if (masterMaxPq <= masterMinPq) {
 		env->ThrowError("DoViTonemap: master capabilities given are invalid");
 	}
 
@@ -45,7 +47,8 @@ DoViTonemap<signalBitDepth>::DoViTonemap(
 		targetMinPq,
 		masterMaxPq,
 		masterMinPq,
-		lumScale);
+		lumScale,
+		limitedInput);
 }
 
 template<int signalBitDepth>
@@ -64,13 +67,13 @@ PVideoFrame DoViTonemap<signalBitDepth>::GetFrame(int n, IScriptEnvironment* env
 	uint16_t maxPq = masterMaxPq;
 	uint16_t minPq = masterMinPq;
 	float scale = lumScale;
+	bool limited = limitedInput;
 
 	if (env->propNumElements(env->getFramePropsRO(src), "_ColorRange") > -1) {
-		bool limitedRange = env->propGetInt(env->getFramePropsRO(dst), "_ColorRange", 0, 0);
-		if (limitedRange) {
-			env->ThrowError("DoViTonemap: Only full range inputs supported");
-		}
+		limited = env->propGetInt(env->getFramePropsRO(dst), "_ColorRange", 0, 0);
 	}
+	// output is always full range independently of the input
+	env->propSetInt(env->getFramePropsRW(dst), "_ColorRange", 0, 0);
 	if (dynamicMasterMaxPq) {
 		if (env->propNumElements(env->getFramePropsRO(src), "_dovi_dynamic_max_pq") > -1) {
 			maxPq = env->propGetInt(env->getFramePropsRO(src), "_dovi_dynamic_max_pq", 0, 0);
@@ -87,16 +90,18 @@ PVideoFrame DoViTonemap<signalBitDepth>::GetFrame(int n, IScriptEnvironment* env
 		}	else env->ThrowError("DoViTonemap: Expected frame property not available. Set 'lumScale' explicitly.");
 	}
 
-	if (maxPq != masterMaxPq || minPq != masterMinPq || std::abs(scale-lumScale)>0.001f) {
+	if (maxPq != masterMaxPq || minPq != masterMinPq || std::abs(scale-lumScale)>0.001f || limited != limitedInput) {
 		masterMaxPq = maxPq;
 		masterMinPq = minPq;
 		lumScale = scale;
+		limitedInput = limited;
 		doviEetf->generateEETF(
 			targetMaxPq,
 			targetMinPq,
 			masterMaxPq,
 			masterMinPq,
-			lumScale);
+			lumScale,
+			limitedInput);
 	}
 
 	applyTonemapRGB(dst, src);

@@ -2,6 +2,7 @@
 #include "DoViProcessor.h"
 
 // explicitly instantiate the template for the linker
+template class DoViEetf<8>;
 template class DoViEetf<10>;
 template class DoViEetf<12>;
 template class DoViEetf<14>;
@@ -18,7 +19,8 @@ void DoViEetf<signalBitDepth>::generateEETF(
 	uint16_t targetMinPq,
 	uint16_t masterMaxPq,
 	uint16_t masterMinPq,
-	float lumScale)
+	float lumScale,
+	bool limitedInput)
 {
 	// based on report ITU-R BT.2408-7 Annex 5 (was in ITU-R BT.2390 until revision 7)
 	float masterMaxEp = DoViProcessor::EOTFinv(DoViProcessor::EOTF(masterMaxPq / 4095.0f) * lumScale);
@@ -39,8 +41,33 @@ void DoViEetf<signalBitDepth>::generateEETF(
 	// we don't need unnecessarily big values of the taper power, thus b is limited
 	const float taperPwr = 1 / std::max(b, 0.01f);
 
-	for (int inSignal = 0; inSignal < LUT_SIZE; inSignal++) {
-		float ep = inSignal / float(LUT_SIZE - 1);
+	int inBlack = 0;
+	int inWhite = LUT_SIZE - 1;
+	if (limitedInput) {
+		inBlack = 16 << (signalBitDepth - 8);
+		inWhite = (235 << (signalBitDepth - 8));
+	}
+	int inMinSignal = masterMinEp * (inWhite - inBlack) + inBlack + 0.5;
+	int inMaxSignal = masterMaxEp * (inWhite - inBlack) + inBlack + 0.5;
+
+	// limiting is needed since masterMaxEp can be above 1 due to lumScale
+	inMinSignal = std::min(inMinSignal, LUT_SIZE);
+	inMaxSignal = std::min(inMaxSignal, LUT_SIZE);
+
+	uint16_t outBlack = 0;
+	uint16_t outWhite = LUT_SIZE - 1;
+	if (!normalizeOutput) {
+		outBlack = targetMinEp * (LUT_SIZE - 1) + 0.5f;
+		outWhite = targetMaxEp * (LUT_SIZE - 1) + 0.5f;
+	}
+
+	int inSignal = 0;
+	for (; inSignal < inMinSignal; inSignal++) {
+		// skip unnecessary processing where result is known
+		lut[inSignal] = outBlack;
+	}
+	for (; inSignal < inMaxSignal; inSignal++) {
+		float ep = (inSignal - inBlack) / float(inWhite - inBlack);
 		float e = DoViProcessor::EOTF(ep) * lumScale;
 		ep = DoViProcessor::EOTFinv(e);
 		float e1 = (ep - masterMinEp) / (masterMaxEp - masterMinEp);
@@ -68,6 +95,10 @@ void DoViEetf<signalBitDepth>::generateEETF(
 		e4 = std::clamp(e4, 0.0f, 1.0f);
 		uint16_t outSignal = e4 * (LUT_SIZE - 1) + 0.5f;
 		lut[inSignal] = outSignal;
+	}
+	for (; inSignal < LUT_SIZE; inSignal++) {
+		// skip unnecessary processing where result is known
+		lut[inSignal] = outWhite;
 	}
 }
 

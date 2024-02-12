@@ -13,7 +13,8 @@ public:
     uint16_t targetMinPq,
     uint16_t masterMaxPq,
     uint16_t masterMinPq,
-    float lumScale);
+    float lumScale,
+    bool limitedInput);
 
 private:
   static inline constexpr float eetfSpline(float e1, float kS, float maxLum);
