@@ -19,10 +19,7 @@ public:
 private:
   static inline constexpr float eetfSpline(float e1, float kS, float maxLum);
 
-  // the LUT becomes unnecessarily big for higher bit depths, cut at 12 bits
-  static constexpr int LUT_BITS = signalBitDepth;
-  static constexpr int LUT_SIZE = 1 << LUT_BITS;
-
+  static constexpr int LUT_SIZE = 1 << signalBitDepth;
   const float kneeOffset;
   const bool normalizeOutput;
   uint16_t lut[LUT_SIZE];
