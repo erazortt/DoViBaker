@@ -181,14 +181,14 @@ This application generates LUTs for conversions from PQ to HLG or SDR. The PQ to
 The generated SDR LUTs provide no colorspace conversion, and create a BT.2020 output. For conversions to BT.709 an additional color conversion is necessary. This can be done using [Avsresize](http://avisynth.nl/index.php/Avsresize). The SDR LUT is experimental only!
 
 ```
-usage: DoViLutGen.exe <output_cube_file> <lut_size> <is_input_normalized> (<start_of_sdr_knee>)
+usage: DoViLutGen.exe <output_cube_file> <lut_size> (<is_input_normalized>) (<start_of_sdr_knee>)
 ```
 
 The meaning of the expected arguments:
 - `output file` this is self-explinatory
 - `lut size` generally a bigger LUT, is a better LUT. A good size is `65`.
-- `normalized input` if this is set to `1`, the generated LUT will expect that the input PQ was re-normalized to 1000 nits max brightness. LUTs for re-normalized inputs can be of smaller size than normal LUTs while still providing better quality. A good size for such a LUT is `50`.
-- `sdr knee` if this optional argument is given it indicates where the SDR curve flattening should start in the HLG signal range. The parameter range is (0.5, 0.7]. There is no perfect value, however `0.6` is probably a good starting point.
+- `normalized input` if this optional argument is set to `1`, the generated LUT will expect that the input PQ was re-normalized to 1000 nits max brightness. LUTs for re-normalized inputs can be of smaller size than normal LUTs while still providing better quality. A good size for such a LUT is `50`. When not given, this will default to 0.
+- `sdr knee` if this optional argument is given it indicates where the SDR curve flattening should start in the HLG signal range. The parameter range is (0.5, 0.7]. There is no perfect value, however `0.6` is probably a good starting point. When not given a HLG LUT will be created.
 
 ## Workflow for conversion to HLG
 
