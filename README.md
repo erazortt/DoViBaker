@@ -72,7 +72,7 @@ subtitle("maxcll = " + string(mcll))
 # DoViTonemap
 This plugin processes the tonemapping of any HDR PQ streams to lower dynamic range targets. The implementation is based on ITU-R BT.2408-7 Annex 5 (was in ITU-R BT.2390 until revision 7), with the addition of an optional luminosity factor which scales the brightness linearily. 
 
-It is not expected to give good results for low brightness targets of 400 nits and below. Also color space is preserved and not converted to narrower gamut. There are other libraries providing this kind of conversions.
+It is not expected to give good results for low brightness targets of 400 nits and below. Also color space is preserved and not converted to narrower gamut. For conversions to HLG or SDR additional processing is required, see `DoViLutGen`.
 
 The following arguments control the tonemapping function: 
 - `masterMaxNits` and `masterMinNits` set the white and black brightness value of the source. The values for the master brightness can be either given explicitly or `masterMaxNits` and `masterMinNits` can both be set to `-1` which will indicate that the actual values are read from the related frame properties `_dovi_dynamic_max_pq` and `_dovi_dynamic_min_pq` which are set by `DoViBaker` or `DoViStatsFileLoader`, leading to a dynamic tonemapping. If not given these will default to `-1`.
@@ -175,8 +175,37 @@ Pay attention to 3-5 since these will indicate if the look of the clip will be d
 
 Additionally it is possible to generate a scenecutfile based on the information from the RPU file. This might be used as the optional scene cut file by `DoViStatsFileLoader`. Or this might be given to the encoder to improve the scene detection (using the parameter --qpfile for x265). In this case add " K" to the end of each line of the file.
 
+# DoViLutGen
+This application generates LUTs for conversions from PQ to HLG or SDR. The PQ to HLG conversion is based on BT.2408-7 in conjunction with BT.2100-2. The LUTs will only process input values up to 1000 nits and will clip anything above that. If the PQ source has brightness levels above that, use `DoViTonemap` to tonemap the PQ stream to 1000 nits.
+
+The generated SDR LUTs provide no colorspace conversion, and create a BT.2020 output. For conversions to BT.709 an additional color conversion is necessary. This can be done using [Avsresize](http://avisynth.nl/index.php/Avsresize). The SDR LUT is experimental only!
+
+```
+usage: DoViLutGen.exe <output_cube_file> <lut_size> <is_input_normalized> (<start_of_sdr_knee>)
+```
+
+The meaning of the expected arguments:
+- `output file` this is self-explinatory
+- `lut size` generally a bigger LUT, is a better LUT. A good size is `65`.
+- `normalized input` if this is set to `1`, the generated LUT will expect that the input PQ was re-normalized to 1000 nits max brightness. LUTs for re-normalized inputs can be of smaller size than normal LUTs while still providing better quality. A good size for such a LUT is `50`.
+- `sdr knee` if this optional argument is given it indicates where the SDR curve flattening should start in the HLG signal range. The parameter range is (0.5, 0.7]. There is no perfect value, however `0.6` is probably a good starting point.
+
+## Workflow for conversion to HLG
+
+Generate the LUT by the following command:
+```
+DoViLutGen.exe pq2hlg_normalizedInput.cube 50 1
+```
+
+Create the following avisyth script:
+```
+DoViBaker(bl,el)
+DoViTonemap(targetMaxNits=1000, targetMinNits=0, normalizeOutput=true)
+AVSCube("pq2hlg_normalizedInput.cube")
+```
+
 # AVSCube
-There is also a simple implementation of AVSCube, which provides the same image processing as the integrated LUT processing as `DoViCubes`.
+This is a simple implementation of AVSCube, which provides the same image processing as the LUT processing done by `DoViCubes`, but with one single LUT provided.
 
 # Remarks concerning compilation
 I had some issues linking against Timecube. I was constantly getting the following error:

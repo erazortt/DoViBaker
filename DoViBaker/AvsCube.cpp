@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <io.h>
 #include <timecube/timecube.h>
+#include "def.h"
 
 AVS_FORCEINLINE void* aligned_malloc(size_t size, size_t align)
 {
@@ -140,6 +141,7 @@ AVSValue __cdecl Create_AVSCube(AVSValue args, void* user_data, IScriptEnvironme
 		env);
 }
 
+#ifdef AVS_CUBE
 const AVS_Linkage* AVS_linkage = 0;
 extern "C" __declspec(dllexport) const char* __stdcall
 AvisynthPluginInit3(IScriptEnvironment * env, AVS_Linkage * vectors)
@@ -148,3 +150,4 @@ AvisynthPluginInit3(IScriptEnvironment * env, AVS_Linkage * vectors)
 	env->AddFunction("AVSCube", "c[cube]s[cpu]i[fullrange]b", Create_AVSCube, 0);
 	return 0;
 }
+#endif //AVS_CUBE

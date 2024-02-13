@@ -28,14 +28,17 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AvisynthEntry.cpp" />
+    <ClCompile Include="AvsCube.cpp" />
     <ClCompile Include="DoViBaker.cpp" />
     <ClCompile Include="DoViCubes.cpp" />
     <ClCompile Include="DoViEetf.cpp" />
+    <ClCompile Include="DoViLutGen.cpp" />
     <ClCompile Include="DoViStatsFileLoader.cpp" />
     <ClCompile Include="DoViProcessor.cpp" />
     <ClCompile Include="DoViTonemap.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\def.h" />
     <ClInclude Include="..\include\DoViBaker.h" />
     <ClInclude Include="..\include\DoViCubes.h" />
     <ClInclude Include="..\include\DoViEetf.h" />

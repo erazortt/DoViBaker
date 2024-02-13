@@ -1,5 +1,6 @@
 #include <sstream>
 
+#include "def.h"
 #include "DoViBaker.h"
 #include "DoViCubes.h"
 #include "DoViTonemap.h"
@@ -212,8 +213,8 @@ AVSValue __cdecl Create_DoViTonemap(AVSValue args, void* user_data, IScriptEnvir
     &args, env);
 }
 
+#ifdef DOVI_BAKER
 const AVS_Linkage *AVS_linkage = nullptr;
-
 extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScriptEnvironment* env, const AVS_Linkage* const vectors)
 {
   AVS_linkage = vectors;
@@ -225,6 +226,7 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScri
 
   return "Hey it is just a spectrogram!";
 }
+#endif //DOVI_BAKER
 
 void ypp2ycc(uint16_t* ycc, float y, float u, float v) {
   //YPrPb to YCrCb
@@ -361,6 +363,8 @@ double Spline64Filter(double value) {
   return 0.0;
 }
 
+//#define DOVI_ANALYZER
+#ifdef DOVI_ANALYZER
 int main(int argc, char* argv[])
 {
   bool selfTest = false;
@@ -498,3 +502,4 @@ int main(int argc, char* argv[])
   if (limitedRangeOutput) printf("output is limited range!\n");
   else printf("output is full range\n");
 }
+#endif // DOVI_ANALYZER
