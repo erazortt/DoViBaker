@@ -376,7 +376,7 @@ void DoViBaker<quarterResolutionEl>::doAllQuickAndDirty(PVideoFrame& dst, const 
 	const int elSrcWidthUV = elSrc->GetRowSize(PLANAR_U) / sizeof(uint16_t);
 	const int elSrcPitchUV = elSrc->GetPitch(PLANAR_U) / sizeof(uint16_t);
 
-	const int blYvsElUVshifts = elChromaSubsampling + quarterResolutionEl;
+	constexpr int blYvsElUVshifts = elChromaSubsampling + quarterResolutionEl;
 	std::array<const uint16_t*, (1 << blYvsElUVshifts)> blSrcYp;
 	std::array<const uint16_t*, (1 << elChromaSubsampling)> elSrcYp;
 	std::array<uint16_t*, (1 << blYvsElUVshifts)> dstRp;
@@ -384,15 +384,15 @@ void DoViBaker<quarterResolutionEl>::doAllQuickAndDirty(PVideoFrame& dst, const 
 	elSrcYp[0] = (const uint16_t*)elSrc->GetReadPtr(PLANAR_Y);
 	dstRp[0] = (uint16_t*)dst->GetWritePtr(PLANAR_R);
 
-	const int blUVvsElUVshifts = std::max(quarterResolutionEl + elChromaSubsampling - blChromaSubsampling, 0);
-	std::vector<const uint16_t*> blSrcUp(1 << blUVvsElUVshifts);
+	constexpr int blUVvsElUVshifts = std::max(quarterResolutionEl + elChromaSubsampling - blChromaSubsampling, 0);
+	std::array<const uint16_t*, (1 << blUVvsElUVshifts)> blSrcUp;
 	std::array<const uint16_t*, 1> elSrcUp;
 	std::array<uint16_t*, (1 << blYvsElUVshifts)> dstGp;
 	blSrcUp[0] = (const uint16_t*)blSrc->GetReadPtr(PLANAR_U);
 	elSrcUp[0] = (const uint16_t*)elSrc->GetReadPtr(PLANAR_U);
 	dstGp[0] = (uint16_t*)dst->GetWritePtr(PLANAR_G);
 
-	std::vector<const uint16_t*>blSrcVp(1 << blUVvsElUVshifts);
+	std::array<const uint16_t*, (1 << blUVvsElUVshifts)> blSrcVp;
 	std::array<const uint16_t*, 1> elSrcVp;
 	std::array<uint16_t*, (1 << blYvsElUVshifts)> dstBp;
 	blSrcVp[0] = (const uint16_t*)blSrc->GetReadPtr(PLANAR_V);
