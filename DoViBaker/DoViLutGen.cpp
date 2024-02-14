@@ -37,36 +37,60 @@ double OETFhlg(double e)
 }
 
 double matchHlg2Sdr(double x) {
-  return 2.8215 * x * x - 2.7758 * x + 1.6826;
+  return 2.8188 * x * x - 2.7718 * x + 1.6812;
 }
-
 double matchHlg2SdrD(double x) {
-  return 2 * 2.8215 * x - 2.7758;
+  return 2 * 2.8188 * x - 2.7718;
 }
-
-double hlg2sdr(double x, double kS) {
-  if (x < 0.5) {
-    // hlg and sdr are itentical below 203 nits
-    return x;
-  }
+double hlg2sdrVariable(double x, double gain, double compression) {
+  double kS = gain * 0.2 + 0.5;
   if (x < kS) {
     // this function maps the hlg signal above 203 nits to the sdr signal range until it runs out of sdr signal range at 267.6nits hlg
     // thus when the sdr is viewed it appears idential to the hlg as long as the hlg stays below these 267.6 nits
     return x * matchHlg2Sdr(x);
   }
+  
   // since the above function will run out of sdr signal space, we need to moderate it so that it does not clip
   // this flattening is done by a hermite spline (just like in hdr tonemapping)
   // the start point is defined by kS, p0 and m0 and the end point by kE, p1 and m1.
   double p0 = kS * matchHlg2Sdr(kS);
-  double p1 = 1;
-  double m0 = (kS * matchHlg2SdrD(kS) + 1 * matchHlg2Sdr(kS));
-  double m1 = std::pow(1 / m0, 3.6231); //the power was chosen such that the curve has a monotonus falling derivative, in the whole validity range of kS=[0.5, 0.7]
+  double m0 = kS * matchHlg2SdrD(kS) + 1 * matchHlg2Sdr(kS);
+  constexpr double p1 = 1;
+  double m1 = 0;
+  if (compression < 1 && !(kS>0.7)) {
+    //the maximal exponent was chosen such that the curve has a monotonus falling derivative, in the whole validity range of kS=[0.5, 0.7]
+    double invPwr = ((1 - compression) * 0.28);
+    m1 = std::pow(1 / m0, 1 / invPwr);
+  }
   m0 *= (1 - kS);
   m1 *= (1 - kS);
-  double kE = 1;
-  float t = (x - kS) / (kE - kS);
-  float p = ((2 * t - 3) * t * t + 1) * p0 + (((t - 2) * t + 1) * m0 + (-2 * t + 3) * t) * t * p1 + t * t * (t - 1) * m1;
+  constexpr double kE = 1;
+  double t = (x - kS) / (kE - kS);
+  double p = ((2 * t - 3) * t * t + 1) * p0 + (((t - 2) * t + 1) * m0 + (-2 * t + 3) * t) * t * p1 + t * t * (t - 1) * m1;
   return p;
+}
+// simplified form of the above function when knee=0.5 and m1=0
+double hlg2sdrFixed(double x) {
+  constexpr double kS = 0.5;
+  constexpr double p0 = kS;
+  constexpr double m0 = 1 * (1 - kS);
+  constexpr double p1 = 1;
+  constexpr double m1 = 0 * (1 - kS);
+  constexpr double kE = 1;
+  double t = (x - kS) / (kE - kS);
+  double p = ((2 * t - 3) * t * t + 1) * p0 + (((t - 2) * t + 1) * m0 + (-2 * t + 3) * t) * t * p1 + t * t * (t - 1) * m1;
+  return p;
+}
+double hlg2sdr(double x, double gain, double compression) {
+  if (x > 0.5) {
+    // do mapping above 203 nits
+    if (gain == 0.0 || compression == 1.0) {
+      return hlg2sdrFixed(x);
+    }
+    return hlg2sdrVariable(x, gain, compression);
+  }
+  // hlg and sdr are itentical below 203 nits
+  return x;
 }
 
 void showBestLutSizes() {
@@ -92,15 +116,15 @@ int main(int argc, char* argv[])
 {
   if (argc < 3) {
     printf("usage:\n");
-    printf("<OUTPUT_CUBE_FILE> <LUT_SIZE> (<NORMALIZED_INPUT>) (<SDR_KNEE_START>) \n");
+    printf("<OUTPUT_FILE> <LUT_SIZE> (<NORMALIZED_INPUT>) (<SDR>) (<GAIN>) (<COMPRESSION>)\n");
     printf("\n");
-    printf("examples for PQ to HLG conversions: \n");
+    printf("examples for PQ to HLG conversions:\n");
     printf("DoViLutGen.exe pq2hlg.cube 65\n");
     printf("DoViLutGen.exe pq2hlg_normalizedInput.cube 50 1\n");
     printf("\n");
-    printf("examples for PQ to SDR conversions: \n");
-    printf("DoViLutGen.exe pq2sdr.cube 65 0 0.6 \n");
-    printf("DoViLutGen.exe pq2sdr_normalizedInput.cube 50 1 0.6 \n");
+    printf("examples for PQ to SDR conversions:\n");
+    printf("DoViLutGen.exe pq2sdr.cube 65 0 1\n");
+    printf("DoViLutGen.exe pq2sdr_normalizedInput.cube 50 1 1\n");
     printf("\n");
     showBestLutSizes();
     return 1;
@@ -119,23 +143,19 @@ int main(int argc, char* argv[])
     normalizedInput = std::atoi(argv[3]);
   }
 
-  bool sdr = false;
   std::string mode = "HLG";
-  float kneeStart = 0;
+  bool sdr = false;
+  double gain = 0.0;
+  double compression = 1.0;
   if (argc > 4) {
-    kneeStart = std::atof(argv[4]);
-    if (!(kneeStart > 0.5)) {
-      printf("\n");
-      printf("Only values above 0.5 allowed for 'knee start'.\n");
-      printf("To create a HLG LUT remove the 'knee start' parameter!\n");
-      return 2;
-    }
-    if (kneeStart > 0.5) {
+    sdr = std::atoi(argv[4]);
+    if (sdr) {
       mode = "SDR";
-      sdr = true;
-      if (kneeStart > 0.7) {
-        printf("Parameter 'knee start' cannot be above 0.7\n");
-        return 2;
+    }
+    if (argc > 5) {
+      gain = std::atof(argv[5]);
+      if (argc > 6) {
+        compression = std::atof(argv[6]);
       }
     }
   }
@@ -156,8 +176,9 @@ int main(int argc, char* argv[])
   fsCube << "# re-normalized input: " << normalizedInput << std::endl;
   fsCube << "# mode: " << mode << std::endl;
   if (sdr) {
-    fsCube << "# knee start: " << kneeStart << std::endl;
-    printf("Producing a LUT for PQ -> SDR conversions of size %i with flattending starting at %f\n", lutSize, kneeStart);
+    fsCube << "# gain: " << gain << std::endl;
+    fsCube << "# compression: " << compression << std::endl;
+    printf("Producing a LUT for PQ -> SDR conversions of size %i\n", lutSize);
     fsCube << "# LUT for conversions from BT.2100 HDR PQ to BT.2020 SDR" << std::endl;
   }
   else {
@@ -201,9 +222,9 @@ int main(int argc, char* argv[])
         double rg = OETFhlg(rs);
 
         if (sdr) {
-          bg = hlg2sdr(bg, kneeStart);
-          gg = hlg2sdr(gg, kneeStart);
-          rg = hlg2sdr(rg, kneeStart);
+          bg = hlg2sdr(bg, gain, compression);
+          gg = hlg2sdr(gg, gain, compression);
+          rg = hlg2sdr(rg, gain, compression);
         }
 
         bg = (bg > 1) ? 1 : bg;

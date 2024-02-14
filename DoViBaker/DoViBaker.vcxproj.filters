@@ -36,6 +36,12 @@
     <ClCompile Include="DoViTonemap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="AvsCube.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DoViLutGen.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\DoViBaker.h">
@@ -57,6 +63,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\DoViTonemap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\def.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -78,7 +78,7 @@ The following arguments control the tonemapping function:
 - `masterMaxNits` and `masterMinNits` set the white and black brightness value of the source. The values for the master brightness can be either given explicitly or `masterMaxNits` and `masterMinNits` can both be set to `-1` which will indicate that the actual values are read from the related frame properties `_dovi_dynamic_max_pq` and `_dovi_dynamic_min_pq` which are set by `DoViBaker` or `DoViStatsFileLoader`, leading to a dynamic tonemapping. If not given these will default to `-1`.
 - `targetMaxNits` and `targetMinNits` set the desired target capabilities. These must be given explicitly.
 - `lumScale` changes the total brightness, this can be usefull since many HDR PQ and DV streams are actually too dark, darker then the respective SDR streams. To find the proper `lumScale` factor you might use the script `LumScaleFindHelper.avs`. It is also possible to read the luminosity factor from the frame property `_dovi_dynamic_luminosity_scale` by setting `lumSacle` to `-1`. When not given explicitly the default of `1.0` is used.
-- `kneeOffset` is a parameter of the tonemapping curve, which governs the size of the region where the tonemapping function is flattened (see figure below). The mathematical validity range is [0.5, 2.0]. In report BT.2408 this value is fixed at 0.5, which leads to very low contrast in the high range favoring max brightness. Here the default value used is `0.75` which should be a better compromise overall, especially when using dynamic tonemapping.
+- `kneeOffset` is a parameter of the tonemapping curve, which governs the size of the region where the tonemapping function is flattened (see figure below). The mathematical validity range is [0.5, 2.0]. In report BT.2408 this value is fixed at 0.5, which leads to low highlight details while favoring max brightness. Here the default value used is `0.75` which should be a better compromise overall, especially when using dynamic tonemapping.
 - `normalizeOutput` normalizes the output from the range `[targetMinNits, targetMaxNits]` to the full range. This can be usefull when the output is just an intermediate result which is further processed, since the usage of the full value range decreases rounding errors down the line. Default is `false`.
 
 The following example applies a dynamic tonemapping to a 1000nits target while reading the current max and min brightness values off the frame properties which are set by `DoViBaker`. The luminosity scale is not given thus the default of 1.0 is used.
@@ -178,17 +178,19 @@ Additionally it is possible to generate a scenecutfile based on the information 
 # DoViLutGen
 This application generates LUTs for conversions from PQ to HLG or SDR. The PQ to HLG conversion is based on BT.2408-7 in conjunction with BT.2100-2. The LUTs will only process input values up to 1000 nits and will clip anything above that. If the PQ source has brightness levels above that, use `DoViTonemap` to tonemap the PQ stream to 1000 nits.
 
-The generated SDR LUTs provide no colorspace conversion, and create a BT.2020 output. For conversions to BT.709 an additional color conversion is necessary. This can be done using [Avsresize](http://avisynth.nl/index.php/Avsresize). The SDR LUT is experimental only!
+The generated SDR LUTs provide no colorspace conversion, and create a BT.2020 output. For conversions to BT.709 an additional color conversion is necessary. This can be done using [Avsresize](http://avisynth.nl/index.php/Avsresize). 
 
 ```
-usage: DoViLutGen.exe <output_cube_file> <lut_size> (<is_input_normalized>) (<start_of_sdr_knee>)
+usage: DoViLutGen.exe <output_cube_file> <lut_size> (<normalized_input>) (<sdr>) (<sdr_gain>) (<sdr_compression>)
 ```
 
 The meaning of the expected arguments:
 - `output file` this is self-explinatory
 - `lut size` generally a bigger LUT, is a better LUT. A good size is `65`.
 - `normalized input` if this optional argument is set to `1`, the generated LUT will expect that the input PQ was re-normalized to 1000 nits max brightness. LUTs for re-normalized inputs can be of smaller size than normal LUTs while still providing better quality. A good size for such a LUT is `50`. When not given, this will default to 0.
-- `sdr knee` if this optional argument is given it indicates where the SDR curve flattening should start in the HLG signal range. The parameter range is (0.5, 0.7]. There is no perfect value, however `0.6` is probably a good starting point. When not given a HLG LUT will be created.
+- `sdr` if this optional argument is set to `1`, the generatewd LUT will convert to BT.2020 SDR. Default is 0.
+- `sdr_gain` this optional argument adjusts the SDR mapping function, by setting the amount of gain of the bright midtones. Range is [0.0, 1.0], default is 0.0.
+- `sdr_compression` this optional argument adjusts the SDR mapping function, by setting the amount of compression of the very bright highlights. Range is [0.0, 1.0], default is 1.0.
 
 ## Workflow for conversion to HLG
 
@@ -213,5 +215,5 @@ I had some issues linking against Timecube. I was constantly getting the followi
 fatal error C1083: Cannot open compiler generated file: 'x64\Release\timecube.asm': No such file or directory
 ```
 
-It turnes out that this is related to the following setting: "Properties" (of the timecube project) -> "C++" -> "Output Files" -> "Assembler Output".
+It turnes out that this is related to the following setting: "Properties" (of the timecube project) -> "C/C++" -> "Output Files" -> "Assembler Output".
 Setting this to "No Listing" resolves the issue.
