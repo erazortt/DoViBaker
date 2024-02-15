@@ -154,7 +154,7 @@ z_ConvertFormat(pixel_type="YUV420P8",colorspace_op="rgb:709:2020:full=>709:709:
 Just like in the HLG example above, the parameter `lumaScale` was not given to `DoViTonemap`, which means that the brightness factor of `1.0` was used. This will very rarely be the right choice. In contrast to HLG conversions, this setting is much more relevant. More often than not it will need to be above `2.0` or even higher.
 
 # DoViCubes
-This plugin provides LUT processing capabilites based on the frame property `_dovi_dynamic_max_content_light_level` set by either [DoViBaker](#dovibaker) or [DoViStatsFileReader](#dovistatsfilereader). Different LUTs are applied based adjustable thresholds. This is done by providing a collection of LUTs and limits of validity measured in nits of max-content-light-level. (The LUT processing implentation is based on: https://github.com/sekrit-twc/timecube).
+This plugin provides LUT processing capabilites based on the frame property `_dovi_dynamic_max_content_light_level` set by either [DoViBaker](#dovibaker) or [DoViStatsFileReader](#dovistatsfilereader). Different LUTs are applied based on adjustable thresholds. This is done by providing a collection of LUTs and limits of validity measured in nits of max-content-light-level. (The LUT processing implentation is based on: https://github.com/sekrit-twc/timecube).
 ```
 DoViBaker(bl,el)
 DoViCubes(cubes="lut_1000.cube;lut_2000.cube;lut_4000.cube",mclls="1010;2020",cubes_basepath="C:\")
