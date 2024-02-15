@@ -4,7 +4,7 @@ Bake the DoVi into your clip
 This avisynth plugin reads the Base Layer, Enhancement Layer and RPU data from a profile 7 DolbyVision stream to create a clip with the DolbyVision data baked in.
 
 ## General information
-This plugin uses the metadata from and RPU file or from the inside stream itself to compose the DolbyVision HDR picture out of the Base Layer (BL) and Enhancement Layer (EL). Display Management (DM) metadata will not be processed per default. It is however possible to further process the clip using DM data by explicitly enabling `trims` or by the means of `DoViTonemap` or `DoViCubes`. 
+This plugin uses the metadata from and RPU file or from the inside stream itself to compose the DolbyVision HDR picture out of the Base Layer (BL) and Enhancement Layer (EL). Display Management (DM) metadata will not be processed per default. It is however possible to further process the clip using DM data by explicitly enabling [Trims](#trims) or by the means of [DoViTonemap](#dovitonemap) or [DoViCubes](#dovicubes). 
 
 ## Feeding the plugin 
 To my knowledge there are currently three source libraries that can be used. It is advisable to choose one of them in a speed test on your machine.
@@ -48,7 +48,7 @@ Typical trim targets usually available are:
 * 600 nits, with a `trimPq` of 2851
 * 1000 nits, with a `trimPq` of 3079
 
-In comparison to trims and especially for higher brightness targets like 600 nits and above, results might be better using `DoViTonemap` with both `masterMaxNits` and `masterMinNits` set to `-1`.
+In comparison to trims and especially for higher brightness targets like 600 nits and above, results might be better using [DoViTonemap](#dovitonemap) with both `masterMaxNits` and `masterMinNits` set to `-1`.
 
 ## Frame Properties
 The following frame properties will be set:
@@ -72,24 +72,24 @@ subtitle("maxcll = " + string(mcll))
 # DoViTonemap
 This plugin processes the tonemapping of any HDR PQ streams to lower dynamic range targets. The implementation is based on ITU-R BT.2408-7 Annex 5 (was in ITU-R BT.2390 until revision 7), with the addition of an optional luminosity factor which scales the brightness linearily. 
 
-It is not expected to give good results for low brightness targets of 400 nits and below. Also color space is preserved and not converted to narrower gamut. For conversions to HLG or SDR additional processing is required, see `DoViLutGen`.
+It is not expected to give good results for low brightness targets of 400 nits and below. Also color space is preserved and not converted to narrower gamut. For conversions to HLG or SDR additional processing is required, see [DoViLutGen](#dovilutgen).
 
 The following arguments control the tonemapping function: 
-- `masterMaxNits` and `masterMinNits` set the white and black brightness value of the source. The values for the master brightness can be either given explicitly or `masterMaxNits` and `masterMinNits` can both be set to `-1` which will indicate that the actual values are read from the related frame properties `_dovi_dynamic_max_pq` and `_dovi_dynamic_min_pq` which are set by `DoViBaker` or `DoViStatsFileLoader`, leading to a dynamic tonemapping. If not given these will default to `-1`.
+- `masterMaxNits` and `masterMinNits` set the white and black brightness value of the source. The values for the master brightness can be either given explicitly or `masterMaxNits` and `masterMinNits` can both be set to `-1` which will indicate that the actual values are read from the related frame properties `_dovi_dynamic_max_pq` and `_dovi_dynamic_min_pq` which are set by [DoViBaker](#dovibaker) or [DoViStatsFileLoader](#dovistatsfileloader), leading to a dynamic tonemapping. If not given these will default to `-1`.
 - `targetMaxNits` and `targetMinNits` set the desired target capabilities. These must be given explicitly.
-- `lumScale` changes the total brightness, this can be usefull since many HDR PQ and DV streams are actually too dark, darker then the respective SDR streams. To find the proper `lumScale` factor you might use the script `LumScaleFindHelper.avs`. It is also possible to read the luminosity factor from the frame property `_dovi_dynamic_luminosity_scale` by setting `lumSacle` to `-1`. When not given explicitly the default of `1.0` is used.
+- `lumScale` changes the total brightness, this can be usefull since many HDR streams are actually too dark, darker then the respective SDR streams would be. This setting is especially important when converting to SDR! If however the equivalent SDR stream is already availble, the proper `lumScale` factor can be found by using the script [LumScaleHelper.avs](#lumscalehelperavs). It is also possible to read the luminosity factor from the frame property `_dovi_dynamic_luminosity_scale` by setting `lumSacle` to `-1`. When not given explicitly the default of `1.0` is used.
 - `kneeOffset` is a parameter of the tonemapping curve, which governs the size of the region where the tonemapping function is flattened (see figure below). The mathematical validity range is [0.5, 2.0]. In report BT.2408 this value is fixed at 0.5, which leads to low highlight details while favoring max brightness. Here the default value used is `0.75` which should be a better compromise overall, especially when using dynamic tonemapping.
 - `normalizeOutput` normalizes the output from the range `[targetMinNits, targetMaxNits]` to the full range. This can be usefull when the output is just an intermediate result which is further processed, since the usage of the full value range decreases rounding errors down the line. Default is `false`.
 
-The following example applies a dynamic tonemapping to a 1000nits target while reading the current max and min brightness values off the frame properties which are set by `DoViBaker`. The luminosity scale is not given thus the default of 1.0 is used.
+The following example applies a dynamic tonemapping to a 1000nits target while reading the current max and min brightness values off the frame properties which are set by [DoViBaker](#dovibaker). The luminosity scale is not given thus the default of 1.0 is used.
 ```
 DoViBaker(bl,el)
 DoViTonemap(targetMaxNits=1000, targetMinNits=0)
 ```
 
 If your source is just PQ and doesn't have a DolbyVision substream, there are two options:
-- use static tonemapping by explicitly defining `masterMaxNits` and `masterMinNits` to `DoViTonemap`
-- analyse the source using `StatsFileCreator.avs` and provide the create stats file to `DoViStatsFileLoader` for a dynamic tonemapping with `DoViTonemap`
+- use static tonemapping by explicitly defining `masterMaxNits` and `masterMinNits` to [DoViTonemap](#dovitonemap)
+- analyse the source using [StatsFileCreator.avs](#statsfilecreatoravs) and provide the create stats file to [DoViStatsFileLoader](#dovistatsfileloader) for a dynamic tonemapping with [DoViTonemap](#dovitonemap)
 
 Shown below is the functional form of the tonemapping curve with the following parameters: masterMaxNits=10000, targetMaxNits=1000, masterMinNits=0, targetMinNits=0.1, lumscale=1.
 ![Tonemapping function](EETF.png "Tonemapping function")
@@ -105,21 +105,23 @@ The following frame properties will be set:
 - `_ColorRange` set to 0, since the output is always full range RGB independently of the input
 
 # DoViLutGen
-This application generates LUTs for conversions from BT.2100 PQ to BT.2100 HLG or to BT.2020 SDR. The PQ to HLG conversion is based on BT.2408-7 in conjunction with BT.2100-2. The LUTs will only process input values up to 1000 nits and will clip anything above that. If the PQ source has brightness levels above that, use `DoViTonemap` to tonemap the PQ stream to 1000 nits.
+This application generates LUTs for conversions from BT.2100 PQ to BT.2100 HLG or to BT.2020 SDR. The PQ to HLG conversion is based on BT.2408-7 in conjunction with BT.2100-2. The LUTs will only process input values up to 1000 nits and will clip anything above that. If the PQ source has brightness levels above that, use [DoViTonemap](#dovitonemap) to tonemap the PQ stream to 1000 nits.
 
-The generated SDR LUTs provide no colorspace conversion, and create a BT.2020 output. For conversions to BT.709 an additional color conversion is necessary. This can be done using [Avsresize](http://avisynth.nl/index.php/Avsresize). 
+The generated SDR LUTs provide no colorspace conversion, and create a BT.2020 output. For conversions to BT.709 an additional color conversion is necessary. This can be done using http://avisynth.nl/index.php/Avsresize. 
 
 ```
-usage: DoViLutGen.exe <output_cube_file> <lut_size> (<normalized_input>) (<sdr>) (<sdr_gain>) (<sdr_compression>)
+usage: DoViLutGen.exe <output_file> <lut_size> (<normalized_input>) (<sdr>) (<sdr_gain>) (<sdr_compression>)
 ```
 
-The meaning of the expected arguments:
-- `output file` this is self-explinatory
+The meaning of the arguments:
+- `output file` the name of the to-be-generated LUT file
 - `lut size` generally a bigger LUT, is a better LUT. A good size is `65`.
 - `normalized input` if this optional argument is set to `1`, the generated LUT will expect that the input PQ was re-normalized to 1000 nits max brightness. LUTs for re-normalized inputs can be of smaller size than normal LUTs while still providing better quality. A good size for such a LUT is `50`. When not given, this will default to `0`.
 - `sdr` if this optional argument is set to `1`, the generatewd LUT will convert to BT.2020 SDR. Default is `0`, with the generated LUT converting to BT.2100 HLG.
-- `sdr_gain` this optional argument adjusts the SDR mapping function, by setting the amount of gain of the bright midtones. Value range is [0.0, 1.0], default is `0.0`.
-- `sdr_compression` this optional argument adjusts the SDR mapping function, by setting the amount of compression of the very bright highlights. Value range is [0.0, 1.0], default is `1.0`.
+- `sdr_gain` this optional argument adjusts the SDR mapping function, by setting the amount of gain of bright midtones. Value range is [0.0, 1.0], default is `0.0`.
+- `sdr_compression` this optional argument adjusts the SDR mapping function, by setting the amount of compression of very bright highlights. Value range is [0.0, 1.0], default is `1.0`.
+
+Please be aware that the aruments are positional for this application, and must thus be given exactly in this order.
 
 ## Workflow for conversion to HLG
 Generate the LUT by the following command:
@@ -149,7 +151,7 @@ z_ConvertFormat(pixel_type="YUV420P8",colorspace_op="rgb:709:2020:full=>709:709:
 ```
 
 # DoViCubes
-This plugin provides LUT processing capabilites based on the frame property `_dovi_dynamic_max_content_light_level` set by either `DoViBaker` or `DoViStatsFileReader`. Different LUTs are applied based adjustable thresholds. This is done by providing a collection of LUTs and limits of validity measured in nits of max-content-light-level. (The LUT processing implentation is based on: https://github.com/sekrit-twc/timecube).
+This plugin provides LUT processing capabilites based on the frame property `_dovi_dynamic_max_content_light_level` set by either [DoViBaker](#dovibaker) or [DoViStatsFileReader](#dovistatsfilereader). Different LUTs are applied based adjustable thresholds. This is done by providing a collection of LUTs and limits of validity measured in nits of max-content-light-level. (The LUT processing implentation is based on: https://github.com/sekrit-twc/timecube).
 ```
 DoViBaker(bl,el)
 DoViCubes(cubes="lut_1000.cube;lut_2000.cube;lut_4000.cube",mclls="1010;2020",cubes_basepath="C:\")
@@ -161,14 +163,14 @@ The following frame properties will be consumed:
 - `_dovi_dynamic_max_content_light_level` the maximal nits value of the current scene
 
 # DoViStatsFileLoader
-This plugin reads the stats file generated by the avisynth script `StatsFileCreator.avs`. It can be used for sources which do not have any DolbyVision substream, but where a processing by `DoViCubes` or `DoViTonemap` is still desired.
+This plugin reads the stats file generated by the avisynth script [StatsFileCreator.avs](statsfilecreatoravs). It can be used for sources which do not have any DolbyVision substream, but where a processing by [DoViCubes](#dovicubes) or [DoViTonemap](#dovitonemap) is still desired.
 The format of each line of the stats file needs to be, last entry is optional:  
 `<frame_number> <decision_if_frame_is_last_in_scene> <frame_max_pq> <frame_min_pq> <frame_lum_scale>`
 
-Additionally it is also possible to provide another scene cut file, created by other means than through `StatsFileCreator.avs`. In this case the scene cuts are going to be taken for that file and the stream statistics from the stats file. The format of each line of the optional alternative scene cut file needs to be:  
+Additionally it is also possible to provide another scene cut file, created by other means than through [StatsFileCreator.avs](statsfilecreatoravs). In this case the scene cuts are going to be taken for that file and the stream statistics from the stats file. The format of each line of the optional alternative scene cut file needs to be:  
 `<frame_number_of_first_frame_after_scene_cut>`
 
-In this example the input stats file is read feeding DoViTonemap:
+In this example the input stats file is read feeding [DoViTonemap](#dovitonemap):
 ```
 DoViStatsFileReader("statsFile.txt")
 DoViTonemap(targetMaxNits=1000, targetMinNits=0)
@@ -186,7 +188,7 @@ The following frame properties will be set:
 - `_dovi_static_max_content_light_level` the value of maximal nits of the whole stream
 
 # StatsFileCreator.avs
-This avisynth script scans through the clip and writes the stats file needed for `DoViStatsFileReader`. The stats file includes scene cuts and per-frame max brightness values. The scene cut detection algorithm is a rather simple implementation, which is however good enough for most cases.
+This avisynth script scans through the clip and writes the stats file needed for [DoViStatsFileLoader](#dovistatsfileloader). The stats file includes scene cuts and per-frame max brightness values. The scene cut detection algorithm is a rather simple implementation, which is however good enough for most cases.
 
 The format of each line of the stats file created is:  
 `<frame_number> <decision_if_frame_is_last_in_scene> <frame_max_pq> <frame_min_pq>`
@@ -195,13 +197,13 @@ The format of each line of the optional alternative scene cut file created is:
 `<frame_number_of_first_frame_after_scene_cut>`
 
 # LumScaleHelper.avs
-Used to find `lumScale` for `DoViTonemap` manually. This is the factor by which to mutiply the brightness of the PQ stream such that its base brightness matches that of the SDR stream. Typical factors can be 1.0 all the way to up 5.0 in very extreme cases. Also this factor might fluctuate from scene to scene. In this case it is advisable to use one best fitting factor thoughout the whole stream in order to maintain the creator's intent. For low brightness targets it might however be necessary have the factor adjusted from scene to scene.
+Used to find `lumScale` for [DoViTonemap](#dovitonemap) manually. This is the factor by which to mutiply the brightness of the PQ stream such that its base brightness matches that of the SDR stream. Typical factors can be 1.0 all the way to up 5.0 in very extreme cases. Also this factor might fluctuate from scene to scene. In this case it is advisable to use one best fitting factor thoughout the whole stream in order to maintain the creator's intent. For low brightness targets it might however be necessary have the factor adjusted from scene to scene.
 
 # BetterGrayscale.avsi
-Needed by `LumScaleHelper.avs` for showing a more correct and better comparable grayscale of PQ and SDR sources.
+Needed by [LumScaleHelper.avs](#lumscalehelperavs) for showing a more correct and better comparable grayscale of PQ and SDR sources.
 
 # DoViAnalyzer
-This application analyzes the RPU.bin file in order to show information relevant to deciding whether it is worth to use `DoViBaker` or if this can be skipped completely and the Base Layer can be used directly.
+This application analyzes the RPU.bin file in order to show information relevant to deciding whether it is worth to use [DoViBaker](#dovibaker) or if this can be skipped completely and the Base Layer can be used directly.
 
 ```
 usage: DoViAnalyzer.exe <path_to_rpu.bin_file> <optional_scenecutfile.txt>
@@ -217,10 +219,10 @@ The output will show the following attributes:
 
 Pay attention to 3-5 since these will indicate if the look of the clip will be different when DolbyVision is taken into account compared to just playing the Base Layer clip. If you are using LUTs, pay attention to 7) since in this case the LUTs provided will need to be different.
 
-Additionally it is possible to generate a scenecutfile based on the information from the RPU file. This might be used as the optional scene cut file by `DoViStatsFileLoader`. Or this might be given to the encoder to improve the scene detection (using the parameter --qpfile for x265). In this case add " K" to the end of each line of the file.
+Additionally it is possible to generate a scenecutfile based on the information from the RPU file. This might be used as the optional scene cut file by [DoViStatsFileLoader](#dovistatsfileloader). Or it might be given to the encoder to improve the scene detection (using the parameter --qpfile for x265). In this case add " K" to the end of each line of the file.
 
 # AVSCube
-This is a simplified version of [AVSCube](http://avisynth.nl/index.php/AVSCube) with exactly no adjustability whatsoever. It provides the same quality of image processing as the LUT processing done by `DoViCubes`, while supporting only a single LUT. The desire for this implementation stems from the fact that the original version has non-optimal default settings.
+This is a simplified version of http://avisynth.nl/index.php/AVSCube with exactly no adjustability whatsoever. It provides the same quality of image processing as the LUT processing done by [DoViCubes](#dovicubes), while supporting only a single LUT. The desire for this implementation stems from the fact that the original version has non-optimal default settings.
 
 # Remarks concerning compilation
 I had some issues linking against Timecube. I was constantly getting the following error:
