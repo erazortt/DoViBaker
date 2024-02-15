@@ -93,6 +93,7 @@ If your source is just PQ and doesn't have a DolbyVision substream, there are tw
 
 Shown below is the functional form of the tonemapping curve with the following parameters: masterMaxNits=10000, targetMaxNits=1000, masterMinNits=0, targetMinNits=0.1, lumscale=1.
 ![Tonemapping function](EETF.png "Tonemapping function")
+
 ## Frame Properties
 The following frame properties will be consumed (if the related arguments `masterMaxNits`, `masterMinNits` and `lumScale` are set to `-1`):
 - `_dovi_dynamic_max_pq` the max_pq value of the current scene
@@ -102,6 +103,50 @@ The following frame properties will be consumed (if the related arguments `maste
 
 The following frame properties will be set:
 - `_ColorRange` set to 0, since the output is always full range RGB independently of the input
+
+# DoViLutGen
+This application generates LUTs for conversions from BT.2100 PQ to BT.2100 HLG or to BT.2020 SDR. The PQ to HLG conversion is based on BT.2408-7 in conjunction with BT.2100-2. The LUTs will only process input values up to 1000 nits and will clip anything above that. If the PQ source has brightness levels above that, use `DoViTonemap` to tonemap the PQ stream to 1000 nits.
+
+The generated SDR LUTs provide no colorspace conversion, and create a BT.2020 output. For conversions to BT.709 an additional color conversion is necessary. This can be done using [Avsresize](http://avisynth.nl/index.php/Avsresize). 
+
+```
+usage: DoViLutGen.exe <output_cube_file> <lut_size> (<normalized_input>) (<sdr>) (<sdr_gain>) (<sdr_compression>)
+```
+
+The meaning of the expected arguments:
+- `output file` this is self-explinatory
+- `lut size` generally a bigger LUT, is a better LUT. A good size is `65`.
+- `normalized input` if this optional argument is set to `1`, the generated LUT will expect that the input PQ was re-normalized to 1000 nits max brightness. LUTs for re-normalized inputs can be of smaller size than normal LUTs while still providing better quality. A good size for such a LUT is `50`. When not given, this will default to `0`.
+- `sdr` if this optional argument is set to `1`, the generatewd LUT will convert to BT.2020 SDR. Default is `0`, with the generated LUT converting to BT.2100 HLG.
+- `sdr_gain` this optional argument adjusts the SDR mapping function, by setting the amount of gain of the bright midtones. Value range is [0.0, 1.0], default is `0.0`.
+- `sdr_compression` this optional argument adjusts the SDR mapping function, by setting the amount of compression of the very bright highlights. Value range is [0.0, 1.0], default is `1.0`.
+
+## Workflow for conversion to HLG
+Generate the LUT by the following command:
+```
+DoViLutGen.exe pq2hlg_normalizedInput.cube 50 1
+```
+
+Create the following avisyth script:
+```
+DoViBaker(bl,el)
+DoViTonemap(targetMaxNits=1000, targetMinNits=0, normalizeOutput=true)
+AVSCube("pq2sdr_normalizedInput.cube")
+z_ConvertFormat(pixel_type="YUV420P16",colorspace_op="rgb:std-b67:2020:full=>2020ncl:std-b67:2020:limited",chromaloc_op="center=>left")
+```
+## Workflow for conversion to SDR
+Generate the LUT by the following command:
+```
+DoViLutGen.exe pq2sdr_normalizedInput.cube 50 1 1
+```
+
+Create the following avisyth script:
+```
+DoViBaker(bl,el)
+DoViTonemap(targetMaxNits=1000, targetMinNits=0, normalizeOutput=true)
+AVSCube("pq2sdr_normalizedInput.cube")
+z_ConvertFormat(pixel_type="YUV420P8",colorspace_op="rgb:709:2020:full=>709:709:709:limited",chromaloc_op="center=>left")
+```
 
 # DoViCubes
 This plugin provides LUT processing capabilites based on the frame property `_dovi_dynamic_max_content_light_level` set by either `DoViBaker` or `DoViStatsFileReader`. Different LUTs are applied based adjustable thresholds. This is done by providing a collection of LUTs and limits of validity measured in nits of max-content-light-level. (The LUT processing implentation is based on: https://github.com/sekrit-twc/timecube).
@@ -149,7 +194,6 @@ The format of each line of the stats file created is:
 The format of each line of the optional alternative scene cut file created is:  
 `<frame_number_of_first_frame_after_scene_cut>`
 
-
 # LumScaleHelper.avs
 Used to find `lumScale` for `DoViTonemap` manually. This is the factor by which to mutiply the brightness of the PQ stream such that its base brightness matches that of the SDR stream. Typical factors can be 1.0 all the way to up 5.0 in very extreme cases. Also this factor might fluctuate from scene to scene. In this case it is advisable to use one best fitting factor thoughout the whole stream in order to maintain the creator's intent. For low brightness targets it might however be necessary have the factor adjusted from scene to scene.
 
@@ -175,39 +219,8 @@ Pay attention to 3-5 since these will indicate if the look of the clip will be d
 
 Additionally it is possible to generate a scenecutfile based on the information from the RPU file. This might be used as the optional scene cut file by `DoViStatsFileLoader`. Or this might be given to the encoder to improve the scene detection (using the parameter --qpfile for x265). In this case add " K" to the end of each line of the file.
 
-# DoViLutGen
-This application generates LUTs for conversions from PQ to HLG or SDR. The PQ to HLG conversion is based on BT.2408-7 in conjunction with BT.2100-2. The LUTs will only process input values up to 1000 nits and will clip anything above that. If the PQ source has brightness levels above that, use `DoViTonemap` to tonemap the PQ stream to 1000 nits.
-
-The generated SDR LUTs provide no colorspace conversion, and create a BT.2020 output. For conversions to BT.709 an additional color conversion is necessary. This can be done using [Avsresize](http://avisynth.nl/index.php/Avsresize). 
-
-```
-usage: DoViLutGen.exe <output_cube_file> <lut_size> (<normalized_input>) (<sdr>) (<sdr_gain>) (<sdr_compression>)
-```
-
-The meaning of the expected arguments:
-- `output file` this is self-explinatory
-- `lut size` generally a bigger LUT, is a better LUT. A good size is `65`.
-- `normalized input` if this optional argument is set to `1`, the generated LUT will expect that the input PQ was re-normalized to 1000 nits max brightness. LUTs for re-normalized inputs can be of smaller size than normal LUTs while still providing better quality. A good size for such a LUT is `50`. When not given, this will default to 0.
-- `sdr` if this optional argument is set to `1`, the generatewd LUT will convert to BT.2020 SDR. Default is 0.
-- `sdr_gain` this optional argument adjusts the SDR mapping function, by setting the amount of gain of the bright midtones. Range is [0.0, 1.0], default is 0.0.
-- `sdr_compression` this optional argument adjusts the SDR mapping function, by setting the amount of compression of the very bright highlights. Range is [0.0, 1.0], default is 1.0.
-
-## Workflow for conversion to HLG
-
-Generate the LUT by the following command:
-```
-DoViLutGen.exe pq2hlg_normalizedInput.cube 50 1
-```
-
-Create the following avisyth script:
-```
-DoViBaker(bl,el)
-DoViTonemap(targetMaxNits=1000, targetMinNits=0, normalizeOutput=true)
-AVSCube("pq2hlg_normalizedInput.cube")
-```
-
 # AVSCube
-This is a simple implementation of AVSCube, which provides the same image processing as the LUT processing done by `DoViCubes`, but with one single LUT provided.
+This is a simplified version of [AVSCube](http://avisynth.nl/index.php/AVSCube) with exactly no adjustability whatsoever. It provides the same quality of image processing as the LUT processing done by `DoViCubes`, while supporting only a single LUT. The desire for this implementation stems from the fact that the original version has non-optimal default settings.
 
 # Remarks concerning compilation
 I had some issues linking against Timecube. I was constantly getting the following error:
