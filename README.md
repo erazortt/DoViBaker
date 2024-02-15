@@ -136,6 +136,8 @@ DoViTonemap(targetMaxNits=1000, targetMinNits=0, normalizeOutput=true)
 AVSCube("pq2sdr_normalizedInput.cube")
 z_ConvertFormat(pixel_type="YUV420P16",colorspace_op="rgb:std-b67:2020:full=>2020ncl:std-b67:2020:limited",chromaloc_op="center=>left")
 ```
+Please be aware that in the example the parameter `lumaScale` was not given to `DoViTonemap`, which means that the brightness factor of `1.0` was used. You might want to have this increased if the source is too dark. And if you have the equivalent SDR source at hand, you can extract the factor using [LumScaleHelper.avs](#lumscalehelperavs).
+
 ## Workflow for conversion to SDR
 Generate the LUT by the following command:
 ```
@@ -149,6 +151,7 @@ DoViTonemap(targetMaxNits=1000, targetMinNits=0, normalizeOutput=true)
 AVSCube("pq2sdr_normalizedInput.cube")
 z_ConvertFormat(pixel_type="YUV420P8",colorspace_op="rgb:709:2020:full=>709:709:709:limited",chromaloc_op="center=>left")
 ```
+Just like in the HLG example above, the parameter `lumaScale` was not given to `DoViTonemap`, which means that the brightness factor of `1.0` was used. This will very rarely be the right choice. In contrast to HLG conversions, this setting is much more relevant. More often than not it will need to be above `2.0` or even higher.
 
 # DoViCubes
 This plugin provides LUT processing capabilites based on the frame property `_dovi_dynamic_max_content_light_level` set by either [DoViBaker](#dovibaker) or [DoViStatsFileReader](#dovistatsfilereader). Different LUTs are applied based adjustable thresholds. This is done by providing a collection of LUTs and limits of validity measured in nits of max-content-light-level. (The LUT processing implentation is based on: https://github.com/sekrit-twc/timecube).
