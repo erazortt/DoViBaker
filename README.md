@@ -118,8 +118,8 @@ The meaning of the arguments:
 - `lut size` generally a bigger LUT, is a better LUT. A good size is `65`.
 - `normalized input` if this optional argument is set to `1`, the generated LUT will expect that the input PQ was re-normalized to 1000 nits max brightness. LUTs for re-normalized inputs can be of smaller size than normal LUTs while still providing better quality. A good size for such a LUT is `50`. When not given, this will default to `0`.
 - `sdr` if this optional argument is set to `1`, the generatewd LUT will convert to BT.2020 SDR. Default is `0`, with the generated LUT converting to BT.2100 HLG.
-- `sdr_gain` this optional argument adjusts the SDR mapping function, by setting the amount of gain of the bright midtones. Value range is [0.0, 1.0], default is `0.0`.
-- `sdr_compression` this optional argument adjusts the SDR mapping function, by setting the amount of compression of the very bright highlights. Value range is [0.0, 1.0], default is `1.0`.
+- `sdr_gain` this optional argument adjusts the SDR mapping function, by setting the amount of gain of bright midtones. Value range is [0.0, 1.0], default is `0.0`.
+- `sdr_compression` this optional argument adjusts the SDR mapping function, by setting the amount of compression of very bright highlights. Value range is [0.0, 1.0], default is `1.0`.
 
 Please be aware that the aruments are positional for this application, and must thus be given exactly in this order.
 
