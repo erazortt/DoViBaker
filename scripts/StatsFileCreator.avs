@@ -27,10 +27,9 @@
 global LumaDiffFac = 4.5 # 4.0 for SDR, 4.5 for HDR
 global LumaDiffMin = 7.8 # 11.0 for SDR, 8.0 for HDR (the usefull range for this is somewhere between 7 and 9 for HDR)
 
-scdResizeFac = (width()<1100)?1:(width()<2100)?2:4
-cllResizeFac = (width()<1100)?1:(width()<2100)?1:2
-global scd=z_ConvertFormat(width=width()/scdResizeFac,height=height()/scdResizeFac,pixel_type="Y8",dither_type="none",resample_filter="bilinear",resample_filter_uv="bilinear",chromaloc_op="top_left=>top_left",colorspace_op="2020ncl:st2084:2020:limited=>2020ncl:st2084:2020:full")
-global rgb=z_ConvertFormat(width=width()/cllResizeFac,height=height()/cllResizeFac,pixel_type="RGBP16",dither_type="none",resample_filter="bilinear",resample_filter_uv="bilinear",chromaloc_op="top_left=>center",colorspace_op="2020ncl:st2084:2020:limited=>rgb:st2084:2020:full")
+resizeFac = (width()<1100)?1:(width()<2100)?2:4
+global scd=z_ConvertFormat(width=width()/resizeFac,height=height()/resizeFac,pixel_type="Y8",dither_type="none",resample_filter="bilinear",resample_filter_uv="bilinear",chromaloc_op="top_left=>top_left",colorspace_op="2020ncl:st2084:2020:limited=>2020ncl:st2084:2020:full")
+global rgb=z_ConvertFormat(width=width()/resizeFac,height=height()/resizeFac,pixel_type="RGBP16",dither_type="none",resample_filter="bilinear",resample_filter_uv="bilinear",chromaloc_op="top_left=>center",colorspace_op="2020ncl:st2084:2020:limited=>rgb:st2084:2020:full")
 scd_super = scd.MSuper(pel=2, sharp=0, hpad=16, vpad=16)
 bac2_vec = MAnalyse(scd_super, isb=true, delta=2, blksize=16, search=4, searchparam=2)
 back_vec = MAnalyse(scd_super, isb=true, delta=1, blksize=16, search=4, searchparam=2)

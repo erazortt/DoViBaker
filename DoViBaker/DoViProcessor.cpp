@@ -101,10 +101,6 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env, const uin
 		showMessage("DoViBaker: BL stream needs higher bitdepth", env);
 		return false;
 	}
-	if ((!elProcessingDisabled()) && elContainerBitDepth < el_bit_depth) {
-		showMessage("DoViBaker: EL stream needs higher bitdepth", env);
-		return false;
-	}
 
 	for (int cmp = 0; cmp < 3; cmp++) {
         const DoviReshapingCurve curve = mapping_data->curves[cmp];
@@ -242,7 +238,37 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env, const uin
 		dovi_rpu_free_data_mapping(mapping_data);
 		dovi_rpu_free_header(header);
 		is_fel = false;
+		disable_residual_flag = true;
 		return successfulCreation;
+	}
+
+	std::string el_type(header->el_type);
+	std::transform(el_type.begin(), el_type.end(), el_type.begin(),
+		[](unsigned char c) { return toupper(c); });
+	if (el_type.compare("FEL") == 0) {
+		is_fel = true;
+	}
+	else if (el_type.compare("MEL") == 0) {
+		is_fel = false;
+	}
+	else {
+		showMessage("DoViBaker: Unknown EL type", env);
+		return false;
+	}
+
+	if (!is_fel && !disable_residual_flag) {
+		// In case of MEL we do not have any EL to work with
+		disable_residual_flag = true;
+	}
+
+	if (!disable_residual_flag){
+		if (elContainerBitDepth == 0) {
+			showMessage("DoViBaker: Expecting EL stream", env);
+		}
+		if (elContainerBitDepth < el_bit_depth) {
+			showMessage("DoViBaker: EL stream needs higher bitdepth", env);
+			return false;
+		}
 	}
 
 	const DoviRpuDataNlq* nlq_data = mapping_data->nlq;
@@ -263,12 +289,6 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env, const uin
 		return false;
 		//alternatively we could just gracefully disable the nlq processing with disable_residual_flag=true
 	}
-
-	std::string el_type(header->el_type);
-	std::transform(el_type.begin(), el_type.end(), el_type.begin(),
-		[](unsigned char c) { return toupper(c); });
-	is_fel = (el_type.compare("FEL")==0);
-
 	auto nlq_offsets = nlq_data->nlq_offset;
 	auto vdr_in_max_int = nlq_data->vdr_in_max_int;
 	auto vdr_in_max = nlq_data->vdr_in_max;

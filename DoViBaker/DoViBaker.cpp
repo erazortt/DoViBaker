@@ -584,18 +584,6 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 		env->propSetInt(env->getFramePropsRW(dst), "_dovi_static_max_content_light_level", doviProc->getStaticMaxContentLightLevel(), 0);
 	}
 
-	bool skipTrim = doviProc->trimProcessingDisabled();
-
-	bool skipElProcessing = false;
-	if (!elChild || !doviProc->isFEL() || doviProc->elProcessingDisabled()) {
-		skipElProcessing = true;
-		doviProc->forceDisableElProcessing();
-	}
-	if (doviProc->isFEL() && !elChild) {
-		env->ThrowError("DoViBaker: Expecting EL clip");
-		return dst;
-	}
-
 	if (qnd) {
 		if (blClipChromaSubSampled && elClipChromaSubSampled)
 			doAllQuickAndDirty<true,true>(dst, blSrc, elSrc, env);
@@ -611,7 +599,7 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 		PVideoFrame elSrc444;
 		PVideoFrame& elSrcR = elSrc;
 		bool frameChromaSubSampled = blClipChromaSubSampled;
-		if (!skipElProcessing) {
+		if (doviProc->elProcessingEnabled()) {
 			if (quarterResolutionEl) {
 				PVideoFrame elUpSrc;
 				if (!blClipChromaSubSampled && elClipChromaSubSampled) {
@@ -671,7 +659,7 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 		}
 		convert2rgb(dst, mez, (!mez444)? mez : mez444);
 	}
-	if (!skipTrim) {
+	if (doviProc->trimProcessingEnabled()) {
 		applyTrim(dst, dst);
 	}
 	return dst;

@@ -34,12 +34,10 @@ public:
   bool intializeFrame(int frame, IScriptEnvironment* env, const uint8_t* rpubuf, size_t rpusize);
   inline int getClipLength() const { return rpus->len; }
   inline bool isIntegratedRpu() const { return !rpus; }
-  inline bool isFEL() const { return is_fel; }
   inline bool isSceneChange() const { return scene_refresh_flag; }
   inline bool isLimitedRangeOutput() const { return !signal_full_range_flag; }
-  inline bool elProcessingDisabled() const { return disable_residual_flag; }
-  inline bool trimProcessingDisabled() const { return skipTrim; }
-  inline void forceDisableElProcessing(bool force = true) { disable_residual_flag = force; }
+  inline bool elProcessingEnabled() const { return !disable_residual_flag; }
+  inline bool trimProcessingEnabled() const { return !skipTrim; }
   inline uint16_t getNlqOffset(int cmp) const { return nlq_offset[cmp] << (outContainerBitDepth - el_bit_depth); }
   inline uint16_t getDynamicMinPq() const { return dynamic_min_pq; }
   inline uint16_t getDynamicMaxPq() const { return dynamic_max_pq; }
