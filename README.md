@@ -110,11 +110,11 @@ This application generates LUTs for conversions from BT.2100 PQ to BT.2100 HLG o
 The generated SDR LUTs provide no colorspace conversion, and create a BT.2020 output. For conversions to BT.709 an additional color conversion is necessary. This can be done using http://avisynth.nl/index.php/Avsresize. 
 
 ```
-usage: DoViLutGen.exe <output_cube_file> <lut_size> (<normalized_input>) (<sdr>) (<sdr_gain>) (<sdr_compression>)
+usage: DoViLutGen.exe <output_file> <lut_size> (<normalized_input>) (<sdr>) (<sdr_gain>) (<sdr_compression>)
 ```
 
 The meaning of the expected arguments:
-- `output file` this is self-explinatory
+- `output file` the name of the to-be-generated LUT file
 - `lut size` generally a bigger LUT, is a better LUT. A good size is `65`.
 - `normalized input` if this optional argument is set to `1`, the generated LUT will expect that the input PQ was re-normalized to 1000 nits max brightness. LUTs for re-normalized inputs can be of smaller size than normal LUTs while still providing better quality. A good size for such a LUT is `50`. When not given, this will default to `0`.
 - `sdr` if this optional argument is set to `1`, the generatewd LUT will convert to BT.2020 SDR. Default is `0`, with the generated LUT converting to BT.2100 HLG.
