@@ -134,7 +134,7 @@ Create the following avisyth script:
 DoViBaker(bl,el)
 DoViTonemap(targetMaxNits=1000, targetMinNits=0, normalizeOutput=true)
 AVSCube("pq2sdr_normalizedInput.cube")
-z_ConvertFormat(pixel_type="YUV420P16",colorspace_op="rgb:std-b67:2020:full=>2020ncl:std-b67:2020:limited",chromaloc_op="center=>left")
+z_ConvertFormat(pixel_type="YUV420P16",colorspace_op="rgb:std-b67:2020:full=>2020ncl:std-b67:2020:limited",chromaloc_op="center=>top_left")
 ```
 Please be aware that in the example the parameter `lumaScale` was not given to `DoViTonemap`, which means that the brightness factor of `1.0` was used. You might want to have this increased if the source is too dark. And if you have the equivalent SDR source at hand, you can extract the factor using [LumScaleHelper.avs](#lumscalehelperavs).
 
