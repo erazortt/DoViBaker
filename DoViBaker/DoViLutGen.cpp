@@ -36,61 +36,47 @@ double OETFhlg(double e)
   return a * std::log(12 * e - b) + c;
 }
 
+
+// this function maps the hlg signal above 203 nits to the sdr signal range until it runs out of sdr signal range at 267.6nits hlg
+// thus when the sdr is viewed it appears idential to the hlg as long as the hlg stays below these 267.6 nits
 double matchHlg2Sdr(double x) {
-  return 2.8188 * x * x - 2.7718 * x + 1.6812;
-}
-double matchHlg2SdrD(double x) {
-  return 2 * 2.8188 * x - 2.7718;
-}
-double hlg2sdrVariable(double x, double gain, double compression) {
-  double kS = gain * 0.2 + 0.5;
-  if (x < kS) {
-    // this function maps the hlg signal above 203 nits to the sdr signal range until it runs out of sdr signal range at 267.6nits hlg
-    // thus when the sdr is viewed it appears idential to the hlg as long as the hlg stays below these 267.6 nits
-    return x * matchHlg2Sdr(x);
-  }
-  
-  // since the above function will run out of sdr signal space, we need to moderate it so that it does not clip
-  // this flattening is done by a hermite spline (just like in hdr tonemapping)
-  // the start point is defined by kS, p0 and m0 and the end point by kE, p1 and m1.
-  double p0 = kS * matchHlg2Sdr(kS);
-  double m0 = kS * matchHlg2SdrD(kS) + 1 * matchHlg2Sdr(kS);
-  constexpr double p1 = 1;
-  double m1 = 0;
-  if (compression < 1 && !(kS>0.7)) {
-    //the maximal exponent was chosen such that the curve has a monotonus falling derivative, in the whole validity range of kS=[0.5, 0.7]
-    double invPwr = ((1 - compression) * 0.28);
-    m1 = std::pow(1 / m0, 1 / invPwr);
-  }
-  m0 *= (1 - kS);
-  m1 *= (1 - kS);
-  constexpr double kE = 1;
-  double t = (x - kS) / (kE - kS);
-  double p = ((2 * t - 3) * t * t + 1) * p0 + (((t - 2) * t + 1) * m0 + (-2 * t + 3) * t) * t * p1 + t * t * (t - 1) * m1;
-  return p;
-}
-// simplified form of the above function when knee=0.5 and m1=0
-double hlg2sdrFixed(double x) {
-  constexpr double kS = 0.5;
-  constexpr double p0 = kS;
-  constexpr double m0 = 1 * (1 - kS);
-  constexpr double p1 = 1;
-  constexpr double m1 = 0 * (1 - kS);
-  constexpr double kE = 1;
-  double t = (x - kS) / (kE - kS);
-  double p = ((2 * t - 3) * t * t + 1) * p0 + (((t - 2) * t + 1) * m0 + (-2 * t + 3) * t) * t * p1 + t * t * (t - 1) * m1;
-  return p;
-}
-double hlg2sdr(double x, double gain, double compression) {
   if (x > 0.5) {
-    // do mapping above 203 nits
-    if (gain == 0.0 || compression == 1.0) {
-      return hlg2sdrFixed(x);
-    }
-    return hlg2sdrVariable(x, gain, compression);
+    return 2.8188 * x * x - 2.7718 * x + 1.6812;
   }
   // hlg and sdr are itentical below 203 nits
-  return x;
+  return 1;
+}
+// derivative of the matching functions
+double matchHlg2SdrD(double x) {
+  if (x > 0.5) {
+    return 2 * 2.8188 * x - 2.7718;
+  }
+  return 0;
+}
+
+// since the above function will run out of sdr signal space, we need to moderate it so that it does not clip
+// this flattening is done by a hermite spline (just like in hdr tonemapping)
+// the start point is defined by kS, p0 and m0 and the end point by kE, p1 and m1.
+double hlg2sdr(double x, double gain, double compression) {
+  double kS = gain * 0.2 + 0.5;
+  if (x > kS) {
+    double p0 = kS * matchHlg2Sdr(kS);
+    double m0 = kS * matchHlg2SdrD(kS) + 1 * matchHlg2Sdr(kS);
+    constexpr double p1 = 1;
+    double m1 = 0;
+    if (compression < 1 && !(kS > 0.7)) {
+      //the maximal exponent was chosen such that the curve has a monotonus falling derivative, in the whole validity range of kS=[0.5, 0.7]
+      double invPwr = ((1 - compression) * 0.28);
+      m1 = std::pow(1 / m0, 1 / invPwr);
+    }
+    m0 *= (1 - kS);
+    m1 *= (1 - kS);
+    constexpr double kE = 1;
+    double t = (x - kS) / (kE - kS);
+    double p = ((2 * t - 3) * t * t + 1) * p0 + (((t - 2) * t + 1) * m0 + (-2 * t + 3) * t) * t * p1 + t * t * (t - 1) * m1;
+    return p;
+  }
+  return x * matchHlg2Sdr(x);
 }
 
 void showBestLutSizes() {
