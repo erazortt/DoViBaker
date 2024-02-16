@@ -123,6 +123,11 @@ The meaning of the arguments:
 
 Please be aware that the aruments are positional for this application, and must thus be given exactly in this order.
 
+## SDR Looks
+The default settings for `sdr_gain` and `sdr_compression` try to emulate a typical SDR look in what concerns dynamic range, which is a little more toned-down (aka flatter) than a typical HDR. For an even even more toned-down look decrease `sdr_compression`, or, inversly and if trying to retain as much HDR feeling as possible, increase `sdr_gain`.
+
+Since no color conversions are (currently?) implemented, any conversion to BT.709 is left to the user. A simple color clipping is shown below in the SDR example. This will retain a very HDR-like look with punchy colors, which works best when `sdr_compression` is not decreased. If colors are supposed to be toned-down, than a mapping must be used.
+
 ## Workflow for conversion to HLG
 Generate the LUT by the following command:
 ```
