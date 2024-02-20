@@ -413,9 +413,12 @@ int main(int argc, char* argv[])
   }
 
   if (showNitsTable) {
-    printf("2081 pq = %f\n", DoViProcessor::pq2nits(2081));
-    printf("2851 pq = %f\n", DoViProcessor::pq2nits(2851));
-    printf("3079 pq = %f\n", DoViProcessor::pq2nits(3079));
+    printf("100 nits = %i pq\n", DoViProcessor::nits2pq(100));
+    printf("600 nits = %i pq\n", DoViProcessor::nits2pq(600));
+    printf("1000 nits = %i pq\n", DoViProcessor::nits2pq(1000));
+    printf("2081 pq = %f nits\n", DoViProcessor::pq2nits(2081));
+    printf("2851 pq = %f nits\n", DoViProcessor::pq2nits(2851));
+    printf("3079 pq = %f nits\n", DoViProcessor::pq2nits(3079));
     for (int i = 0; i <= 120; i += 10) {
       printf("%i%%: %f\n", i, DoViProcessor::pq2nits(4095 * i * 0.01));
     }

@@ -57,23 +57,27 @@ double matchHlg2SdrD(double x) {
 // since the above function will run out of sdr signal space, we need to moderate it so that it does not clip
 // this flattening is done by a hermite spline (just like in hdr tonemapping)
 // the start point is defined by kS, p0 and m0 and the end point by kE, p1 and m1.
+// p(t)=p0*h00(t)+m0*h10(t)+p1*h01(t)+m1*h11(t)
+// with t(x)=(x-kS)/(kE-kS), h00(t)=(2*t-3)*t*t+1, h10(t)=(((t-2)*t+1)*t, h10=(-2*t+3)*t*t, h11(t)=t*t*(t-1)
+// d^2p(t)/dt^2=p_2(t)=p0*h00_2(t)+m0*h10_2(t)+p1*h01_2(t)+m1*h11_2(t)
+// with h00_2(t)=12*t-6, h10_2(t)=6*t-4, h01_2(t)=-12*t+6, h11_2(t)=6*t-2
 double hlg2sdr(double x, double gain, double compression) {
-  double kS = gain * 0.2 + 0.5;
+  double kS = gain * 0.21 + 0.5;
   if (x > kS) {
-    double p0 = kS * matchHlg2Sdr(kS);
+    const double p0 = kS * matchHlg2Sdr(kS);
     double m0 = kS * matchHlg2SdrD(kS) + 1 * matchHlg2Sdr(kS);
+    m0 *= (1 - kS); // must be scaled since we are not on the interval x=[0,1] but on the affine t=[0,1]
     constexpr double p1 = 1;
-    double m1 = 0;
-    if (compression < 1 && !(kS > 0.7)) {
-      //the maximal exponent was chosen such that the curve has a monotonus falling derivative, in the whole validity range of kS=[0.5, 0.7]
-      double invPwr = ((1 - compression) * 0.28);
-      m1 = std::pow(1 / m0, 1 / invPwr);
-    }
-    m0 *= (1 - kS);
-    m1 *= (1 - kS);
+
+    // calculate the maximal m1 such that the curvature of p(t) never becomes positive for any t, especially not for t=1
+    // p0*h00_2(1)+m0*h10_2(1)+p1*h01_2(1)+m1_max*h11_2(1)=0 <=> p0*h00_2(1)+m0*h10_2(1)+p1*h01_2(1)=-m1_max*h11_2(1) 
+    // => p0*6+m0*2-p1*6=-4*m1_max <=> m1_max=-(p0*6+m0*2-p1*6)/4
+    double m1max = -(p0*6+m0*2-p1*6)/4;
+    double m1 = (1-std::sqrt(1-compression)) * m1max;
+    
     constexpr double kE = 1;
     double t = (x - kS) / (kE - kS);
-    double p = ((2 * t - 3) * t * t + 1) * p0 + (((t - 2) * t + 1) * m0 + (-2 * t + 3) * t) * t * p1 + t * t * (t - 1) * m1;
+    double p = ((2*t-3)*t*t+1)*p0 + ((t-2)*t+1)*t*m0 + (-2*t+3)*t*t*p1 + (t-1)*t*t*m1;
     return p;
   }
   return x * matchHlg2Sdr(x);
@@ -132,7 +136,7 @@ int main(int argc, char* argv[])
   std::string mode = "HLG";
   bool sdr = false;
   double gain = 0.0;
-  double compression = 1.0;
+  double compression = 0.0;
   if (argc > 4) {
     sdr = std::atoi(argv[4]);
     if (sdr) {
@@ -162,8 +166,8 @@ int main(int argc, char* argv[])
   fsCube << "# re-normalized input: " << normalizedInput << std::endl;
   fsCube << "# mode: " << mode << std::endl;
   if (sdr) {
-    fsCube << "# gain: " << gain << std::endl;
-    fsCube << "# compression: " << compression << std::endl;
+    fsCube << "# midtone gain: " << gain << std::endl;
+    fsCube << "# highlight compression: " << compression << std::endl;
     printf("Producing a LUT for PQ -> SDR conversions of size %i\n", lutSize);
     fsCube << "# LUT for conversions from BT.2100 HDR PQ to BT.2020 SDR" << std::endl;
   }
