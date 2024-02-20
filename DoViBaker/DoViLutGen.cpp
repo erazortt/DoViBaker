@@ -62,7 +62,7 @@ double matchHlg2SdrD(double x) {
 // d^2p(t)/dt^2=p_2(t)=p0*h00_2(t)+m0*h10_2(t)+p1*h01_2(t)+m1*h11_2(t)
 // with h00_2(t)=12*t-6, h10_2(t)=6*t-4, h01_2(t)=-12*t+6, h11_2(t)=6*t-2
 double hlg2sdr(double x, double gain, double compression) {
-  double kS = gain * 0.21 + 0.5;
+  double kS = std::sqrt(gain) * 0.21 + 0.5;
   if (x > kS) {
     const double p0 = kS * matchHlg2Sdr(kS);
     double m0 = kS * matchHlg2SdrD(kS) + 1 * matchHlg2Sdr(kS);
