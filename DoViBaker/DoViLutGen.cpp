@@ -61,12 +61,12 @@ double matchHlg2SdrD(double x) {
 // with t(x)=(x-kS)/(kE-kS), h00(t)=(2*t-3)*t*t+1, h10(t)=(((t-2)*t+1)*t, h10=(-2*t+3)*t*t, h11(t)=t*t*(t-1)
 // d^2p(t)/dt^2=p_2(t)=p0*h00_2(t)+m0*h10_2(t)+p1*h01_2(t)+m1*h11_2(t)
 // with h00_2(t)=12*t-6, h10_2(t)=6*t-4, h01_2(t)=-12*t+6, h11_2(t)=6*t-2
-double hlg2sdr(double x, const double kS, double m1Factor) {
+double hlg2sdr(double x, double kS, double m1Factor) {
   if (x > kS) {
-    const double p0 = kS * matchHlg2Sdr(kS);
+    double p0 = kS * matchHlg2Sdr(kS);
     double m0 = kS * matchHlg2SdrD(kS) + 1 * matchHlg2Sdr(kS);
     m0 *= (1 - kS); // must be scaled since we are not on the interval x=[0,1] but on the affine t=[0,1]
-    constexpr double p1 = 1;
+    double p1 = 1;
 
     // calculate the maximal m1 such that the curvature of p(t) never becomes positive for any t, especially not for t=1
     // p0*h00_2(1)+m0*h10_2(1)+p1*h01_2(1)+m1_max*h11_2(1)=0 <=> p0*h00_2(1)+m0*h10_2(1)+p1*h01_2(1)=-m1_max*h11_2(1) 
@@ -74,7 +74,7 @@ double hlg2sdr(double x, const double kS, double m1Factor) {
     double m1max = -(p0*6+m0*2-p1*6)/4;
     double m1 = m1Factor * m1max;
     
-    constexpr double kE = 1;
+    double kE = 1;
     double t = (x - kS) / (kE - kS);
     double p = ((2*t-3)*t*t+1)*p0 + ((t-2)*t+1)*t*m0 + (-2*t+3)*t*t*p1 + (t-1)*t*t*m1;
     return p;
