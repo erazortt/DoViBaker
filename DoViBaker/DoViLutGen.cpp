@@ -61,8 +61,7 @@ double matchHlg2SdrD(double x) {
 // with t(x)=(x-kS)/(kE-kS), h00(t)=(2*t-3)*t*t+1, h10(t)=(((t-2)*t+1)*t, h10=(-2*t+3)*t*t, h11(t)=t*t*(t-1)
 // d^2p(t)/dt^2=p_2(t)=p0*h00_2(t)+m0*h10_2(t)+p1*h01_2(t)+m1*h11_2(t)
 // with h00_2(t)=12*t-6, h10_2(t)=6*t-4, h01_2(t)=-12*t+6, h11_2(t)=6*t-2
-double hlg2sdr(double x, double gain, double compression) {
-  double kS = std::sqrt(gain) * 0.21 + 0.5;
+double hlg2sdr(double x, const double kS, double m1Factor) {
   if (x > kS) {
     const double p0 = kS * matchHlg2Sdr(kS);
     double m0 = kS * matchHlg2SdrD(kS) + 1 * matchHlg2Sdr(kS);
@@ -73,7 +72,7 @@ double hlg2sdr(double x, double gain, double compression) {
     // p0*h00_2(1)+m0*h10_2(1)+p1*h01_2(1)+m1_max*h11_2(1)=0 <=> p0*h00_2(1)+m0*h10_2(1)+p1*h01_2(1)=-m1_max*h11_2(1) 
     // => p0*6+m0*2-p1*6=-4*m1_max <=> m1_max=-(p0*6+m0*2-p1*6)/4
     double m1max = -(p0*6+m0*2-p1*6)/4;
-    double m1 = (1-std::sqrt(1-compression)) * m1max;
+    double m1 = m1Factor * m1max;
     
     constexpr double kE = 1;
     double t = (x - kS) / (kE - kS);
@@ -135,20 +134,30 @@ int main(int argc, char* argv[])
 
   std::string mode = "HLG";
   bool sdr = false;
-  double gain = 0.0;
-  double compression = 0.0;
+  double sdrGain = 0.0;
+  double sdrCompression = 0.0;
   if (argc > 4) {
     sdr = std::atoi(argv[4]);
     if (sdr) {
       mode = "SDR";
     }
     if (argc > 5) {
-      gain = std::atof(argv[5]);
+      sdrGain = std::atof(argv[5]);
+      if (sdrGain < 0) {
+        printf("gain cannot be negative");
+        return 2;
+      }
       if (argc > 6) {
-        compression = std::atof(argv[6]);
+        sdrCompression = std::atof(argv[6]);
+        if (sdrCompression > 1) {
+          printf("compression cannot be above 1");
+          return 2;
+        }
       }
     }
   }
+  double sdrKneeStart = std::sqrt(sdrGain) * 0.21 + 0.5;
+  double sdrKneeEndTangentFactor = (1 - std::sqrt(1 - sdrCompression));
 
   if (!normalizedInput) {
     if (lutSize <= 69 && (lutSize % 4) != 1) {
@@ -166,8 +175,8 @@ int main(int argc, char* argv[])
   fsCube << "# re-normalized input: " << normalizedInput << std::endl;
   fsCube << "# mode: " << mode << std::endl;
   if (sdr) {
-    fsCube << "# midtone gain: " << gain << std::endl;
-    fsCube << "# highlight compression: " << compression << std::endl;
+    fsCube << "# midtone gain: " << sdrGain << " (kS=" << sdrKneeStart << ")" << std::endl;
+    fsCube << "# highlight compression: " << sdrCompression << " (m1Factor=" << sdrKneeEndTangentFactor << ")" << std::endl;
     printf("Producing a LUT for PQ -> SDR conversions of size %i\n", lutSize);
     fsCube << "# LUT for conversions from BT.2100 HDR PQ to BT.2020 SDR" << std::endl;
   }
@@ -212,9 +221,9 @@ int main(int argc, char* argv[])
         double rg = OETFhlg(rs);
 
         if (sdr) {
-          bg = hlg2sdr(bg, gain, compression);
-          gg = hlg2sdr(gg, gain, compression);
-          rg = hlg2sdr(rg, gain, compression);
+          bg = hlg2sdr(bg, sdrKneeStart, sdrKneeEndTangentFactor);
+          gg = hlg2sdr(gg, sdrKneeStart, sdrKneeEndTangentFactor);
+          rg = hlg2sdr(rg, sdrKneeStart, sdrKneeEndTangentFactor);
         }
 
         bg = (bg > 1) ? 1 : bg;
