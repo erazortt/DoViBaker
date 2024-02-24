@@ -1,13 +1,6 @@
 #include "DoViTonemap.h"
 #include "DoViProcessor.h"
 
-// explicitly instantiate the template for the linker
-// 8 bit inputs are not supported and don't make much sense anyhow
-template class DoViTonemap<10>;
-template class DoViTonemap<12>;
-template class DoViTonemap<14>;
-template class DoViTonemap<16>;
-
 template<int signalBitDepth>
 DoViTonemap<signalBitDepth>::DoViTonemap(
 	PClip child,
@@ -47,6 +40,13 @@ DoViTonemap<signalBitDepth>::DoViTonemap(
 		lumScale,
 		limitedInput);
 }
+
+// explicitly instantiate the template for the linker
+// 8 bit inputs are not supported and don't make much sense anyhow
+template class DoViTonemap<10>;
+template class DoViTonemap<12>;
+template class DoViTonemap<14>;
+template class DoViTonemap<16>;
 
 template<int signalBitDepth>
 DoViTonemap<signalBitDepth>::~DoViTonemap() 
