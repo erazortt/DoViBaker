@@ -1,4 +1,4 @@
-While DoViBaker is the name of the main component, the package actually includes a suite of different tools:
+While `DoViBaker` is the name of the main component, the package actually includes a suite of different tools:
 - [DoViBaker](#dovibaker): Bake a DolbyVision stream to a PQ stream 
 - [DoViTonemap](#dovitonemap): static or dynamic tonemapping of a PQ stream
 - [DoViCubes](#dovicubes): applies different LUTs based on maxCll
