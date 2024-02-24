@@ -6,9 +6,9 @@
 //#define DOVI_LUTGEN
 //#define AVS_CUBE
 
-#ifdef DOVI_BAKER
-#define DOVI_ANALYZER
-#endif
+//#ifdef DOVI_BAKER
+//#define DOVI_ANALYZER
+//#endif
 
 #ifdef DOVI_ANALYZER
 #define DOVI_BAKER
