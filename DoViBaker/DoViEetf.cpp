@@ -2,17 +2,17 @@
 #include "DoViProcessor.h"
 #include <algorithm>
 
+template<int signalBitDepth>
+DoViEetf<signalBitDepth>::DoViEetf(float kneeOffset_, bool normalizeOutput_)
+	: kneeOffset(kneeOffset_),
+		normalizeOutput(normalizeOutput_) {}
+
 // explicitly instantiate the template for the linker
 template class DoViEetf<8>;
 template class DoViEetf<10>;
 template class DoViEetf<12>;
 template class DoViEetf<14>;
 template class DoViEetf<16>;
-
-template<int signalBitDepth>
-DoViEetf<signalBitDepth>::DoViEetf(float kneeOffset_, bool normalizeOutput_)
-	: kneeOffset(kneeOffset_),
-		normalizeOutput(normalizeOutput_) {}
 
 template<int signalBitDepth>
 void DoViEetf<signalBitDepth>::generateEETF(
@@ -107,3 +107,9 @@ void DoViEetf<signalBitDepth>::generateEETF(
 		lut[inSignal] = outWhite;
 	}
 }
+
+template void DoViEetf<8>::generateEETF(uint16_t targetMaxPq, uint16_t targetMinPq, uint16_t masterMaxPq, uint16_t masterMinPq, float lumScale, bool limitedInput);
+template void DoViEetf<10>::generateEETF(uint16_t targetMaxPq, uint16_t targetMinPq, uint16_t masterMaxPq, uint16_t masterMinPq, float lumScale, bool limitedInput);
+template void DoViEetf<12>::generateEETF(uint16_t targetMaxPq, uint16_t targetMinPq, uint16_t masterMaxPq, uint16_t masterMinPq, float lumScale, bool limitedInput);
+template void DoViEetf<14>::generateEETF(uint16_t targetMaxPq, uint16_t targetMinPq, uint16_t masterMaxPq, uint16_t masterMinPq, float lumScale, bool limitedInput);
+template void DoViEetf<16>::generateEETF(uint16_t targetMaxPq, uint16_t targetMinPq, uint16_t masterMaxPq, uint16_t masterMinPq, float lumScale, bool limitedInput);
