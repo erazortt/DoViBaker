@@ -1,5 +1,5 @@
 #pragma once
-#include <algorithm>
+#include <cstdint>
 
 template<int signalBitDepth>
 class DoViEetf

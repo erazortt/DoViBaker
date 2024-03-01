@@ -1,5 +1,6 @@
 #include "DoViEetf.h"
 #include "DoViProcessor.h"
+#include <algorithm>
 
 // explicitly instantiate the template for the linker
 template class DoViEetf<8>;
