@@ -5,31 +5,31 @@
 
 function narrow_rgb_to_xyz(clip rgb){
     #values from my excel sheet
-    x=mt_lutxyz(rgb.ExtractR(),rgb.ExtractG(),rgb.ExtractB(),expr=mt_polish("0.412410846*x+0.357584568*y+0.180453804*z"),Y=3,U=0,V=0,use_expr=2)
-    y=mt_lutxyz(rgb.ExtractR(),rgb.ExtractG(),rgb.ExtractB(),expr=mt_polish("0.212649343*x+0.715169136*y+0.072181522*z"),Y=3,U=0,V=0,use_expr=2)
-    z=mt_lutxyz(rgb.ExtractR(),rgb.ExtractG(),rgb.ExtractB(),expr=mt_polish("0.019331758*x+0.119194856*y+0.950390034*z"),Y=3,U=0,V=0,use_expr=2)
+    x=mt_lutxyz(rgb.ExtractR(),rgb.ExtractG(),rgb.ExtractB(),expr=mt_polish("0.412390799*x+0.357584339*y+0.180480788*z"),Y=3,U=0,V=0,use_expr=2)
+    y=mt_lutxyz(rgb.ExtractR(),rgb.ExtractG(),rgb.ExtractB(),expr=mt_polish("0.212639006*x+0.715168679*y+0.072192315*z"),Y=3,U=0,V=0,use_expr=2)
+    z=mt_lutxyz(rgb.ExtractR(),rgb.ExtractG(),rgb.ExtractB(),expr=mt_polish("0.019330819*x+0.119194780*y+0.950532152*z"),Y=3,U=0,V=0,use_expr=2)
     MergeRGB(x,y,z)
 }
 function xyz_to_narrow_rgb(clip xyz){
     #values from my excel sheet
-    r=mt_lutxyz(xyz.ExtractR(),xyz.ExtractG(),xyz.ExtractB(),expr=mt_polish("3.240812399*x-1.537308446*y-0.498586523*z"),Y=3,U=0,V=0,use_expr=2)
-    g=mt_lutxyz(xyz.ExtractR(),xyz.ExtractG(),xyz.ExtractB(),expr=mt_polish("-0.969243017*x+1.875966303*y+0.041555031*z"),Y=3,U=0,V=0,use_expr=2)
-    b=mt_lutxyz(xyz.ExtractR(),xyz.ExtractG(),xyz.ExtractB(),expr=mt_polish("0.055638398*x-0.204007461*y+1.05712957*z"),Y=3,U=0,V=0,use_expr=2)
+    r=mt_lutxyz(xyz.ExtractR(),xyz.ExtractG(),xyz.ExtractB(),expr=mt_polish( "3.240969942*x-1.537383178*y-0.498610760*z"),Y=3,U=0,V=0,use_expr=2)
+    g=mt_lutxyz(xyz.ExtractR(),xyz.ExtractG(),xyz.ExtractB(),expr=mt_polish("-0.969243636*x+1.875967502*y+0.041555057*z"),Y=3,U=0,V=0,use_expr=2)
+    b=mt_lutxyz(xyz.ExtractR(),xyz.ExtractG(),xyz.ExtractB(),expr=mt_polish( "0.055630080*x-0.203976959*y+1.056971514*z"),Y=3,U=0,V=0,use_expr=2)
     MergeRGB(r,g,b)
 }
 
 function wide_rgb_to_xyz(clip rgb){
     #values from my excel sheet
-    x=mt_lutxyz(rgb.ExtractR(),rgb.ExtractG(),rgb.ExtractB(),expr=mt_polish("0.636103731*x+0.145005373*y+0.169340114*z"),Y=3,U=0,V=0,use_expr=2)
-    y=mt_lutxyz(rgb.ExtractR(),rgb.ExtractG(),rgb.ExtractB(),expr=mt_polish("0.262402691*x+0.678462002*y+0.059135307*z"),Y=3,U=0,V=0,use_expr=2)
-    z=mt_lutxyz(rgb.ExtractR(),rgb.ExtractG(),rgb.ExtractB(),expr=mt_polish("0.000049510*x+0.028316941*y+1.060550197*z"),Y=3,U=0,V=0,use_expr=2)
+    x=mt_lutxyz(rgb.ExtractR(),rgb.ExtractG(),rgb.ExtractB(),expr=mt_polish("0.636958048*x+0.144616904*y+0.168880975*z"),Y=3,U=0,V=0,use_expr=2)
+    y=mt_lutxyz(rgb.ExtractR(),rgb.ExtractG(),rgb.ExtractB(),expr=mt_polish("0.262700212*x+0.677998072*y+0.059301716*z"),Y=3,U=0,V=0,use_expr=2)
+    z=mt_lutxyz(rgb.ExtractR(),rgb.ExtractG(),rgb.ExtractB(),expr=mt_polish("0.000000000*x+0.028072693*y+1.060985058*z"),Y=3,U=0,V=0,use_expr=2)
     MergeRGB(x,y,z)
 }
 function xyz_to_wide_rgb(clip xyz){
     #values from my excel sheet
-    r=mt_lutxyz(xyz.ExtractR(),xyz.ExtractG(),xyz.ExtractB(),expr=mt_polish("1.719288549*x-0.356830388*y-0.254625614*z"),Y=3,U=0,V=0,use_expr=2)
-    g=mt_lutxyz(xyz.ExtractR(),xyz.ExtractG(),xyz.ExtractB(),expr=mt_polish("-0.66649797*x+1.615688601*y+0.016331712*z"),Y=3,U=0,V=0,use_expr=2)
-    b=mt_lutxyz(xyz.ExtractR(),xyz.ExtractG(),xyz.ExtractB(),expr=mt_polish("0.017715392*x-0.04312261*y+0.942482633*z"),Y=3,U=0,V=0,use_expr=2)
+    r=mt_lutxyz(xyz.ExtractR(),xyz.ExtractG(),xyz.ExtractB(),expr=mt_polish( "1.716651188*x-0.355670784*y-0.253366281*z"),Y=3,U=0,V=0,use_expr=2)
+    g=mt_lutxyz(xyz.ExtractR(),xyz.ExtractG(),xyz.ExtractB(),expr=mt_polish("-0.666684352*x+1.616481237*y+0.015768546*z"),Y=3,U=0,V=0,use_expr=2)
+    b=mt_lutxyz(xyz.ExtractR(),xyz.ExtractG(),xyz.ExtractB(),expr=mt_polish( "0.017639857*x-0.042770613*y+0.942103121*z"),Y=3,U=0,V=0,use_expr=2)
     MergeRGB(r,g,b)
 }
 
