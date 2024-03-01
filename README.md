@@ -145,9 +145,7 @@ DoViTonemap(targetMaxNits=1000, targetMinNits=0)
 ```
 
 # DoViLutGen.exe
-This application generates LUTs for conversions from BT.2100 PQ to BT.2100 HLG or to BT.2020 SDR. The PQ to HLG conversion is based on BT.2408-7 in conjunction with BT.2100-2. The LUTs will only process input values up to 1000 nits and will clip anything above that. If the PQ source has brightness levels above that, use [DoViTonemap](#dovitonemap) to tonemap the PQ stream to 1000 nits.
-
-The generated SDR LUTs provide no colorspace conversion, and create a BT.2020 output. For conversions to BT.709 an additional color conversion is necessary. This can be done using http://avisynth.nl/index.php/Avsresize. 
+This application generates LUTs for conversions from BT.2100 PQ to either: BT.2100 HLG or BT.2020 SDR or BT.709 SDR. The PQ to HLG conversion is based on BT.2408-7 in conjunction with BT.2100-2. The LUTs will only process input values up to 1000 nits and will clip anything above that. If the PQ source has brightness levels above that, use [DoViTonemap](#dovitonemap) to tonemap the PQ stream to 1000 nits.
 
 ```
 usage: DoViLutGen.exe <output_file> <lut_size> (<normalized_input>) (<sdr>) (<sdr_gain>) (<sdr_compression>)
@@ -157,7 +155,7 @@ The meaning of the arguments:
 - `output file` the name of the to-be-generated LUT file
 - `lut size` generally a bigger LUT, is a better LUT. A good size is `65`.
 - `normalized input` if this optional argument is set to `1`, the generated LUT will expect that the input PQ was re-normalized to 1000 nits max brightness. LUTs for re-normalized inputs can be of smaller size than normal LUTs while still providing better quality. A good size for such a LUT is `50`. When not given, this will default to `0`.
-- `sdr` if this optional argument is set to `1`, the generatewd LUT will convert to BT.2020 SDR. Default is `0`, with the generated LUT converting to BT.2100 HLG.
+- `sdr` if this optional argument is set to `1`, the generated LUT will convert to BT.2020 SDR, and if set to `2` it will convert to BT.709 SDR. Default is `0`, with the generated LUT converting to BT.2100 HLG.
 - `sdr_gain` this optional argument adjusts the SDR mapping function, by setting the amount of gain of bright midtones. Value range is [0.0, 1.0], default is `0.0`.
 - `sdr_compression` this optional argument adjusts the SDR mapping function, by setting the amount of compression of very bright highlights. Value range is [0.0, 1.0], default is `0.0`.
 
@@ -165,8 +163,6 @@ Please be aware that the aruments are positional for this application, and must 
 
 ## SDR Looks
 The default settings for `sdr_gain` and `sdr_compression` try to emulate a typical SDR look in what concerns dynamic range. This is usually more toned-down (aka flatter) than a typical HDR. For an even even more toned-down look increase `sdr_compression`, or, inversly and if trying to retain as much HDR feeling as possible, increase `sdr_gain`. Tweaking of these two settings will need to be done for each stream individually, while the defaults should be a good starting point in all instances.
-
-Since no color conversions are implemented, any conversion to BT.709 is left to the user. A simple color clipping is shown below in the SDR example. This will retain a very HDR-like look with punchy colors, which works best when `sdr_compression` is left at the default. If colors are supposed to be toned-down, than a mapping must be used.
 
 ## Workflow for conversion to HLG
 Generate the LUT by the following command:
@@ -183,18 +179,18 @@ z_ConvertFormat(pixel_type="YUV420P10",colorspace_op="rgb:std-b67:2020:full=>202
 ```
 Please be aware that in the example the parameter `lumaScale` was not given to `DoViTonemap`, which means that a brightness factor of `1.0` was used. You might want to have this increased if the source is too dark. And if you have the equivalent SDR source at hand, you can extract the factor using [LumScaleHelper.avs](#lumscalehelperavs).
 
-## Workflow for conversion to SDR
+## Workflow for conversion to BT.709 SDR
 Generate the LUT by the following command:
 ```
-DoViLutGen.exe pq2sdr_normalizedInput.cube 50 1 1
+DoViLutGen.exe pq2sdr709_normalizedInput.cube 50 1 2
 ```
 
 Create the following avisyth script:
 ```
 DoViBaker(bl,el)
 DoViTonemap(targetMaxNits=1000, targetMinNits=0, normalizeOutput=true)
-AVSCube("pq2sdr_normalizedInput.cube")
-z_ConvertFormat(pixel_type="YUV420P8",colorspace_op="rgb:709:2020:full=>709:709:709:limited",chromaloc_op="center=>left")
+AVSCube("pq2sdr709_normalizedInput.cube")
+z_ConvertFormat(pixel_type="YUV420P8",colorspace_op="rgb:709:709:full=>709:709:709:limited",chromaloc_op="center=>left")
 ```
 Just like in the HLG example above, the parameter `lumaScale` was not given to `DoViTonemap`, which means that a brightness factor of `1.0` was used. This will very rarely be the right choice. In contrast to HLG conversions, this setting is somewhat more relevant here. More often than not it will need to be above `2.0` or even higher.
 
