@@ -43,10 +43,20 @@ DoViBaker<quarterResolutionEl>::DoViBaker(
 	doviProc->setTrim(_desiredTrimPq, _targetMinLum, _targetMaxLum);
 
 	if (!doviProc->isIntegratedRpu() && vi.num_frames != doviProc->getClipLength()) {
-		env->ThrowError("DoViBaker: Clip length does not match length indicated by RPU file");
+		auto message = std::string("DoViBaker: Clip length does not match length indicated by RPU file (");
+		message += std::to_string(vi.num_frames);
+		message += " != ";
+		message += std::to_string(doviProc->getClipLength());
+		message += ")";
+		env->ThrowError(message.c_str());
 	}
 	if (elChild && vi.num_frames != elChild->GetVideoInfo().num_frames) {
-		env->ThrowError("DoViBaker: Length of BL clip does not match length of EL clip");
+		auto message = std::string("DoViBaker: Length of BL clip does not match length of EL clip (");
+		message += std::to_string(vi.num_frames);
+		message += " != ";
+		message += std::to_string(elChild->GetVideoInfo().num_frames);
+		message += ")";
+		env->ThrowError(message.c_str());
 	}
 
 	// set the output pixel type
