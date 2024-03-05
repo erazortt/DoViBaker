@@ -10,17 +10,17 @@ double EOTFpq(double ep)
   static constexpr double c2 = 2413.0 / 4096 * 32;
   static constexpr double c1 = c3 - c2 + 1;
 
-  const double epower = pow(ep, 1 / m2);
+  const double epower = std::pow(ep, 1 / m2);
   const double num = std::max(epower - c1, 0.0);
   const double denom = c2 - c3 * epower;
-  return pow(num / denom, 1 / m1);
+  return std::pow(num / denom, 1 / m1);
 }
 
 double OOTFhlgInv(double fd, double yd)
 {
   if (yd > 0) {
     static constexpr double power = (1 - 1.2) / 1.2;
-    return fd * pow(yd, power);
+    return fd * std::pow(yd, power);
   }
   return 0;
 }
@@ -90,7 +90,7 @@ double hlg2sdr(double x, double kS, double m1Factor) {
     double p1 = 1;
 
     // calculate the maximal m1 such that the curvature of p(t) never becomes positive for any t, especially not for t=1
-    // p0*h00_2(1)+m0*h10_2(1)+p1*h01_2(1)+m1_max*h11_2(1)=0 <=> p0*h00_2(1)+m0*h10_2(1)+p1*h01_2(1)=-m1_max*h11_2(1) 
+    // p_2(t)=0 <=> p0*h00_2(1)+m0*h10_2(1)+p1*h01_2(1)+m1_max*h11_2(1)=0 <=> p0*h00_2(1)+m0*h10_2(1)+p1*h01_2(1)=-m1_max*h11_2(1) 
     // => p0*6+m0*2-p1*6=-4*m1_max <=> m1_max=-(p0*6+m0*2-p1*6)/4
     double m1max = -(p0*6+m0*2-p1*6)/4;
     double m1 = m1Factor * m1max;
@@ -101,10 +101,6 @@ double hlg2sdr(double x, double kS, double m1Factor) {
     return p;
   }
   return x * matchHlg2Sdr(x);
-}
-
-bool outOfRange(double r, double g, double b) {
-  return b < 0 || b > 1 || g < 0 || g > 1 || r < 0 || r > 1;
 }
 
 void xyzFromRgb2020(double& x, double& y, double& z, double rl, double gl, double bl) {
@@ -141,9 +137,9 @@ void XYZfromLms(double& x, double& y, double& z, double l, double m, double s) {
 }
 
 void labFromLms(double& L, double& a, double& b, double l, double m, double s) {
-  l = std::pow(l, 0.33333333);
-  m = std::pow(m, 0.33333333);
-  s = std::pow(s, 0.33333333);
+  l = std::pow(l, 0.3333333333);
+  m = std::pow(m, 0.3333333333);
+  s = std::pow(s, 0.3333333333);
   L = 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s;
   a = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s;
   b = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s;
@@ -192,41 +188,93 @@ void convert2020To709(double& rl, double& gl, double& bl) {
   rgb709FromXYZ(rl, gl, bl, x, y, z);
 }
 
-void clip2020Chroma(double& rl, double& gl, double& bl) {
-  double L, a, b;
-  labFromRgb2020(L, a, b, rl, gl, bl);
-  double f=0.5;
-  for (int d = 4; d < 16385; d *= 2) {
-    rgb2020fromLab(rl, gl, bl, L, a*f, b*f);
-    if (outOfRange(rl, gl, bl)) {
-      f -= 1.0 / d;
-    }
-    else {
-      f += 1.0 / d;
-    }
-  }
-}
-
-void clip709Chroma(double& rl, double& gl, double& bl) {
-  double L, a, b;
-  labFromRgb709(L, a, b, rl, gl, bl);
-  double f = 0.5;
-  for (int d = 4; d < 8193; d *= 2) {
-    rgb709fromLab(rl, gl, bl, L, a * f, b * f);
-    if (outOfRange(rl, gl, bl)) {
-      f -= 1.0 / d;
-    }
-    else {
-      f += 1.0 / d;
-    }
-  }
-}
-
+// slightly decreases the chroma such that the shrunken BT.2020 gamut tangentialy hits the BT.709 gamut
+// this first happens along the blue edge of BT.709 (0,0,b)
 void reduceChroma(double& rl, double& gl, double& bl) {
   double L, a, b;
   labFromRgb2020(L, a, b, rl, gl, bl);
   double f = 0.9418;
   rgb2020fromLab(rl, gl, bl, L, a * f, b * f);
+}
+
+typedef void (*rgbFromLab)(double& rl, double& gl, double& bl, double L, double a, double b);
+typedef void (*labFromRgb)(double& L, double& a, double& b, double rl, double gl, double bl);
+
+bool outOfRange(double r, double g, double b) {
+  return b > 1. || g > 1. || r > 1.;
+}
+
+void findInRangeLab(double& Li, double& Ai, double& Bi, double ri, double gi, double bi, double sensL, double sensA, double sensB, rgbFromLab rgbFromLabFunc) {
+  double f = 1;
+  for (int d = 2; d < (1 << 29) + 1; d *= 2) {
+    if (outOfRange(ri, gi, bi)) {
+      f -= 1.0 / d;
+    }
+    else {
+      f += 1.0 / d;
+    }
+    double facL = 1 - sensL * (1 - f);
+    double facA = 1 - sensA * (1 - f);
+    double facB = 1 - sensB * (1 - f);
+    rgbFromLabFunc(ri, gi, bi, Li * facL, Ai * facA, Bi * facB);
+  }
+
+  double facL = 1 - sensL * (1 - f);
+  double facA = 1 - sensA * (1 - f);
+  double facB = 1 - sensB * (1 - f);
+  Li *= facL;
+  Ai *= facA;
+  Bi *= facB;
+}
+
+void clipToPoint(double& ri, double& gi, double& bi, rgbFromLab rgbFromLabFunc, labFromRgb labFromRgbFunc) {
+  // changes the chroma of an out-of-range color such that it becomes in-range, while leaving lightness and hue constant.
+  // unfortunately this does not produce good results, the approch varying also lightness the way to go. See function below.
+
+  double Li, Ai, Bi;
+  labFromRgbFunc(Li, Ai, Bi, ri, gi, bi);
+
+  double Lo = Li;
+  double Ao = Ai;
+  double Bo = Bi;
+  findInRangeLab(Lo, Ao, Bo, ri, gi, bi, 0, 1, 1, rgbFromLabFunc);
+
+  rgbFromLabFunc(ri, gi, bi, Lo, Ao, Bo);
+}
+
+void clipToTangentLine(double& ri, double& gi, double& bi, rgbFromLab rgbFromLabFunc, labFromRgb labFromRgbFunc) {
+  // finds the most similar looking in-gamut color for an out-of-range color, while leaving hue constant.
+
+  double Li, Ai, Bi;
+  labFromRgbFunc(Li, Ai, Bi, ri, gi, bi);
+
+  //first in-range point on the surface of the target gamut
+  double L1 = Li;
+  double A1 = Ai;
+  double B1 = Bi;
+  findInRangeLab(L1, A1, B1, ri, gi, bi, 0, 1, 1, rgbFromLabFunc);
+
+  //second in-range point on the surface of the target gamut
+  double L2 = Li;
+  double A2 = Ai;
+  double B2 = Bi;
+  findInRangeLab(L2, A2, B2, ri, gi, bi, 1, 1, 1, rgbFromLabFunc);
+
+  //calculate normal vector from given out-of-range point to the line connecting the two in-range points
+  //the intersection point of that line to the normal is the nearest in-range point
+  double r = (A1 * A1 + A2 * Ai - A1 * (A2 + Ai) + (B1 - B2) * (B1 - Bi) + (L1 - L2) * (L1 - Li)) / ((A1 - A2) * (A1 - A2) + (B1 - B2) * (B1 - B2) + (L1 - L2) * (L1 - L2));
+  double Lo = L1 + (L2 - L1) * r;
+  double Ao = A1 + (A2 - A1) * r;
+  double Bo = B1 + (B2 - B1) * r;
+
+  rgbFromLabFunc(ri, gi, bi, Lo, Ao, Bo);
+}
+
+void softClip709(double& rl, double& gl, double& bl) {
+  clipToTangentLine(rl, gl, bl, rgb709fromLab, labFromRgb709);
+}
+void softClip2020(double& rl, double& gl, double& bl) {
+  clipToTangentLine(rl, gl, bl, rgb2020fromLab, labFromRgb2020);
 }
 
 void showBestLutSizes() {
@@ -245,6 +293,15 @@ void warnAboutLutSize() {
   printf("WARNING:\n");
   showBestLutSizes();
   printf("\n");
+}
+
+void selfTest() {
+  {
+    double r = 1.25;
+    double g = 0;
+    double b = 0;
+    softClip2020(r, g, b);
+  }
 }
 
 #ifdef DOVI_LUTGEN
@@ -374,16 +431,21 @@ int main(int argc, char* argv[])
         double bs = OOTFhlgInv(bd, yd);
 
         /*if (outOfRange(rs, gs, bs)) {
-          clip2020Chroma(rs, gs, bs);
+          softClip2020(rs, gs, bs);
+          softClip2020(rs, gs, bs);
         }*/
+
+        if (rs < 0)rs = 0;
+        if (gs < 0)gs = 0;
+        if (bs < 0)bs = 0;
 
         double rg = OETFhlg(rs);
         double gg = OETFhlg(gs);
         double bg = OETFhlg(bs);
 
-        bg = std::clamp(bg, 0.0, 1.0);
-        gg = std::clamp(gg, 0.0, 1.0);
-        rg = std::clamp(rg, 0.0, 1.0);
+        if (rg > 1)rg = 1;
+        if (gg > 1)gg = 1;
+        if (bg > 1)bg = 1;
 
         if (sdr) {
           rg = hlg2sdr(rg, sdrKneeStart, sdrKneeEndTangentFactor);
@@ -394,19 +456,29 @@ int main(int argc, char* argv[])
             double rl = EOTFsdr(rg);
             double gl = EOTFsdr(gg);
             double bl = EOTFsdr(bg);
-            reduceChroma(rl, gl, bl);
+            //reduceChroma(rl, gl, bl);
             convert2020To709(rl, gl, bl);
+
+            if (rl < 0)rl = 0;
+            if (gl < 0)gl = 0;
+            if (bl < 0)bl = 0;
+
             /*if (outOfRange(rl, gl, bl)) {
-              clip709Chroma(rl, gl, bl);
+              softClip709(rl, gl, bl);
+              softClip709(rl, gl, bl);
+              if (rl < 0)rl = 0;
+              if (gl < 0)gl = 0;
+              if (bl < 0)bl = 0;
             }*/
+
             rg = OETFsdr(rl);
             gg = OETFsdr(gl);
             bg = OETFsdr(bl);
           }
 
-          bg = std::clamp(bg, 0.0, 1.0);
-          gg = std::clamp(gg, 0.0, 1.0);
-          rg = std::clamp(rg, 0.0, 1.0);
+          if (rg > 1)rg = 1;
+          if (gg > 1)gg = 1;
+          if (bg > 1)bg = 1;
         }
 
         fsCube << rg << " " << gg << " " << bg << std::endl;
