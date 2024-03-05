@@ -103,7 +103,7 @@ double hlg2sdr(double x, double kS, double m1Factor) {
   return x * matchHlg2Sdr(x);
 }
 
-void xyzFromRgb2020(double& x, double& y, double& z, double rl, double gl, double bl) {
+void XYZfromRgb2020(double& x, double& y, double& z, double rl, double gl, double bl) {
   x = 0.636958048 * rl + 0.144616904 * gl + 0.168880975 * bl;
   y = 0.262700212 * rl + 0.677998072 * gl + 0.059301716 * bl;
   z = 0.000000000 * rl + 0.028072693 * gl + 1.060985058 * bl;
@@ -114,7 +114,7 @@ void rgb2020FromXYZ(double& rl, double& gl, double& bl, double x, double y, doub
   bl = 0.017639857 * x - 0.042770613 * y + 0.942103121 * z;
 }
 
-void xyzFromRgb709(double& x, double& y, double& z, double rl, double gl, double bl) {
+void XYZfromRgb709(double& x, double& y, double& z, double rl, double gl, double bl) {
   x = 0.412390799 * rl + 0.357584339 * gl + 0.180480788 * bl;
   y = 0.212639006 * rl + 0.715168679 * gl + 0.072192315 * bl;
   z = 0.019330819 * rl + 0.119194780 * gl + 0.950532152 * bl;
@@ -155,14 +155,14 @@ void lmsFromLab(double& l, double& m, double& s, double L, double a, double b) {
 
 void labFromRgb2020(double& L, double& a, double& b, double rl, double gl, double bl) {
   double x, y, z;
-  xyzFromRgb2020(x, y, z, rl, gl, bl);
+  XYZfromRgb2020(x, y, z, rl, gl, bl);
   double l, m, s;
   lmsFromXYZ(l, m, s, x, y, z);
   labFromLms(L, a, b, l, m, s);
 }
 void labFromRgb709(double& L, double& a, double& b, double rl, double gl, double bl) {
   double x, y, z;
-  xyzFromRgb709(x, y, z, rl, gl, bl);
+  XYZfromRgb709(x, y, z, rl, gl, bl);
   double l, m, s;
   lmsFromXYZ(l, m, s, x, y, z);
   labFromLms(L, a, b, l, m, s);
@@ -184,7 +184,7 @@ void rgb709fromLab(double& rl, double& gl, double& bl, double L, double a, doubl
 
 void convert2020To709(double& rl, double& gl, double& bl) {
   double x, y, z;
-  xyzFromRgb2020(x, y, z, rl, gl, bl);
+  XYZfromRgb2020(x, y, z, rl, gl, bl);
   rgb709FromXYZ(rl, gl, bl, x, y, z);
 }
 
