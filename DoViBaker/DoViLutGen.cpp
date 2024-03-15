@@ -1,6 +1,8 @@
 #include "def.h"
 #include <fstream>
 #include <algorithm>
+#include <vector>
+#include <format>
 
 double EOTFpq(double ep)
 {
@@ -57,6 +59,27 @@ double EOTFsdr(double g) {
   return std::pow((g + (a - 1))/a, 1.0/0.45);
 }
 
+static constexpr double unitHermiteSpline(double t, double y0, double m0, double y1, double m1) {
+  // implementation of the hermite spline on the unit interval:
+  // p(t)=p0*h00(t)+m0*h10(t)+p1*h01(t)+m1*h11(t)
+  // with t(x)=(x-x0)/(x1-x0), h00(t)=(2*t-3)*t*t+1, h10(t)=(((t-2)*t+1)*t, h10=(-2*t+3)*t*t, h11(t)=t*t*(t-1)
+  // variables used are also known as: x0=kS, x1=kE, y0=p0, y1=p1
+  // d^2p(t)/dt^2=p_2(t)=p0*h00_2(t)+m0*h10_2(t)+p1*h01_2(t)+m1*h11_2(t)
+  // with h00_2(t)=12*t-6, h10_2(t)=6*t-4, h01_2(t)=-12*t+6, h11_2(t)=6*t-2
+  double p = ((2 * t - 3) * t * t + 1) * y0 + ((t - 2) * t + 1) * t * m0 + (-2 * t + 3) * t * t * y1 + (t - 1) * t * t * m1;
+  return p;
+}
+
+static constexpr double hermiteSpline(double x, double x0, double y0, double m0, double x1, double y1, double m1) {
+  // spline scaled from the unit interval to [x0,x1]
+  if (x < x0) return y0;
+  if (x > x1) return y1;
+  m0 *= (x1 - x0);
+  m1 *= (x1 - x0);
+  double t = (x - x0) / (x1 - x0);
+  double p = unitHermiteSpline(t, y0, m0, y1, m1);
+  return p;
+}
 
 // this function maps the hlg signal above 203 nits to the sdr signal range until it runs out of sdr signal range at 267.6nits hlg
 // thus when the sdr is viewed it appears idential to the hlg as long as the hlg stays below these 267.6 nits
@@ -75,13 +98,9 @@ double matchHlg2SdrD(double x) {
   return 0;
 }
 
-// since the above function will run out of sdr signal space, we need to moderate it so that it does not clip
+// since the function above will run out of sdr signal space, we need to moderate it so that it does not clip
 // this flattening is done by a hermite spline (just like in hdr tonemapping)
 // the start point is defined by kS, p0 and m0 and the end point by kE, p1 and m1.
-// p(t)=p0*h00(t)+m0*h10(t)+p1*h01(t)+m1*h11(t)
-// with t(x)=(x-kS)/(kE-kS), h00(t)=(2*t-3)*t*t+1, h10(t)=(((t-2)*t+1)*t, h10=(-2*t+3)*t*t, h11(t)=t*t*(t-1)
-// d^2p(t)/dt^2=p_2(t)=p0*h00_2(t)+m0*h10_2(t)+p1*h01_2(t)+m1*h11_2(t)
-// with h00_2(t)=12*t-6, h10_2(t)=6*t-4, h01_2(t)=-12*t+6, h11_2(t)=6*t-2
 double hlg2sdr(double x, double kS, double m1Factor) {
   if (x > kS) {
     double p0 = kS * matchHlg2Sdr(kS);
@@ -89,68 +108,117 @@ double hlg2sdr(double x, double kS, double m1Factor) {
     m0 *= (1 - kS); // must be scaled since we are not on the interval x=[0,1] but on the affine t=[0,1]
     double p1 = 1;
 
-    // calculate the maximal m1 such that the curvature of p(t) never becomes positive for any t, especially not for t=1
-    // p_2(t)=0 <=> p0*h00_2(1)+m0*h10_2(1)+p1*h01_2(1)+m1_max*h11_2(1)=0 <=> p0*h00_2(1)+m0*h10_2(1)+p1*h01_2(1)=-m1_max*h11_2(1) 
+    // calculate the maximal m1 such that the curvature of the hermite spline p(t) does not becomes positive near t=1
+    // d^2p(t)/dt^2=p_2(t) <=> p0*h00_2(1)+m0*h10_2(1)+p1*h01_2(1)+m1_max*h11_2(1)=0 <=> p0*h00_2(1)+m0*h10_2(1)+p1*h01_2(1)=-m1_max*h11_2(1) 
     // => p0*6+m0*2-p1*6=-4*m1_max <=> m1_max=-(p0*6+m0*2-p1*6)/4
     double m1max = -(p0*6+m0*2-p1*6)/4;
     double m1 = m1Factor * m1max;
     
     double kE = 1;
     double t = (x - kS) / (kE - kS);
-    double p = ((2*t-3)*t*t+1)*p0 + ((t-2)*t+1)*t*m0 + (-2*t+3)*t*t*p1 + (t-1)*t*t*m1;
+    double p = unitHermiteSpline(t, p0, m0, p1, m1);
     return p;
   }
   return x * matchHlg2Sdr(x);
 }
 
-void XYZfromRgb2020(double& x, double& y, double& z, double rl, double gl, double bl) {
-  x = 0.636958048 * rl + 0.144616904 * gl + 0.168880975 * bl;
-  y = 0.262700212 * rl + 0.677998072 * gl + 0.059301716 * bl;
-  z = 0.000000000 * rl + 0.028072693 * gl + 1.060985058 * bl;
-}
-void rgb2020FromXYZ(double& rl, double& gl, double& bl, double x, double y, double z) {
-  rl = 1.716651188 * x - 0.355670784 * y - 0.253366281 * z;
-  gl = -0.666684352 * x + 1.616481237 * y + 0.015768546 * z;
-  bl = 0.017639857 * x - 0.042770613 * y + 0.942103121 * z;
+void xyFromXYZ(double& x, double &y, double X, double Y, double Z) {
+  double norm = (X + Y + Z);
+  x = X / norm;
+  y = Y / norm;
 }
 
-void XYZfromRgb709(double& x, double& y, double& z, double rl, double gl, double bl) {
-  x = 0.412390799 * rl + 0.357584339 * gl + 0.180480788 * bl;
-  y = 0.212639006 * rl + 0.715168679 * gl + 0.072192315 * bl;
-  z = 0.019330819 * rl + 0.119194780 * gl + 0.950532152 * bl;
+void XYZfromRgb2020(double& X, double& Y, double& Z, double rl, double gl, double bl) {
+  X = 0.636958048 * rl + 0.144616904 * gl + 0.168880975 * bl;
+  Y = 0.262700212 * rl + 0.677998072 * gl + 0.059301716 * bl;
+  Z = 0.000000000 * rl + 0.028072693 * gl + 1.060985058 * bl;
 }
-void rgb709FromXYZ(double& rl, double& gl, double& bl, double x, double y, double z) {
-  rl = 3.240969942 * x - 1.537383178 * y - 0.498610760 * z;
-  gl = -0.969243636 * x + 1.875967502 * y + 0.041555057 * z;
-  bl = 0.055630080 * x - 0.203976959 * y + 1.056971514 * z;
+void rgb2020fromXYZ(double& rl, double& gl, double& bl, double X, double Y, double Z) {
+  rl = 1.716651189 * X - 0.3556707849 * Y - 0.2533662813 * Z;
+  gl =-0.6666843518 * X + 1.616481236 * Y + 0.01576854646 * Z;
+  bl = 0.01763985741 * X - 0.04277061315 * Y + 0.942103121 * Z;
 }
 
-void lmsFromXYZ(double& l, double& m, double& s, double x, double y, double z) {
-  l = 0.8189330101 * x + 0.3618667424 * y - 0.1288597137 * z;
-  m = 0.0329845436 * x + 0.9293118715 * y + 0.0361456387 * z;
-  s = 0.0482003018 * x + 0.2643662691 * y + 0.6338517070 * z;
+void XYZfromRgb709(double& X, double& Y, double& Z, double rl, double gl, double bl) {
+  X = 0.412390799 * rl + 0.357584339 * gl + 0.180480788 * bl;
+  Y = 0.212639006 * rl + 0.715168679 * gl + 0.072192315 * bl;
+  Z = 0.019330819 * rl + 0.119194780 * gl + 0.950532152 * bl;
 }
-void XYZfromLms(double& x, double& y, double& z, double l, double m, double s) {
-  x = 1.227013851 * l - 0.557799981 * m + 0.281256149 * s;
-  y = -0.040580178 * l + 1.11225687 * m - 0.071676679 * s;
-  z = -0.076381285 * l - 0.421481978 * m + 1.58616322 * s;
+void rgb709fromXYZ(double& rl, double& gl, double& bl, double X, double Y, double Z) {
+  rl = 3.240969944 * X - 1.537383176 * Y - 0.4986107602 * Z;
+  gl = -0.9692436371 * X + 1.875967501 * Y + 0.04155505794 * Z;
+  bl = 0.05563007901 * X - 0.2039769588 * Y + 1.056971515 * Z;
+}
+
+void LsAsBsFromXYZ(double& Ls, double& As, double& Bs, double X, double Y, double Z) {
+  // conversion to CIELAB without all the constants
+  constexpr double Xw = 0.950455927;
+  constexpr double Yw = 1;
+  constexpr double Zw = 1.089057751;
+  Ls = Y / Yw;
+  As = X / Xw - Ls;
+  Bs = Ls - Z / Zw;
+}
+void XYZfromLsAsBs(double& X, double& Y, double& Z, double Ls, double As, double Bs) {
+  constexpr double Xw = 0.950455927;
+  constexpr double Yw = 1;
+  constexpr double Zw = 1.089057751;
+  Y = Ls * Yw;
+  X = (As + Ls) * Xw;
+  Z = (Ls - Bs) * Zw;
+}
+
+void LsAsBsFromRgb709(double& Ls, double& As, double& Bs, double rl, double gl, double bl) {
+  double X, Y, Z;
+  XYZfromRgb709(X, Y, Z, rl, gl, bl);
+  LsAsBsFromXYZ(Ls, As, Bs, X, Y, Z);
+}
+void LsAsBsFromRgb2020(double& Ls, double& As, double& Bs, double rl, double gl, double bl) {
+  double X, Y, Z;
+  XYZfromRgb2020(X, Y, Z, rl, gl, bl);
+  LsAsBsFromXYZ(Ls, As, Bs, X, Y, Z);
+}
+void rgb709fromLsAsBs(double& rl, double& gl, double& bl, double Ls, double As, double Bs) {
+  double X, Y, Z;
+  XYZfromLsAsBs(X, Y, Z, Ls, As, Bs);
+  rgb709fromXYZ(rl, gl, bl, X, Y, Z);
+}
+void rgb2020fromLsAsBs(double& rl, double& gl, double& bl, double Ls, double As, double Bs) {
+  double X, Y, Z;
+  XYZfromLsAsBs(X, Y, Z, Ls, As, Bs);
+  rgb2020fromXYZ(rl, gl, bl, X, Y, Z);
+}
+
+void lmsFromXYZ(double& l, double& m, double& s, double X, double Y, double Z) {
+  l = 0.8189330101 * X + 0.3618667424 * Y - 0.1288597137 * Z;
+  m = 0.0329845436 * X + 0.9293118715 * Y + 0.0361456387 * Z;
+  s = 0.0482003018 * X + 0.2643662691 * Y + 0.6338517070 * Z;
+}
+void XYZfromLms(double& X, double& Y, double& Z, double l, double m, double s) {
+  X = 1.227013851 * l - 0.5577999807 * m + 0.281256149 * s;
+  Y = -0.04058017842 * l + 1.11225687 * m - 0.07167667867 * s;
+  Z = -0.07638128451 * l - 0.4214819784 * m + 1.58616322 * s;
 }
 
 void labFromLms(double& L, double& a, double& b, double l, double m, double s) {
-  l = std::pow(l, 0.3333333333);
-  m = std::pow(m, 0.3333333333);
-  s = std::pow(s, 0.3333333333);
+  // the original exponent of 3.0 produces a blue color line which curls into iself
+  constexpr double exponent = 2.3605929376;
+  l = std::pow(l, 1/exponent);
+  m = std::pow(m, 1/exponent);
+  s = std::pow(s, 1/exponent);
   L = 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s;
   a = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s;
   b = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s;
 }
 void lmsFromLab(double& l, double& m, double& s, double L, double a, double b) {
-  l = 1.000000000 * L + 0.396337792 * a + 0.215803758 * b;
-  m = 1.000000000 * L - 0.105561342 * a - 0.063854175 * b;
-  s = 1.000000000 * L - 0.089484182 * a - 1.291485538 * b;
-  l = l*l*l;
-  m = m*m*m;
-  s = s*s*s;
+  l = 0.9999999985 * L + 0.3963377922 * a + 0.2158037581 * b;
+  m = 1.000000009 * L - 0.1055613423 * a - 0.06385417477 * b;
+  s = 1.000000055 * L - 0.08948418209 * a - 1.291485538 * b;
+  // the original exponent of 3.0 produces a blue color line which curls into iself
+  constexpr double exponent = 2.3605929376;
+  l = std::pow(l, exponent);
+  m = std::pow(m, exponent);
+  s = std::pow(s, exponent);
 }
 
 void labFromRgb2020(double& L, double& a, double& b, double rl, double gl, double bl) {
@@ -172,109 +240,151 @@ void rgb2020fromLab(double& rl, double& gl, double& bl, double L, double a, doub
   lmsFromLab(l, m, s, L, a, b);
   double x, y, z;
   XYZfromLms(x, y, z, l, m, s);
-  rgb2020FromXYZ(rl, gl, bl, x, y, z);
+  rgb2020fromXYZ(rl, gl, bl, x, y, z);
 }
 void rgb709fromLab(double& rl, double& gl, double& bl, double L, double a, double b) {
   double l, m, s;
   lmsFromLab(l, m, s, L, a, b);
   double x, y, z;
   XYZfromLms(x, y, z, l, m, s);
-  rgb709FromXYZ(rl, gl, bl, x, y, z);
+  rgb709fromXYZ(rl, gl, bl, x, y, z);
 }
 
 void convert2020To709(double& rl, double& gl, double& bl) {
   double x, y, z;
   XYZfromRgb2020(x, y, z, rl, gl, bl);
-  rgb709FromXYZ(rl, gl, bl, x, y, z);
-}
-
-// slightly decreases the chroma such that the shrunken BT.2020 gamut tangentialy hits the BT.709 gamut
-// this first happens along the blue edge of BT.709 (0,0,b)
-void reduceChroma(double& rl, double& gl, double& bl) {
-  double L, a, b;
-  labFromRgb2020(L, a, b, rl, gl, bl);
-  double f = 0.9418;
-  rgb2020fromLab(rl, gl, bl, L, a * f, b * f);
+  rgb709fromXYZ(rl, gl, bl, x, y, z);
 }
 
 typedef void (*rgbFromLab)(double& rl, double& gl, double& bl, double L, double a, double b);
 typedef void (*labFromRgb)(double& L, double& a, double& b, double rl, double gl, double bl);
 
+bool outOfLumaRange(double r, double g, double b) {
+  return r > 1. || g > 1. || b > 1.;
+}
+bool outOfChromaRange(double r, double g, double b) {
+  return r < 0 || g < 0 || b < 0;
+}
 bool outOfRange(double r, double g, double b) {
-  return b > 1. || g > 1. || r > 1.;
+  return outOfChromaRange(r, g, b) || outOfLumaRange(r, g, b);
+}
+bool outOfChromaRangeApprox(double r, double g, double b) {
+  return r < -0.000001 || g < -0.000001 || b < -0.000001;
+}
+bool outOfRangeApprox(double r, double g, double b) {
+  return outOfChromaRangeApprox(r, g, b) || outOfLumaRange(r, g, b);
 }
 
-void findInRangeLab(double& Li, double& Ai, double& Bi, double ri, double gi, double bi, double sensL, double sensA, double sensB, rgbFromLab rgbFromLabFunc) {
+// This finction finds the border of the color space in direction along the saturation of the given color
+// The value returned is the position of the given color as a percentage of the distance to the border
+double findBorderInside(double Li, double& Ai, double& Bi, rgbFromLab rgbFromLabFunc) {
   double f = 1;
-  for (int d = 2; d < (1 << 29) + 1; d *= 2) {
-    if (outOfRange(ri, gi, bi)) {
+  double r, g, b;
+  for (int_fast32_t d = 2; d < (1 << 29) + 1; d *= 2) {
+    rgbFromLabFunc(r, g, b, Li, Ai * f, Bi * f);
+    if (outOfRangeApprox(r, g, b)) {
       f -= 1.0 / d;
     }
     else {
       f += 1.0 / d;
     }
-    double facL = 1 - sensL * (1 - f);
-    double facA = 1 - sensA * (1 - f);
-    double facB = 1 - sensB * (1 - f);
-    rgbFromLabFunc(ri, gi, bi, Li * facL, Ai * facA, Bi * facB);
+  }
+  Ai *= f;
+  Bi *= f;
+
+  //double x, y, X, Y, Z;
+  //XYZfromLsAsBs(X, Y, Z, Li, Ai, Bi);
+  //xyFromXYZ(x, y, X, Y, Z);
+
+  return 1/f;
+}
+double findBorderOutside(double Li, double& Ai, double& Bi, rgbFromLab rgbFromLabFunc) {
+  double f = 1;
+  double r, g, b;
+  for (int_fast32_t d = 2; d < (1 << 29) + 1; d *= 2) {
+    rgbFromLabFunc(r, g, b, Li, Ai / f, Bi / f);
+    if (outOfRangeApprox(r, g, b)) {
+      f += 1.0 / d;
+    }
+    else {
+      f -= 1.0 / d;
+    }
+  }
+  Ai /= f;
+  Bi /= f;
+
+  //double x, y, X, Y, Z;
+  //XYZfromLsAsBs(X, Y, Z, Li, Ai, Bi);
+  //xyFromXYZ(x, y, X, Y, Z);
+
+  return f;
+}
+
+// Returns the bt709 color for a given bt2020 color preserving the look as much as possible while preventing any clipping.
+double hybridColorMapping(double& ri, double& gi, double& bi) {
+  double rc = ri, gc = gi, bc = bi;
+  convert2020To709(rc, gc, bc);
+
+  double L, A, B;
+  labFromRgb2020(L, A, B, ri, gi, bi); // same as labFromRgb709(L, A, B, rc, gc, bc);
+  //double C = sqrt(A * A + B * B);
+  //double h = atan2(B, A);
+
+  double fracSrc = 0;
+  double aHullSrc = A;
+  double bHullSrc = B;
+  if (outOfRange(ri, gi, bi))
+    fracSrc = findBorderInside(L, aHullSrc, bHullSrc, rgb2020fromLab);
+  else
+    fracSrc = findBorderOutside(L, aHullSrc, bHullSrc, rgb2020fromLab);
+ 
+  double fracDst = 0;
+  double aHullDst = A;
+  double bHullDst = B;
+  if (outOfRange(rc, gc, bc))
+    fracDst = findBorderInside(L, aHullDst, bHullDst, rgb709fromLab);
+  else
+    fracDst = findBorderOutside(L, aHullDst, bHullDst, rgb709fromLab);
+  
+  // the amount of reduction along the given color saturaion line
+  double reductionFactor = fracDst / fracSrc;
+  if (fracSrc > 1) {
+    // this should only be numerical flukes
+    fracSrc = 1;
+  }
+  if (fracDst > 1) {
+    // for the weightning below we need an upper bound of 1
+    fracDst = 1;
   }
 
-  double facL = 1 - sensL * (1 - f);
-  double facA = 1 - sensA * (1 - f);
-  double facB = 1 - sensB * (1 - f);
-  Li *= facL;
-  Ai *= facA;
-  Bi *= facB;
-}
+  double aLinScaled = aHullDst * fracSrc; //same as A/reduction;
+  double bLinScaled = bHullDst * fracSrc; //same as B/reduction;
 
-void clipToPoint(double& ri, double& gi, double& bi, rgbFromLab rgbFromLabFunc, labFromRgb labFromRgbFunc) {
-  // changes the chroma of an out-of-range color such that it becomes in-range, while leaving lightness and hue constant.
-  // unfortunately this does not produce good results, the approch varying also lightness the way to go. See function below.
+  double weight1 = 0;
+  double weight2 = 1;
+  if (reductionFactor > 1) {
+    weight1 = fracSrc;
+    weight2 = (1 - fracSrc);
+    if (reductionFactor < 2) {
+      weight2 = ((fracSrc - 1) * ((reductionFactor - 2) * (reductionFactor - 1) * fracSrc - reductionFactor)) / reductionFactor;
+    }
+  }
+  if (reductionFactor > 2) {
+    double weight2sup = (1 + (reductionFactor / 2 - 1) * fracSrc);
+    weight2 /= weight2sup;
+  }
+  double aWeighted = aLinScaled * weight1 + A * weight2;
+  double bWeighted = bLinScaled * weight1 + B * weight2;
+  //double Co = sqrt(aWeighted * aWeighted + bWeighted * bWeighted);
+  //double ho = atan2(bWeighted, aWeighted);
 
-  double Li, Ai, Bi;
-  labFromRgbFunc(Li, Ai, Bi, ri, gi, bi);
+  //double x, y, X, Y, Z;
+  //XYZfromLsAsBs(X, Y, Z, L, aHullDst, bHullDst);
+  //xyFromXYZ(x, y, X, Y, Z);
 
-  double Lo = Li;
-  double Ao = Ai;
-  double Bo = Bi;
-  findInRangeLab(Lo, Ao, Bo, ri, gi, bi, 0, 1, 1, rgbFromLabFunc);
+  rgb709fromLab(ri, gi, bi, L, aWeighted, bWeighted);
 
-  rgbFromLabFunc(ri, gi, bi, Lo, Ao, Bo);
-}
-
-void clipToTangentLine(double& ri, double& gi, double& bi, rgbFromLab rgbFromLabFunc, labFromRgb labFromRgbFunc) {
-  // finds the most similar looking in-gamut color for an out-of-range color, while leaving hue constant.
-
-  double Li, Ai, Bi;
-  labFromRgbFunc(Li, Ai, Bi, ri, gi, bi);
-
-  //first in-range point on the surface of the target gamut
-  double L1 = Li;
-  double A1 = Ai;
-  double B1 = Bi;
-  findInRangeLab(L1, A1, B1, ri, gi, bi, 0, 1, 1, rgbFromLabFunc);
-
-  //second in-range point on the surface of the target gamut
-  double L2 = Li;
-  double A2 = Ai;
-  double B2 = Bi;
-  findInRangeLab(L2, A2, B2, ri, gi, bi, 1, 1, 1, rgbFromLabFunc);
-
-  //calculate normal vector from given out-of-range point to the line connecting the two in-range points
-  //the intersection point of that line to the normal is the nearest in-range point
-  double r = (A1 * A1 + A2 * Ai - A1 * (A2 + Ai) + (B1 - B2) * (B1 - Bi) + (L1 - L2) * (L1 - Li)) / ((A1 - A2) * (A1 - A2) + (B1 - B2) * (B1 - B2) + (L1 - L2) * (L1 - L2));
-  double Lo = L1 + (L2 - L1) * r;
-  double Ao = A1 + (A2 - A1) * r;
-  double Bo = B1 + (B2 - B1) * r;
-
-  rgbFromLabFunc(ri, gi, bi, Lo, Ao, Bo);
-}
-
-void softClip709(double& rl, double& gl, double& bl) {
-  clipToTangentLine(rl, gl, bl, rgb709fromLab, labFromRgb709);
-}
-void softClip2020(double& rl, double& gl, double& bl) {
-  clipToTangentLine(rl, gl, bl, rgb2020fromLab, labFromRgb2020);
+  return reductionFactor;
 }
 
 void showBestLutSizes() {
@@ -287,7 +397,6 @@ void showBestLutSizes() {
   }
   printf("\n");
 }
-
 void warnAboutLutSize() {
   printf("\n");
   printf("WARNING:\n");
@@ -295,13 +404,31 @@ void warnAboutLutSize() {
   printf("\n");
 }
 
-void selfTest() {
-  {
-    double r = 1.25;
-    double g = 0;
-    double b = 0;
-    softClip2020(r, g, b);
+void selfTestHybridConversion() {
+  double r, g, b, f;
+
+  for (int i = 0; i < 101; i++) {
+    r = 0 + (i * 0.01); g = 0 + (i * 0.01); b = 1 - (i * 0.01);
+    f = hybridColorMapping(r, g, b);
   }
+  r = 0; g = 0; b = 0;
+  f = hybridColorMapping(r, g, b);
+  r = 1; g = 1; b = 1;
+  f = hybridColorMapping(r, g, b);
+  r = 1; g = 0; b = 0;
+  f = hybridColorMapping(r, g, b);
+  r = 0; g = 1; b = 0;
+  f = hybridColorMapping(r, g, b);
+  r = 0; g = 0; b = 1;
+  f = hybridColorMapping(r, g, b);
+  r = 0; g = 1; b = 1;
+  f = hybridColorMapping(r, g, b);
+  r = 1; g = 0; b = 1;
+  f = hybridColorMapping(r, g, b);
+  r = 1; g = 1; b = 0;
+  f = hybridColorMapping(r, g, b);
+  r = 0.2; g = 0.4; b = 0.5;
+  f = hybridColorMapping(r, g, b);
 }
 
 #ifdef DOVI_LUTGEN
@@ -326,6 +453,7 @@ int main(int argc, char* argv[])
     showBestLutSizes();
     return 1;
   }
+  //selfTestHybridConversion();
   std::ofstream fsCube;
   fsCube.open(argv[1], std::ifstream::out);
   if (!fsCube.is_open()) {
@@ -369,7 +497,7 @@ int main(int argc, char* argv[])
       }
     }
   }
-  double sdrKneeStart = std::sqrt(sdrGain) * 0.21 + 0.5;
+  double sdrKneeStart = std::sqrt(sdrGain) * 0.2103131223 + 0.5;
   double sdrKneeEndTangentFactor = (1 - std::sqrt(1 - sdrCompression));
 
   if (!normalizedInput) {
@@ -421,6 +549,11 @@ int main(int argc, char* argv[])
       double gd = EOTFpq(egp) * 10000 / 1000;
       gd = (gd > 1) ? 1 : gd;
       for (int ri = 0; ri < lutSize; ri++) {
+        //if (gi != ri)continue;
+        //if (bi != lutSize - 1) continue;
+        //if (gi != ri)continue;
+        //if (gi != 25-(bi-25)) continue;
+        //if (ri != 23 || gi != 29 || bi != 36) continue;
         double erp = double(ri) / (lutSize - 1) * inputScale;
         double rd = EOTFpq(erp) * 10000 / 1000;
         rd = (rd > 1) ? 1 : rd;
@@ -429,11 +562,6 @@ int main(int argc, char* argv[])
         double rs = OOTFhlgInv(rd, yd);
         double gs = OOTFhlgInv(gd, yd);
         double bs = OOTFhlgInv(bd, yd);
-
-        /*if (outOfRange(rs, gs, bs)) {
-          softClip2020(rs, gs, bs);
-          softClip2020(rs, gs, bs);
-        }*/
 
         if (rs < 0)rs = 0;
         if (gs < 0)gs = 0;
@@ -456,20 +584,16 @@ int main(int argc, char* argv[])
             double rl = EOTFsdr(rg);
             double gl = EOTFsdr(gg);
             double bl = EOTFsdr(bg);
-            //reduceChroma(rl, gl, bl);
-            convert2020To709(rl, gl, bl);
+            if(sdr>2)
+              hybridColorMapping(rl, gl, bl);
+            else
+              convert2020To709(rl, gl, bl);
+            
+            //fsCube << ri << " " << gi << " " << bi << " " << rl << " " << gl << " " << bl << std::endl;
 
             if (rl < 0)rl = 0;
             if (gl < 0)gl = 0;
             if (bl < 0)bl = 0;
-
-            /*if (outOfRange(rl, gl, bl)) {
-              softClip709(rl, gl, bl);
-              softClip709(rl, gl, bl);
-              if (rl < 0)rl = 0;
-              if (gl < 0)gl = 0;
-              if (bl < 0)bl = 0;
-            }*/
 
             rg = OETFsdr(rl);
             gg = OETFsdr(gl);
@@ -481,6 +605,7 @@ int main(int argc, char* argv[])
           if (bg > 1)bg = 1;
         }
 
+        //fsCube << std::format("{:.7f} {:.7f} {:.7f}",rg, gg, bg) << std::endl;
         fsCube << rg << " " << gg << " " << bg << std::endl;
       }
     }

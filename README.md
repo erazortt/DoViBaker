@@ -155,7 +155,7 @@ The meaning of the arguments:
 - `output file` the name of the to-be-generated LUT file
 - `lut size` generally a bigger LUT, is a better LUT. A good size is `65`.
 - `normalized input` if this optional argument is set to `1`, the generated LUT will expect that the input PQ was re-normalized to 1000 nits max brightness. LUTs for re-normalized inputs can be of smaller size than normal LUTs while still providing better quality. A good size for such a LUT is `50`. When not given, this will default to `0`.
-- `sdr` if this optional argument is set to `1`, the generated LUT will convert to BT.2020 SDR, and if set to `2` it will convert to BT.709 SDR. Default is `0`, with the generated LUT converting to BT.2100 HLG.
+- `sdr` if this optional argument is set to `1`, the generated LUT will convert to BT.2020 SDR, if set to `2` it will convert to BT.709 SDR using hard clipping for the color gamut and finally using `3` will also convert to BT.709 but with a smart color mapping which prevents clipping while maintaining the look as much as possbile. Default is `0`, with the generated LUT converting to BT.2100 HLG.
 - `sdr_gain` this optional argument adjusts the SDR mapping function, by setting the amount of gain of bright midtones. Value range is [0.0, 1.0], default is `0.0`.
 - `sdr_compression` this optional argument adjusts the SDR mapping function, by setting the amount of compression of very bright highlights. Value range is [0.0, 1.0], default is `0.0`.
 
@@ -182,7 +182,7 @@ Please be aware that in the example the parameter `lumaScale` was not given to `
 ## Workflow for conversion to BT.709 SDR
 Generate the LUT by the following command:
 ```
-DoViLutGen.exe pq2sdr709_normalizedInput.cube 50 1 2
+DoViLutGen.exe pq2sdr709_normalizedInput.cube 50 1 3
 ```
 
 Create the following avisyth script:
