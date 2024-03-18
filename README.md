@@ -4,7 +4,7 @@ While `DoViBaker` is the name of the main component, the package actually includ
 - [DoViCubes](#dovicubes): applies different LUTs based on maxCll
 - [AVSCube](#avscube): applies a LUT to a stream
 - [DoViStatsFileLoader](#dovistatsfileloader): loads the stats-file created by StatsFileCreator.avs enabling DoViTonemap or DoViCubes to apply dynamic processing on non-DolbyVision PQ streams
-- [DoViLutGen.exe](#dovilutgenexe): creates LUTs for converting already tonemapped PQ streams to HLG or SDR
+- [DoViLutGen.exe](#dovilutgenexe): creates LUTs for converting already tonemapped PQ streams to HLG or SDR, or from HLG to SDR
 - [DoViAnalyzer.exe](#dovianalyzerexe): analyzes a given RPU.bin file
 - [StatsFileCreator.avs](#statsfilecreatoravs): analyzes a non-DolbyVision PQ stream and generates a stats-file which enables dynamic tonemapping
 - [LumaScaleHelper.avs](#lumascalehelperavs): manually compare a PQ stream to a pre-existing SDR stream to extract the lumaScale which can be given to DoViTonemap
@@ -156,7 +156,7 @@ The following frame properties will be set:
 - `_dovi_static_max_content_light_level` the value of maximal nits of the whole stream
 
 # DoViLutGen.exe
-This application generates LUTs for conversions from BT.2100 PQ to either: BT.2100 HLG or BT.2020 SDR or BT.709 SDR. The PQ to HLG conversion is based on BT.2408-7 in conjunction with BT.2100-2. The LUTs will only process input values up to 1000 nits and will clip anything above that. If the PQ source has brightness levels above that, use [DoViTonemap](#dovitonemap) to tonemap the PQ stream to 1000 nits.
+This application generates LUTs for conversions between BT.2100 PQ, BT.2100 HLG, BT.2020 SDR and BT.709 SDR. The PQ to HLG conversion is based on BT.2408-7 in conjunction with BT.2100-2. The LUTs with PQ as source will only process input values up to 1000 nits and will clip anything above that. If the PQ source has brightness levels above that, use [DoViTonemap](#dovitonemap) to tonemap the PQ stream to 1000 nits. Only down-conversions are supported, meaning BT.2100 PQ can be converted to BT.2100 HLG, BT.2020 SDR or BT.709 SDR, while BT.2100 HLG can be only converted to BT.2020 SDR or BT.709 SDR and BT.2020 SDR can only be converted to BT.709 SDR.
 
 ```
 usage: DoViLutGen.exe <output_file> -s <lut_size> [-i <input_format>] [-o <output_format>] [-g <sdr_gain>] [-c <sdr_compression>] [-r <chroma_reduction_factor>]
