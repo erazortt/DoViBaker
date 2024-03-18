@@ -211,7 +211,7 @@ Just like in the HLG example above, the parameter `lumaScale` was not given to `
 ## Workflow for conversions from HLG to BT.709 SDR
 Generate the LUT by the following command:
 ```
-DoViLutGen.exe hlg2sdr709.cube -s 65 -i 2 -o 3
+DoViLutGen.exe hlg2sdr709.cube -s 50 -i 2 -o 3
 ```
 At this stage you can experiment with the SDR looks settings `gain` and `compression`.
 
