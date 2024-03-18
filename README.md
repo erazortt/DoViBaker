@@ -159,7 +159,7 @@ The following frame properties will be set:
 This application generates LUTs for conversions from BT.2100 PQ to either: BT.2100 HLG or BT.2020 SDR or BT.709 SDR. The PQ to HLG conversion is based on BT.2408-7 in conjunction with BT.2100-2. The LUTs will only process input values up to 1000 nits and will clip anything above that. If the PQ source has brightness levels above that, use [DoViTonemap](#dovitonemap) to tonemap the PQ stream to 1000 nits.
 
 ```
-usage: DoViLutGen.exe <output_file> --size <lut_size> [--input <input>] [--output <output>] [--gain <sdr_gain>] [--compression <sdr_compression>] [--reduction <chroma_reduction_factor>]
+usage: DoViLutGen.exe <output_file> -s <lut_size> [-i <input_format>] [-o <output_format>] [-g <sdr_gain>] [-c <sdr_compression>] [-r <chroma_reduction_factor>]
 ```
 
 The meaning of the arguments:
@@ -175,7 +175,7 @@ Comment on the special input option for PQ re-normalized to 1000 nits:
 In that case, the generated LUT will expect that the input PQ was re-normalized to 1000 nits max brightness. LUTs for re-normalized inputs can be of smaller size than normal LUTs while still providing better quality. A good size for such a LUT is `50` instead of the `65` needed for the default PQ input.
 
 ## SDR Looks
-The default settings for `sdr_gain` and `sdr_compression` try to emulate a typical SDR look in what concerns dynamic range. This is usually more toned-down (aka flatter) than a typical HDR. For an even even more toned-down look increase `sdr_compression`, or, inversly and if trying to retain as much HDR feeling as possible, increase `sdr_gain`. Tweaking of these two settings will need to be done for each stream individually, while the defaults should be a good starting point in all instances.
+The default settings for `sdr_gain` and `sdr_compression` try to emulate a typical SDR look in what concerns dynamic range. This is usually more toned-down (aka flatter) than a typical HDR. For an even even more toned-down look increase `sdr_compression`, or, inversly and if trying to retain as much HDR feeling as possible, increase `sdr_gain`. If the output seems too colorful, the chroma can be decreased by decreasing `chroma_reduction_factor`. Tweaking of these settings will need to be done for each stream individually, while the defaults should be a good starting point in all instances. 
 
 ## Workflow for conversions from PQ to HLG
 Generate the LUT by the following command:
