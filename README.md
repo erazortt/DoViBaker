@@ -166,7 +166,7 @@ The meaning of the arguments:
 - `output file` the name of the to-be-generated LUT file
 - `lut size` generally a bigger LUT, is a better LUT. A good size is `65` when input is default BT.2100 PQ. In all other cases `50` is enough.
 - `input format` this optional argument sets the source format of the LUT: `0` for BT.2100 PQ input, `1` for BT.2100 PQ input which was re-normalized to 1000 nits, `2` for BT.2100 HLG input and `3` for BT.2020 SDR input. Default is `0`.
-- `output format` this optional argument sets the destination format of the LUT: `0` for conversions to BT.2100 HLG, `1` for BT.2020 SDR, `2` will convert to BT.709 SDR using hard clipping for the color gamut and `3` will also convert to BT.709 but with a smart color mapping which prevents clipping while maintaining the look as much as possbile. Default is `0`.
+- `output format` this optional argument sets the destination format of the LUT: `0` for conversions to BT.2100 HLG, `1` for BT.2020 SDR, `2` will convert to BT.709 SDR using hard clipping of the color gamut and `3` will also convert to BT.709 but with a smart color mapping which prevents clipping while maintaining the look as much as possbile. Default is `0`.
 - `sdr gain` this optional argument adjusts the SDR mapping function, by setting the amount of gain of light midtones. Value range is [0.0, 1.0], default is `0.0`.
 - `sdr compression` this optional argument adjusts the SDR mapping function, by setting the amount of compression of bright highlights. Value range is [0.0, 1.0], default is `0.0`.
 - `chroma reduction factor` the factor by which the chroma is reduced. Default is `1.0`, meaning chroma is not reduced.
