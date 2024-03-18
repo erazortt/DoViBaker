@@ -442,36 +442,40 @@ void warnAboutLutSize() {
 
 void showUsage(std::string& execname) {
   printf("USAGE:\n");
-  printf("%s -o|--out <string> -s|--size <string> [-n|--normalized] [-d|--sdr <int>] [-g|--gain <float>] [-c|--compression <float>] [-r|--reduction <float>]\n", execname.c_str());
+  printf("%s <string> -s|--size <string> [-n|--normalized] [-d|--sdr <int>] [-g|--gain <float>] [-c|--compression <float>] [-r|--reduction <float>]\n", execname.c_str());
   printf("\n");
   printf("ARGUMENTS:\n");
-  printf("-o, --out <string>         name of the to-be-generated LUT file\n");
+  printf("<string>                   name of the to-be-generated LUT file\n");
   printf("-s, --size <int>           size along one dimension of the LUT\n");
-  printf("-n, --normalized           whether the input is normalized to 1000nits (false)\n");
-  printf("-d, --sdr <int>            1: converts to BT.2020 SDR\n");
-  printf("                           2: converts to BT.709 SDR with hard color clipping\n");
-  printf("                           3: converts to BT.709 SDR with advanced color mapping\n");
-  printf("                           default (0): converts to BT.2100 HLG\n");
+  printf("-i, --input <int>          expected input format to convert from:\n");
+  printf("                             0: BT.2100 PQ (default)\n");
+  printf("                             1: BT.2100 PQ which was re-normalized to 1000nits\n");
+  printf("                             2: BT.2100 HLG\n");
+  printf("                             3: BT.2020 SDR\n");
+  printf("-o, --output <int>         output format to convert to\n");
+  printf("                             0: BT.2100 HLG (default)\n");
+  printf("                             1: BT.2020 SDR\n");
+  printf("                             2: BT.709 SDR with hard color clipping\n");
+  printf("                             3: BT.709 SDR with advanced color mapping\n");
   printf("-g, --gain <float>         gain of light midtones in SDR conversions (0.0)\n");
   printf("-c, --compression <float>  highlight compression in SDR conversions (0.0)\n");
   printf("-r, --reduction <float>    chroma reduction factor in SDR conversions (1.0)\n");
   printf("\n");
   printf("examples for PQ to HLG conversions:\n");
-  printf("%s -o pq2hlg.cube -s 65\n", execname.c_str());
-  printf("%s -o pq2hlg_normalizedInput.cube -s 50 -n\n", execname.c_str());
-  printf("\n");
-  printf("examples for PQ to BT.2020 SDR conversions:\n");
-  printf("%s -o pq2sdr2020.cube -s 65 -d 1\n", execname.c_str());
-  printf("%s -o pq2sdr2020_normalizedInput.cube -s 50 -n -d 1\n", execname.c_str());
+  printf("%s pq2hlg.cube -s 65 -i 0 -o 0\n", execname.c_str());
+  printf("%s pq2hlg_normalizedInput.cube -s 50 -i 1 -o 0\n", execname.c_str());
   printf("\n");
   printf("examples for PQ to BT.709 SDR conversions:\n");
-  printf("%s -o pq2sdr709.cube -s 65 -d 3\n", execname.c_str());
-  printf("%s -o pq2sdr709_normalizedInput.cube -s 50 -n -d 3\n", execname.c_str());
+  printf("%s pq2sdr709.cube -s 65 -i 0 -o 3\n", execname.c_str());
+  printf("%s pq2sdr709_normalizedInput.cube -s 50 -i 1 -o 3\n", execname.c_str());
+  printf("\n");
+  printf("examples for HLG to BT.709 SDR conversions:\n");
+  printf("%s hlg2sdr709.cube -s 65 -i 2 -o 3\n", execname.c_str());
   printf("\n");
   showBestLutSizes();
 }
 
-bool hasArgument(
+/*bool hasArgument(
   const std::vector<std::string>& args,
   const std::string& option_name,
   const std::string& option_alt_name) {
@@ -490,6 +494,49 @@ std::string getArgumentValue(
       return *(it + 1);
   }
   return "";
+}*/
+
+bool hasArgument(
+  std::vector<std::string>& args,
+  const std::string& option_name,
+  const std::string& option_alt_name) {
+  for (auto it = args.begin(), end = args.end(); it != end; ++it) {
+    if (*it == option_name || *it == option_alt_name) {
+      return true;
+    }
+  }
+  return false;
+}
+bool getFlag(
+  std::vector<std::string>& args,
+  const std::string& option_name,
+  const std::string& option_alt_name) {
+  for (auto it = args.begin(), end = args.end(); it != end; ++it) {
+    if (*it == option_name || *it == option_alt_name) {
+      args.erase(it);
+      return true;
+    }
+  }
+  return false;
+}
+std::string getArgumentValue(
+  std::vector<std::string>& args,
+  const std::string& option_name,
+  const std::string& option_alt_name) {
+  for (auto it = args.begin(), end = args.end(); it != end; ++it) {
+    if (*it == option_name || *it == option_alt_name) {
+      std::string value = *(it + 1);
+      args.erase(it + 1);
+      args.erase(it);
+      return value;
+    }
+  }
+  return "";
+}
+std::string getPositionalArgument(std::vector<std::string>& args) {
+  std::string value = *(args.begin());
+  args.erase(args.begin());
+  return value;
 }
 
 #ifdef DOVI_LUTGEN
@@ -497,34 +544,34 @@ int main(int argc, char* argv[])
 {
   //selfTestHybridConversion();
 
+  //cxxopts::Options options("DoViLutGen", "One line description of MyProgram");
+
   std::string execname = std::filesystem::path(*argv).filename().string();
   if (argc < 5) {
     showUsage(execname);
     return 1;
   }
 
-  const std::vector<std::string> args(argv + 1, argv + argc);
+  std::vector<std::string> args(argv + 1, argv + argc);
   std::string lutFileName;
   int lutSize;
-  bool normalizedInput;
-  int sdr = 0;
+  bool reNormalizedInput = false;
+  int inputFormat = 0;
+  int outputFormat = 0;
   double sdrGain = 0.0;
   double sdrCompression = 0.0;
   double chromaReduction = 1.0;
 
-  if (!hasArgument(args, "-o", "--out")) {
-    showUsage(execname);
-    return 1;
-  }
-  lutFileName = getArgumentValue(args, "-o", "--out");
   if (!hasArgument(args, "-s", "--size")) {
     showUsage(execname);
     return 1;
   }
   lutSize = std::stoi(getArgumentValue(args, "-s", "--size"));
-  normalizedInput = hasArgument(args, "-n", "--normalized");
-  if (hasArgument(args, "-d", "--sdr")) {
-    sdr = std::stoi(getArgumentValue(args, "-d", "--sdr"));
+  if (hasArgument(args, "-i", "--input")) {
+    inputFormat = std::stoi(getArgumentValue(args, "-i", "--input"));
+  }
+  if (hasArgument(args, "-o", "--output")) {
+    outputFormat = std::stoi(getArgumentValue(args, "-o", "--output"));
   }
   if (hasArgument(args, "-g", "--gain")) {
     sdrGain = std::stof(getArgumentValue(args, "-g", "--gain"));
@@ -535,12 +582,33 @@ int main(int argc, char* argv[])
   if (hasArgument(args, "-r", "--reduction")) {
     chromaReduction = std::stof(getArgumentValue(args, "-r", "--reduction"));
   }
+  lutFileName = getPositionalArgument(args);
 
   if (lutSize < 1 || lutSize > 200) {
     printf("LUT size not supported");
     return 2;
   }
-  if (!normalizedInput) {
+  std::string inFormatName = "BT.2100 PQ";
+  switch (inputFormat)
+  {
+  case 0: inFormatName = "BT.2100 PQ"; break;
+  case 1: inFormatName = "BT.2100 PQ"; reNormalizedInput = true; break;
+  case 2: inFormatName = "BT.2100 HLG"; break;
+  case 3: inFormatName = "BT.2020 SDR"; break;
+  default:
+    break;
+  }
+  std::string outFormatName = "BT.2100 HLG";
+  switch (outputFormat)
+  {
+  case 0: outFormatName = "BT.2100 HLG"; break;
+  case 1: outFormatName = "BT.2020 SDR"; break;
+  case 2: outFormatName = "BT.709 SDR"; break;
+  case 3: outFormatName = "BT.709 SDR"; break;
+  default:
+    break;
+  }
+  if (!inputFormat) {
     if (lutSize <= 69 && (lutSize % 4) != 1) {
       warnAboutLutSize();
     }
@@ -551,15 +619,13 @@ int main(int argc, char* argv[])
       warnAboutLutSize();
     }
   }
-
-  std::string mode = "HLG";
-  if (sdr) {
-    if (sdr > 1) {
-      mode = "BT.709 SDR";
-    }
-    else {
-      mode = "BT.2020 SDR";
-    }
+  if (inputFormat > 2 && outputFormat < 2) {
+    printf("Unsupported conversion");
+    return 2;
+  }
+  if (inputFormat > 1 && outputFormat < 1) {
+    printf("Unsupported conversion");
+    return 2;
   }
   if (sdrGain < 0) {
     printf("Gain cannot be negative");
@@ -586,13 +652,25 @@ int main(int argc, char* argv[])
   double sdrKneeEndTangentFactor = (1 - std::sqrt(1 - sdrCompression));
 
   fsCube << "# Generated by DoViLutGen" << std::endl;
-  fsCube << "# re-normalized input: " << normalizedInput << std::endl;
-  fsCube << "# mode: " << mode << std::endl;
-  if (sdr) {
+  fsCube << "# in format: " << inFormatName << std::endl;
+  if (inputFormat < 2) {
+    fsCube << "# re-normalized input: " << reNormalizedInput << std::endl;
+  }
+  fsCube << "# out format: " << outFormatName << std::endl;
+  if (outputFormat) {
     fsCube << "# midtone gain: " << sdrGain << " (kS=" << sdrKneeStart << ")" << std::endl;
     fsCube << "# highlight compression: " << sdrCompression << " (m1Factor=" << sdrKneeEndTangentFactor << ")" << std::endl;
-    printf("Producing a LUT for PQ -> %s conversions of size %i\n", mode.c_str(), lutSize);
-    fsCube << "# LUT for conversions from BT.2100 HDR PQ to " << mode << std::endl;
+    if (outputFormat > 1) {
+      fsCube << "# color conversion: ";
+      if (outputFormat > 2) {
+        fsCube << "advanced mapping" << std::endl;
+      }
+      else {
+        fsCube << "hard clipping" << std::endl;
+      }
+    }
+    printf("Producing a LUT for %s -> %s conversions of size %i\n", inFormatName.c_str(), outFormatName.c_str(), lutSize);
+    fsCube << "# LUT for conversions from " << inFormatName << " to " << outFormatName << std::endl;
   }
   else {
     printf("Producing LUT for PQ -> HLG conversions of size %i\n", lutSize);
@@ -600,15 +678,14 @@ int main(int argc, char* argv[])
   }
 
   double inputScale = 1;
-  if (normalizedInput) {
+  if (reNormalizedInput) {
     printf("The LUT will expect the PQ input to be re-normalized to 1000 nits\n");
     inputScale = 0.7518271;
     fsCube << "# ATTENTION: This special LUT expects the PQ input to be re-normalized to 1000nits max brightness!" << std::endl;
-    fsCube << "TITLE \"PQ renorm 1000nits to " << mode << "\"" << std::endl;
+    fsCube << "TITLE \"PQ renorm 1000nits to " << outFormatName << "\"" << std::endl;
   }
   else {
-    printf("The LUT will expect usual PQ input\n");
-    fsCube << "TITLE \"PQ to " << mode << "\"" << std::endl;
+    fsCube << "TITLE \"" << inFormatName << " to " << outFormatName << "\"" << std::endl;
   }
   fsCube << "LUT_3D_SIZE " << lutSize << std::endl;
 
@@ -648,18 +725,30 @@ int main(int argc, char* argv[])
         if (gg > 1)gg = 1;
         if (bg > 1)bg = 1;
 
-        if (sdr) {
+        if (inputFormat == 2) {
+          rg = double(ri) / (lutSize - 1);
+          gg = double(gi) / (lutSize - 1);
+          bg = double(bi) / (lutSize - 1);
+        }
+
+        if (outputFormat) {
           rg = hlg2sdr(rg, sdrKneeStart, sdrKneeEndTangentFactor);
           gg = hlg2sdr(gg, sdrKneeStart, sdrKneeEndTangentFactor);
           bg = hlg2sdr(bg, sdrKneeStart, sdrKneeEndTangentFactor);
 
-          if (sdr>1) {
+          if (inputFormat == 3) {
+            rg = double(ri) / (lutSize - 1);
+            gg = double(gi) / (lutSize - 1);
+            bg = double(bi) / (lutSize - 1);
+          }
+
+          if (outputFormat > 1) {
             double rl = EOTFsdr(rg);
             double gl = EOTFsdr(gg);
             double bl = EOTFsdr(bg);
             if (chromaReduction != 1.0)
               reduceChroma(rl, gl, bl, chromaReduction);
-            if(sdr > 2)
+            if(outputFormat > 2)
               hybridColorMapping(rl, gl, bl);
             else
               convert2020To709(rl, gl, bl);

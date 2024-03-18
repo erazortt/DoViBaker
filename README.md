@@ -144,31 +144,43 @@ DoViStatsFileReader("statsFile.txt")
 DoViTonemap(targetMaxNits=1000, targetMinNits=0)
 ```
 
+## Frame Properties
+The following frame properties will be set:
+- `_SceneChangePrev` set to 1 for the first frame in a scene
+- `_SceneChangeNext` set to 1 for the last frame in a scene
+- `_dovi_dynamic_min_pq` the min_pq value of the current scene
+- `_dovi_dynamic_max_pq` the max_pq value of the current scene
+- `_dovi_dynamic_max_content_light_level` the equivalend value of maximal nits of the current scene
+- `_dovi_dynamic_luminosity_scale` the optional luminosity scaling factor of the current scene
+- `_dovi_static_max_pq` the max_pq value of the whole stream
+- `_dovi_static_max_content_light_level` the value of maximal nits of the whole stream
+
 # DoViLutGen.exe
 This application generates LUTs for conversions from BT.2100 PQ to either: BT.2100 HLG or BT.2020 SDR or BT.709 SDR. The PQ to HLG conversion is based on BT.2408-7 in conjunction with BT.2100-2. The LUTs will only process input values up to 1000 nits and will clip anything above that. If the PQ source has brightness levels above that, use [DoViTonemap](#dovitonemap) to tonemap the PQ stream to 1000 nits.
 
 ```
-usage: DoViLutGen.exe --out <output_file> --size <lut_size> [--normalized] [--sdr <sdr>] [--gain <sdr_gain>] [--compression <sdr_compression>] [--reduction <chroma_reduction_factor>]
+usage: DoViLutGen.exe <output_file> --size <lut_size> [--input <input>] [--output <output>] [--gain <sdr_gain>] [--compression <sdr_compression>] [--reduction <chroma_reduction_factor>]
 ```
 
 The meaning of the arguments:
 - `output file` the name of the to-be-generated LUT file
-- `lut size` generally a bigger LUT, is a better LUT. A good size is `65`.
-- `normalized input` if this optional flag is set, the generated LUT will expect that the input PQ was re-normalized to 1000 nits max brightness. LUTs for re-normalized inputs can be of smaller size than normal LUTs while still providing better quality. A good size for such a LUT is `50`. When not given, this will default to `false`.
-- `sdr` if this optional argument is set to `1`, the generated LUT will convert to BT.2020 SDR, if set to `2` it will convert to BT.709 SDR using hard clipping for the color gamut and finally using `3` will also convert to BT.709 but with a smart color mapping which prevents clipping while maintaining the look as much as possbile. Default is `0`, with the generated LUT converting to BT.2100 HLG.
+- `lut size` generally a bigger LUT, is a better LUT. A good size is `65` when input is default BT.2100 PQ. In all other cases `50` is enough.
+- `input format` this optional argument sets the source format of the LUT: `0` for BT.2100 PQ input, `1` for BT.2100 PQ input which was re-normalized to 1000 nits, `2` for BT.2100 HLG input and `3` for BT.2020 SDR input. Default is `0`.
+- `output format` this optional argument sets the destination format of the LUT: `0` for conversions to BT.2100 HLG, `1` for BT.2020 SDR, `2` will convert to BT.709 SDR using hard clipping for the color gamut and `3` will also convert to BT.709 but with a smart color mapping which prevents clipping while maintaining the look as much as possbile. Default is `0`.
 - `sdr gain` this optional argument adjusts the SDR mapping function, by setting the amount of gain of light midtones. Value range is [0.0, 1.0], default is `0.0`.
 - `sdr compression` this optional argument adjusts the SDR mapping function, by setting the amount of compression of bright highlights. Value range is [0.0, 1.0], default is `0.0`.
 - `chroma reduction factor` the factor by which the chroma is reduced. Default is `1.0`, meaning chroma is not reduced.
 
-Please be aware that the aruments are positional for this application, and must thus be given exactly in this order.
+Comment on the special input option for PQ re-normalized to 1000 nits:
+In that case, the generated LUT will expect that the input PQ was re-normalized to 1000 nits max brightness. LUTs for re-normalized inputs can be of smaller size than normal LUTs while still providing better quality. A good size for such a LUT is `50` instead of the `65` needed for the default PQ input.
 
 ## SDR Looks
 The default settings for `sdr_gain` and `sdr_compression` try to emulate a typical SDR look in what concerns dynamic range. This is usually more toned-down (aka flatter) than a typical HDR. For an even even more toned-down look increase `sdr_compression`, or, inversly and if trying to retain as much HDR feeling as possible, increase `sdr_gain`. Tweaking of these two settings will need to be done for each stream individually, while the defaults should be a good starting point in all instances.
 
-## Workflow for conversion to HLG
+## Workflow for conversions from PQ to HLG
 Generate the LUT by the following command:
 ```
-DoViLutGen.exe pq2hlg_normalizedInput.cube 50 1
+DoViLutGen.exe pq2hlg_normalizedInput.cube -s 50 -i 1 -o 0
 ```
 
 Create the following avisyth script:
@@ -180,11 +192,12 @@ z_ConvertFormat(pixel_type="YUV420P10",colorspace_op="rgb:std-b67:2020:full=>202
 ```
 Please be aware that in the example the parameter `lumaScale` was not given to `DoViTonemap`, which means that a brightness factor of `1.0` was used. You might want to have this increased if the source is too dark. And if you have the equivalent SDR source at hand, you can extract the factor using [LumScaleHelper.avs](#lumscalehelperavs).
 
-## Workflow for conversion to BT.709 SDR
+## Workflow for conversions from PQ to BT.709 SDR
 Generate the LUT by the following command:
 ```
-DoViLutGen.exe pq2sdr709_normalizedInput.cube 50 1 3
+DoViLutGen.exe pq2sdr709_normalizedInput.cube -s 50 -i 1 -o 3
 ```
+At this stage you can experiment with the SDR looks settings `gain` and `compression`.
 
 Create the following avisyth script:
 ```
@@ -193,18 +206,21 @@ DoViTonemap(targetMaxNits=1000, targetMinNits=0, normalizeOutput=true)
 AVSCube("pq2sdr709_normalizedInput.cube")
 z_ConvertFormat(pixel_type="YUV420P8",colorspace_op="rgb:709:709:full=>709:709:709:limited",chromaloc_op="center=>left")
 ```
-Just like in the HLG example above, the parameter `lumaScale` was not given to `DoViTonemap`, which means that a brightness factor of `1.0` was used. This will very rarely be the right choice. In contrast to HLG conversions, this setting is somewhat more relevant here. More often than not it will need to be above `2.0` or even higher.
+Just like in the HLG example above, the parameter `lumaScale` was not given to `DoViTonemap`, which means that a brightness factor of `1.0` was used. This will very rarely be the right choice. In contrast to HLG conversions, this setting is somewhat more relevant here. More often than not it will need to be above `2.0` or even higher. 
 
-## Frame Properties
-The following frame properties will be set:
-- `_SceneChangePrev` set to 1 for the first frame in a scene
-- `_SceneChangeNext` set to 1 for the last frame in a scene
-- `_dovi_dynamic_min_pq` the min_pq value of the current scene
-- `_dovi_dynamic_max_pq` the max_pq value of the current scene
-- `_dovi_dynamic_max_content_light_level` the equivalend value of maximal nits of the current scene
-- `_dovi_dynamic_luminosity_scale` the optional luminosity scaling factor of the current scene
-- `_dovi_static_max_pq` the max_pq value of the whole stream
-- `_dovi_static_max_content_light_level` the value of maximal nits of the whole stream
+## Workflow for conversions from HLG to BT.709 SDR
+Generate the LUT by the following command:
+```
+DoViLutGen.exe hlg2sdr709.cube -s 65 -i 2 -o 3
+```
+At this stage you can experiment with the SDR looks settings `gain` and `compression`.
+
+Create the following avisyth script:
+```
+z_ConvertFormat(pixel_type="RGBP16",colorspace_op="2020ncl:std-b67:2020:limited=>rgb:std-b67:2020:full",chromaloc_op="top_left=>center")
+AVSCube("hlg2sdr709.cube")
+z_ConvertFormat(pixel_type="YUV420P8",colorspace_op="rgb:709:709:full=>709:709:709:limited",chromaloc_op="center=>left")
+```
 
 # DoViAnalyzer.exe
 This application analyzes the RPU.bin file in order to show information relevant to deciding whether it is worth to use [DoViBaker](#dovibaker) or if this can be skipped completely and the Base Layer can be used directly.
