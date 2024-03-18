@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <vector>
 #include <format>
+#include <string>
+#include <filesystem>
 
 double EOTFpq(double ep)
 {
@@ -150,7 +152,7 @@ void rgb709fromXYZ(double& rl, double& gl, double& bl, double X, double Y, doubl
   bl = 0.05563007901 * X - 0.2039769588 * Y + 1.056971515 * Z;
 }
 
-void LsAsBsFromXYZ(double& Ls, double& As, double& Bs, double X, double Y, double Z) {
+/*void LsAsBsFromXYZ(double& Ls, double& As, double& Bs, double X, double Y, double Z) {
   // conversion to CIELAB without all the constants
   constexpr double Xw = 0.950455927;
   constexpr double Yw = 1;
@@ -167,7 +169,6 @@ void XYZfromLsAsBs(double& X, double& Y, double& Z, double Ls, double As, double
   X = (As + Ls) * Xw;
   Z = (Ls - Bs) * Zw;
 }
-
 void LsAsBsFromRgb709(double& Ls, double& As, double& Bs, double rl, double gl, double bl) {
   double X, Y, Z;
   XYZfromRgb709(X, Y, Z, rl, gl, bl);
@@ -187,7 +188,7 @@ void rgb2020fromLsAsBs(double& rl, double& gl, double& bl, double Ls, double As,
   double X, Y, Z;
   XYZfromLsAsBs(X, Y, Z, Ls, As, Bs);
   rgb2020fromXYZ(rl, gl, bl, X, Y, Z);
-}
+}*/
 
 void lmsFromXYZ(double& l, double& m, double& s, double X, double Y, double Z) {
   l = 0.8189330101 * X + 0.3618667424 * Y - 0.1288597137 * Z;
@@ -220,40 +221,48 @@ void lmsFromLab(double& l, double& m, double& s, double L, double a, double b) {
   m = std::pow(m, exponent);
   s = std::pow(s, exponent);
 }
+void XYZfromLab(double& X, double& Y, double& Z, double L, double a, double b) {
+  double l, m, s;
+  lmsFromLab(l, m, s, L, a, b);
+  XYZfromLms(X, Y, Z, l, m, s);
+}
+void labFromXYZ(double& L, double& a, double& b, double X, double Y, double Z) {
+  double l, m, s;
+  lmsFromXYZ(l, m, s, X, Y, Z);
+  labFromLms(L, a, b, l, m, s);
+}
 
 void labFromRgb2020(double& L, double& a, double& b, double rl, double gl, double bl) {
-  double x, y, z;
-  XYZfromRgb2020(x, y, z, rl, gl, bl);
-  double l, m, s;
-  lmsFromXYZ(l, m, s, x, y, z);
-  labFromLms(L, a, b, l, m, s);
+  double X, Y, Z;
+  XYZfromRgb2020(X, Y, Z, rl, gl, bl);
+  labFromXYZ(L, a, b, X, Y, Z);
 }
 void labFromRgb709(double& L, double& a, double& b, double rl, double gl, double bl) {
-  double x, y, z;
-  XYZfromRgb709(x, y, z, rl, gl, bl);
-  double l, m, s;
-  lmsFromXYZ(l, m, s, x, y, z);
-  labFromLms(L, a, b, l, m, s);
+  double X, Y, Z;
+  XYZfromRgb709(X, Y, Z, rl, gl, bl);
+  labFromXYZ(L, a, b, X, Y, Z);
 }
 void rgb2020fromLab(double& rl, double& gl, double& bl, double L, double a, double b) {
-  double l, m, s;
-  lmsFromLab(l, m, s, L, a, b);
-  double x, y, z;
-  XYZfromLms(x, y, z, l, m, s);
-  rgb2020fromXYZ(rl, gl, bl, x, y, z);
+  double X, Y, Z;
+  XYZfromLab(X, Y, Z, L, a, b);
+  rgb2020fromXYZ(rl, gl, bl, X, Y, Z);
 }
 void rgb709fromLab(double& rl, double& gl, double& bl, double L, double a, double b) {
-  double l, m, s;
-  lmsFromLab(l, m, s, L, a, b);
-  double x, y, z;
-  XYZfromLms(x, y, z, l, m, s);
-  rgb709fromXYZ(rl, gl, bl, x, y, z);
+  double X, Y, Z;
+  XYZfromLab(X, Y, Z, L, a, b);
+  rgb709fromXYZ(rl, gl, bl, X, Y, Z);
 }
 
 void convert2020To709(double& rl, double& gl, double& bl) {
   double x, y, z;
   XYZfromRgb2020(x, y, z, rl, gl, bl);
   rgb709fromXYZ(rl, gl, bl, x, y, z);
+}
+
+void reduceChroma(double& rl, double& gl, double& bl, double f = 0.9418) {
+  double L, a, b;
+  labFromRgb2020(L, a, b, rl, gl, bl);
+  rgb2020fromLab(rl, gl, bl, L, a * f, b * f);
 }
 
 typedef void (*rgbFromLab)(double& rl, double& gl, double& bl, double L, double a, double b);
@@ -293,7 +302,7 @@ double findBorderInside(double Li, double& Ai, double& Bi, rgbFromLab rgbFromLab
   Bi *= f;
 
   //double x, y, X, Y, Z;
-  //XYZfromLsAsBs(X, Y, Z, Li, Ai, Bi);
+  //XYZfromLab(X, Y, Z, Li, Ai, Bi);
   //xyFromXYZ(x, y, X, Y, Z);
 
   return 1/f;
@@ -314,7 +323,7 @@ double findBorderOutside(double Li, double& Ai, double& Bi, rgbFromLab rgbFromLa
   Bi /= f;
 
   //double x, y, X, Y, Z;
-  //XYZfromLsAsBs(X, Y, Z, Li, Ai, Bi);
+  //XYZfromLab(X, Y, Z, Li, Ai, Bi);
   //xyFromXYZ(x, y, X, Y, Z);
 
   return f;
@@ -379,29 +388,12 @@ double hybridColorMapping(double& ri, double& gi, double& bi) {
   //double ho = atan2(bWeighted, aWeighted);
 
   //double x, y, X, Y, Z;
-  //XYZfromLsAsBs(X, Y, Z, L, aHullDst, bHullDst);
+  //XYZfromLab(X, Y, Z, L, aHullDst, bHullDst);
   //xyFromXYZ(x, y, X, Y, Z);
 
   rgb709fromLab(ri, gi, bi, L, aWeighted, bWeighted);
 
   return reductionFactor;
-}
-
-void showBestLutSizes() {
-  printf("For unnormalized PQ inputs only the following LUT sizes should be used:\n");
-  for (int s = 2; s < 139; s++) {
-    if (s <= 69 && (s % 4) != 1) continue;
-    if (s >= 70 && (s % 4) != 2) continue;
-    if (s > 138) continue;
-    printf("%i ", s);
-  }
-  printf("\n");
-}
-void warnAboutLutSize() {
-  printf("\n");
-  printf("WARNING:\n");
-  showBestLutSizes();
-  printf("\n");
 }
 
 void selfTestHybridConversion() {
@@ -431,75 +423,123 @@ void selfTestHybridConversion() {
   f = hybridColorMapping(r, g, b);
 }
 
+void showBestLutSizes() {
+  printf("For unnormalized PQ inputs only the following LUT sizes should be used:\n");
+  for (int s = 2; s < 139; s++) {
+    if (s <= 69 && (s % 4) != 1) continue;
+    if (s >= 70 && (s % 4) != 2) continue;
+    if (s > 138) continue;
+    printf("%i ", s);
+  }
+  printf("\n");
+}
+void warnAboutLutSize() {
+  printf("\n");
+  printf("WARNING:\n");
+  showBestLutSizes();
+  printf("\n");
+}
+
+void showUsage(std::string& execname) {
+  printf("USAGE:\n");
+  printf("%s -o|--out <string> -s|--size <string> [-n|--normalized] [-d|--sdr <int>] [-g|--gain <float>] [-c|--compression <float>] [-r|--reduction <float>]\n", execname.c_str());
+  printf("\n");
+  printf("ARGUMENTS:\n");
+  printf("-o, --out <string>         name of the to-be-generated LUT file\n");
+  printf("-s, --size <int>           size along one dimension of the LUT\n");
+  printf("-n, --normalized           whether the input is normalized to 1000nits (false)\n");
+  printf("-d, --sdr <int>            1: converts to BT.2020 SDR\n");
+  printf("                           2: converts to BT.709 SDR with hard color clipping\n");
+  printf("                           3: converts to BT.709 SDR with advanced color mapping\n");
+  printf("                           default (0): converts to BT.2100 HLG\n");
+  printf("-g, --gain <float>         gain of light midtones in SDR conversions (0.0)\n");
+  printf("-c, --compression <float>  highlight compression in SDR conversions (0.0)\n");
+  printf("-r, --reduction <float>    chroma reduction factor in SDR conversions (1.0)\n");
+  printf("\n");
+  printf("examples for PQ to HLG conversions:\n");
+  printf("%s -o pq2hlg.cube -s 65\n", execname.c_str());
+  printf("%s -o pq2hlg_normalizedInput.cube -s 50 -n\n", execname.c_str());
+  printf("\n");
+  printf("examples for PQ to BT.2020 SDR conversions:\n");
+  printf("%s -o pq2sdr2020.cube -s 65 -d 1\n", execname.c_str());
+  printf("%s -o pq2sdr2020_normalizedInput.cube -s 50 -n -d 1\n", execname.c_str());
+  printf("\n");
+  printf("examples for PQ to BT.709 SDR conversions:\n");
+  printf("%s -o pq2sdr709.cube -s 65 -d 3\n", execname.c_str());
+  printf("%s -o pq2sdr709_normalizedInput.cube -s 50 -n -d 3\n", execname.c_str());
+  printf("\n");
+  showBestLutSizes();
+}
+
+bool hasArgument(
+  const std::vector<std::string>& args,
+  const std::string& option_name,
+  const std::string& option_alt_name) {
+  for (auto it = args.begin(), end = args.end(); it != end; ++it) {
+    if (*it == option_name || *it == option_alt_name)
+      return true;
+  }
+  return false;
+}
+std::string getArgumentValue(
+  const std::vector<std::string>& args,
+  const std::string& option_name,
+  const std::string& option_alt_name) {
+  for (auto it = args.begin(), end = args.end(); it != end; ++it) {
+    if (*it == option_name || *it == option_alt_name)
+      return *(it + 1);
+  }
+  return "";
+}
+
 #ifdef DOVI_LUTGEN
 int main(int argc, char* argv[])
 {
-  if (argc < 3) {
-    printf("usage:\n");
-    printf("<OUTPUT_FILE> <LUT_SIZE> (<NORMALIZED_INPUT>) (<SDR>) (<GAIN>) (<COMPRESSION>)\n");
-    printf("\n");
-    printf("examples for PQ to HLG conversions:\n");
-    printf("DoViLutGen.exe pq2hlg.cube 65\n");
-    printf("DoViLutGen.exe pq2hlg_normalizedInput.cube 50 1\n");
-    printf("\n");
-    printf("examples for PQ to BT.2020 SDR conversions:\n");
-    printf("DoViLutGen.exe pq2sdr2020.cube 65 0 1\n");
-    printf("DoViLutGen.exe pq2sdr2020_normalizedInput.cube 50 1 1\n");
-    printf("\n");
-    printf("examples for PQ to BT.709 SDR conversions:\n");
-    printf("DoViLutGen.exe pq2sdr709.cube 65 0 2\n");
-    printf("DoViLutGen.exe pq2sdr709_normalizedInput.cube 50 1 2\n");
-    printf("\n");
-    showBestLutSizes();
+  //selfTestHybridConversion();
+
+  std::string execname = std::filesystem::path(*argv).filename().string();
+  if (argc < 5) {
+    showUsage(execname);
     return 1;
   }
-  //selfTestHybridConversion();
-  std::ofstream fsCube;
-  fsCube.open(argv[1], std::ifstream::out);
-  if (!fsCube.is_open()) {
-    fsCube.close();
-    printf("Unable to open output file\n");
-    return 2;
-  }
 
-  int lutSize = std::atoi(argv[2]);
-  bool normalizedInput = false;
-  if (argc > 3) {
-    normalizedInput = std::atoi(argv[3]);
-  }
-
-  std::string mode = "HLG";
-  int sdr = false;
+  const std::vector<std::string> args(argv + 1, argv + argc);
+  std::string lutFileName;
+  int lutSize;
+  bool normalizedInput;
+  int sdr = 0;
   double sdrGain = 0.0;
   double sdrCompression = 0.0;
-  if (argc > 4) {
-    sdr = std::atoi(argv[4]);
-    if (sdr) {
-      if (sdr > 1) {
-        mode = "BT.709 SDR";
-      }
-      else {
-        mode = "BT.2020 SDR";
-      }
-    }
-    if (argc > 5) {
-      sdrGain = std::atof(argv[5]);
-      if (sdrGain < 0) {
-        printf("gain cannot be negative");
-        return 2;
-      }
-      if (argc > 6) {
-        sdrCompression = std::atof(argv[6]);
-        if (sdrCompression > 1) {
-          printf("compression cannot be above 1");
-          return 2;
-        }
-      }
-    }
-  }
-  double sdrKneeStart = std::sqrt(sdrGain) * 0.2103131223 + 0.5;
-  double sdrKneeEndTangentFactor = (1 - std::sqrt(1 - sdrCompression));
+  double chromaReduction = 1.0;
 
+  if (!hasArgument(args, "-o", "--out")) {
+    showUsage(execname);
+    return 1;
+  }
+  lutFileName = getArgumentValue(args, "-o", "--out");
+  if (!hasArgument(args, "-s", "--size")) {
+    showUsage(execname);
+    return 1;
+  }
+  lutSize = std::stoi(getArgumentValue(args, "-s", "--size"));
+  normalizedInput = hasArgument(args, "-n", "--normalized");
+  if (hasArgument(args, "-d", "--sdr")) {
+    sdr = std::stoi(getArgumentValue(args, "-d", "--sdr"));
+  }
+  if (hasArgument(args, "-g", "--gain")) {
+    sdrGain = std::stof(getArgumentValue(args, "-g", "--gain"));
+  }
+  if (hasArgument(args, "-c", "--compression")) {
+    sdrCompression = std::stof(getArgumentValue(args, "-c", "--compression"));
+  }
+  if (hasArgument(args, "-r", "--reduction")) {
+    chromaReduction = std::stof(getArgumentValue(args, "-r", "--reduction"));
+  }
+
+  if (lutSize < 1 || lutSize > 200) {
+    printf("LUT size not supported");
+    return 2;
+  }
   if (!normalizedInput) {
     if (lutSize <= 69 && (lutSize % 4) != 1) {
       warnAboutLutSize();
@@ -512,13 +552,46 @@ int main(int argc, char* argv[])
     }
   }
 
+  std::string mode = "HLG";
+  if (sdr) {
+    if (sdr > 1) {
+      mode = "BT.709 SDR";
+    }
+    else {
+      mode = "BT.2020 SDR";
+    }
+  }
+  if (sdrGain < 0) {
+    printf("Gain cannot be negative");
+    return 2;
+  }
+  if (sdrCompression > 1) {
+    printf("Compression cannot be above 1");
+    return 2;
+  }
+  if (chromaReduction < 0) {
+    printf("Reduction cannot be negative");
+    return 2;
+  }
+
+  std::ofstream fsCube;
+  fsCube.open(lutFileName, std::ifstream::out);
+  if (!fsCube.is_open()) {
+    fsCube.close();
+    printf("Unable to open output file\n");
+    return 2;
+  }
+
+  double sdrKneeStart = std::sqrt(sdrGain) * 0.2103131223 + 0.5;
+  double sdrKneeEndTangentFactor = (1 - std::sqrt(1 - sdrCompression));
+
   fsCube << "# Generated by DoViLutGen" << std::endl;
   fsCube << "# re-normalized input: " << normalizedInput << std::endl;
   fsCube << "# mode: " << mode << std::endl;
   if (sdr) {
     fsCube << "# midtone gain: " << sdrGain << " (kS=" << sdrKneeStart << ")" << std::endl;
     fsCube << "# highlight compression: " << sdrCompression << " (m1Factor=" << sdrKneeEndTangentFactor << ")" << std::endl;
-    printf("Producing a LUT for PQ -> SDR conversions of size %i\n", lutSize);
+    printf("Producing a LUT for PQ -> %s conversions of size %i\n", mode.c_str(), lutSize);
     fsCube << "# LUT for conversions from BT.2100 HDR PQ to " << mode << std::endl;
   }
   else {
@@ -584,7 +657,9 @@ int main(int argc, char* argv[])
             double rl = EOTFsdr(rg);
             double gl = EOTFsdr(gg);
             double bl = EOTFsdr(bg);
-            if(sdr>2)
+            if (chromaReduction != 1.0)
+              reduceChroma(rl, gl, bl, chromaReduction);
+            if(sdr > 2)
               hybridColorMapping(rl, gl, bl);
             else
               convert2020To709(rl, gl, bl);

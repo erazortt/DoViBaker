@@ -148,16 +148,17 @@ DoViTonemap(targetMaxNits=1000, targetMinNits=0)
 This application generates LUTs for conversions from BT.2100 PQ to either: BT.2100 HLG or BT.2020 SDR or BT.709 SDR. The PQ to HLG conversion is based on BT.2408-7 in conjunction with BT.2100-2. The LUTs will only process input values up to 1000 nits and will clip anything above that. If the PQ source has brightness levels above that, use [DoViTonemap](#dovitonemap) to tonemap the PQ stream to 1000 nits.
 
 ```
-usage: DoViLutGen.exe <output_file> <lut_size> (<normalized_input>) (<sdr>) (<sdr_gain>) (<sdr_compression>)
+usage: DoViLutGen.exe --out <output_file> --size <lut_size> [--normalized] [--sdr <sdr>] [--gain <sdr_gain>] [--compression <sdr_compression>] [--reduction <chroma_reduction_factor>]
 ```
 
 The meaning of the arguments:
 - `output file` the name of the to-be-generated LUT file
 - `lut size` generally a bigger LUT, is a better LUT. A good size is `65`.
-- `normalized input` if this optional argument is set to `1`, the generated LUT will expect that the input PQ was re-normalized to 1000 nits max brightness. LUTs for re-normalized inputs can be of smaller size than normal LUTs while still providing better quality. A good size for such a LUT is `50`. When not given, this will default to `0`.
+- `normalized input` if this optional flag is set, the generated LUT will expect that the input PQ was re-normalized to 1000 nits max brightness. LUTs for re-normalized inputs can be of smaller size than normal LUTs while still providing better quality. A good size for such a LUT is `50`. When not given, this will default to `false`.
 - `sdr` if this optional argument is set to `1`, the generated LUT will convert to BT.2020 SDR, if set to `2` it will convert to BT.709 SDR using hard clipping for the color gamut and finally using `3` will also convert to BT.709 but with a smart color mapping which prevents clipping while maintaining the look as much as possbile. Default is `0`, with the generated LUT converting to BT.2100 HLG.
-- `sdr_gain` this optional argument adjusts the SDR mapping function, by setting the amount of gain of bright midtones. Value range is [0.0, 1.0], default is `0.0`.
-- `sdr_compression` this optional argument adjusts the SDR mapping function, by setting the amount of compression of very bright highlights. Value range is [0.0, 1.0], default is `0.0`.
+- `sdr gain` this optional argument adjusts the SDR mapping function, by setting the amount of gain of light midtones. Value range is [0.0, 1.0], default is `0.0`.
+- `sdr compression` this optional argument adjusts the SDR mapping function, by setting the amount of compression of bright highlights. Value range is [0.0, 1.0], default is `0.0`.
+- `chroma reduction factor` the factor by which the chroma is reduced. Default is `1.0`, meaning chroma is not reduced.
 
 Please be aware that the aruments are positional for this application, and must thus be given exactly in this order.
 
