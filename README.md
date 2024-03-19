@@ -214,6 +214,8 @@ DoViTonemap(targetMaxNits=1000, targetMinNits=0, masterMaxNits=4000, masterMinNi
 AVSCube("pq2sdr709_normalizedInput.cube")
 z_ConvertFormat(pixel_type="YUV420P8",colorspace_op="rgb:709:709:full=>709:709:709:limited",chromaloc_op="center=>left")
 ```
+This example uses static tonemapping. By virtueof [StatsFileCreator.avs](#statsfilecreatoravs) and [DoViStatsFileLoader](#dovistatsfileloader) it is also possble to have the clip analyzed allowing for dynamic tonemapping.
+
 Just like in the HLG example above, the parameter `lumaScale` was not given to `DoViTonemap`, which means that a brightness factor of `1.0` was used. This will very rarely be the right choice. In contrast to HLG conversions, this setting is somewhat more relevant here. More often than not it will need to be above `2.0` or even higher. 
 
 ## Workflow for conversions from HLG to BT.709 SDR
