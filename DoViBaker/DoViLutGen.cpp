@@ -452,13 +452,13 @@ void showUsage(std::string& execname) {
   printf("                             1: BT.2100 PQ which was re-normalized to 1000nits\n");
   printf("                             2: BT.2100 HLG\n");
   printf("                             3: BT.2020 SDR\n");
-  printf("-o, --output <int>         output format to convert to\n");
+  printf("-o, --output <int>         output format to convert to:\n");
   printf("                             0: BT.2100 HLG (default)\n");
   printf("                             1: BT.2020 SDR\n");
   printf("                             2: BT.709 SDR with hard color clipping\n");
   printf("                             3: BT.709 SDR with advanced color mapping\n");
-  printf("-g, --gain <float>         gain of light midtones in SDR conversions (0.0)\n");
-  printf("-c, --compression <float>  highlight compression in SDR conversions (0.0)\n");
+  printf("-g, --gain <float>         gain of light midtones in conversions to SDR (0.0)\n");
+  printf("-c, --compression <float>  highlight compression in conversions to SDR (0.0)\n");
   printf("-r, --reduction <float>    chroma reduction factor in SDR conversions (1.0)\n");
   printf("\n");
   printf("examples for PQ to HLG conversions:\n");
