@@ -185,7 +185,7 @@ In that case, the generated LUT will expect that the input PQ was re-normalized 
 ## SDR Looks
 The default settings for `sdr_gain` and `sdr_compression` try to emulate a typical SDR look in what concerns dynamic range. This is usually more toned-down (aka flatter) than a typical HDR. For an even even more toned-down look increase `sdr_compression`, or, inversly and if trying to retain as much HDR feeling as possible, increase `sdr_gain`. If the output seems too colorful, the chroma can be decreased by decreasing `chroma_reduction_factor`. Tweaking of these settings will need to be done for each stream individually, while the defaults should be a good starting point in all instances. 
 
-## Workflow for conversions from PQ to HLG
+## Workflow for conversions from DolbyVision to HLG
 Generate the LUT by the following command:
 ```
 DoViLutGen.exe pq2hlg_normalizedInput.cube -s 50 -i 1 -o 0
@@ -209,8 +209,8 @@ At this stage you can experiment with the SDR looks settings `gain` and `compres
 
 Create the following avisyth script:
 ```
-DoViBaker(bl,el)
-DoViTonemap(targetMaxNits=1000, targetMinNits=0, normalizeOutput=true)
+z_ConvertFormat(pixel_type="RGBP16",colorspace_op="2020ncl:st2084:2020:limited=>rgb:st2084:2020:full",chromaloc_op="top_left=>center")
+DoViTonemap(targetMaxNits=1000, targetMinNits=0, masterMaxNits=4000, masterMinNits=0, normalizeOutput=true)
 AVSCube("pq2sdr709_normalizedInput.cube")
 z_ConvertFormat(pixel_type="YUV420P8",colorspace_op="rgb:709:709:full=>709:709:709:limited",chromaloc_op="center=>left")
 ```
