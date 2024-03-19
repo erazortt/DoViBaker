@@ -147,14 +147,14 @@ The default settings for `sdr_gain` and `sdr_compression` try to emulate a typic
 ## Workflow for conversions from DolbyVision PQ to HLG
 Generate the LUT by the following command:
 ```
-DoViLutGen.exe pq2hlg_normalizedInput.cube -s 50 -i 1 -o 0
+DoViLutGen.exe pq2hlg.cube -s 65 -i 0 -o 0
 ```
 
 Create the following avisyth script:
 ```
 DoViBaker(bl,el)
-DoViTonemap(targetMaxNits=1000, targetMinNits=0, normalizeOutput=true)
-AVSCube("pq2hlg_normalizedInput.cube")
+DoViTonemap(targetMaxNits=1000, targetMinNits=0)
+AVSCube("pq2hlg.cube")
 z_ConvertFormat(pixel_type="YUV420P10",colorspace_op="rgb:std-b67:2020:full=>2020ncl:std-b67:2020:limited",chromaloc_op="center=>top_left")
 ```
 Please be aware that in the example the parameter `lumaScale` was not given to `DoViTonemap`, which means that a brightness factor of `1.0` was used. You might want to have this increased if the source is too dark. And if you have the equivalent SDR source at hand, you can extract the factor using [LumScaleHelper.avs](#lumscalehelperavs).
@@ -162,15 +162,15 @@ Please be aware that in the example the parameter `lumaScale` was not given to `
 ## Workflow for conversions from non-DolbyVision PQ to BT.709 SDR
 Generate the LUT by the following command:
 ```
-DoViLutGen.exe pq2sdr709_normalizedInput.cube -s 50 -i 1 -o 3
+DoViLutGen.exe pq2sdr709.cube -s 65 -i 0 -o 3
 ```
 At this stage you can experiment with the SDR looks settings `gain` and `compression`.
 
 Create the following avisyth script:
 ```
 z_ConvertFormat(pixel_type="RGBP16",colorspace_op="2020ncl:st2084:2020:limited=>rgb:st2084:2020:full",chromaloc_op="top_left=>center")
-DoViTonemap(targetMaxNits=1000, targetMinNits=0, masterMaxNits=4000, masterMinNits=0, normalizeOutput=true)
-AVSCube("pq2sdr709_normalizedInput.cube")
+DoViTonemap(targetMaxNits=1000, targetMinNits=0, masterMaxNits=4000, masterMinNits=0)
+AVSCube("pq2sdr709.cube")
 z_ConvertFormat(pixel_type="YUV420P8",colorspace_op="rgb:709:709:full=>709:709:709:limited",chromaloc_op="center=>left")
 ```
 This example uses fixed values for the `masterMaxNits` and `masterMinNits` settings of `DoViTonemap`, meaning it is a static tonemapping. By virtue of [StatsFileCreator.avs](#statsfilecreatoravs) and [DoViStatsFileLoader](#dovistatsfileloader) it is also possble to have the clip analyzed allowing for dynamic tonemapping (then `masterMaxNits` and `masterMinNits` would be left unset).
