@@ -136,7 +136,7 @@ The meaning of the arguments:
   - `3` for BT.709 SDR output with smart color mapping preventing clipping while maintaining the look as much as possbile
 - `sdr gain` this optional argument adjusts the SDR mapping function, by setting the amount of gain of light midtones. Value range is [0.0, 1.0], default is `0.0`.
 - `sdr compression` this optional argument adjusts the SDR mapping function, by setting the amount of compression of bright highlights. Value range is [0.0, 1.0], default is `0.0`.
-- `chroma reduction factor` this optional sets the factor by which the chroma is reduced. Default is `1.0`, meaning chroma is not reduced.
+- `chroma reduction factor` this optional argument sets the factor by which the chroma is reduced. Default is `1.0`, meaning chroma is not reduced.
 
 Comment on the special input option for PQ re-normalized to 1000 nits:
 In that case, the generated LUT will expect that the input PQ was re-normalized to 1000 nits max brightness. LUTs for re-normalized inputs can be of smaller size than normal LUTs while still providing better quality. A good size for such a LUT is `50` instead of the `65` needed for the default PQ input.
