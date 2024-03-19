@@ -4,7 +4,7 @@ While `DoViBaker` is the name of the main component, the package actually includ
 - [DoViCubes](#dovicubes): applies different LUTs based on maxCll
 - [AVSCube](#avscube): applies a LUT to a stream
 - [DoViStatsFileLoader](#dovistatsfileloader): loads the stats-file created by StatsFileCreator.avs enabling DoViTonemap or DoViCubes to apply dynamic processing on non-DolbyVision PQ streams
-- [DoViLutGen.exe](#dovilutgenexe): creates LUTs for converting already tonemapped PQ streams to HLG or SDR, or from HLG to SDR
+- [DoViLutGen.exe](#dovilutgenexe): creates LUTs for converting PQ streams to HLG or SDR, or for converting HLG to SDR
 - [DoViAnalyzer.exe](#dovianalyzerexe): analyzes a given RPU.bin file
 - [StatsFileCreator.avs](#statsfilecreatoravs): analyzes a non-DolbyVision PQ stream and generates a stats-file which enables dynamic tonemapping
 - [LumaScaleHelper.avs](#lumascalehelperavs): manually compare a PQ stream to a pre-existing SDR stream to extract the lumaScale which can be given to DoViTonemap
