@@ -157,7 +157,7 @@ DoViTonemap(targetMaxNits=1000, targetMinNits=0)
 AVSCube("pq2hlg.cube")
 z_ConvertFormat(pixel_type="YUV420P10",colorspace_op="rgb:std-b67:2020:full=>2020ncl:std-b67:2020:limited",chromaloc_op="center=>top_left")
 ```
-Please be aware that in the example the parameter `lumaScale` was not given to `DoViTonemap`, which means that a brightness factor of `1.0` was used. You might want to have this increased if the source is too dark. And if you have the equivalent SDR source at hand, you can extract the factor using [LumScaleHelper.avs](#lumscalehelperavs).
+Please be aware that in the example the parameter `lumaScale` was not given to `DoViTonemap`, which means that a brightness factor of `1.0` is used. You might want to have this increased if the source is too dark. And if you have the equivalent SDR source at hand, you can extract the factor using [LumScaleHelper.avs](#lumscalehelperavs).
 
 ## Workflow for conversions from non-DolbyVision PQ to BT.709 SDR
 Generate the LUT by the following command:
@@ -175,7 +175,7 @@ z_ConvertFormat(pixel_type="YUV420P8",colorspace_op="rgb:709:709:full=>709:709:7
 ```
 This example uses fixed values for the `masterMaxNits` and `masterMinNits` settings of `DoViTonemap`, meaning it is a static tonemapping. By virtue of [StatsFileCreator.avs](#statsfilecreatoravs) and [DoViStatsFileLoader](#dovistatsfileloader) it is also possble to have the clip analyzed allowing for dynamic tonemapping (then `masterMaxNits` and `masterMinNits` would be left unset).
 
-Just like in the HLG example above, the parameter `lumaScale` was not given to `DoViTonemap`, which means that a brightness factor of `1.0` was used. This will very rarely be the right choice. In contrast to HLG conversions, this setting is somewhat more relevant here. More often than not it will need to be above `2.0` or even higher. 
+Just like in the HLG example above, the parameter `lumaScale` was not given to `DoViTonemap`, which means that a brightness factor of `1.0` is used. This will very rarely be the right choice. In contrast to HLG conversions, this setting is somewhat more relevant here. More often than not it will need to be above `2.0` or even higher. 
 
 ## Workflow for conversions from HLG to BT.709 SDR
 Generate the LUT by the following command:
