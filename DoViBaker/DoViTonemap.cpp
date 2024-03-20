@@ -28,7 +28,7 @@ DoViTonemap<signalBitDepth>::DoViTonemap(
 	, limitedInput(false)
 	, dynamicMasterMaxPq(masterMaxNits < 0)
 	, dynamicMasterMinPq(masterMinNits < 0)
-	, dynamicLumScale(lumScale < 0) 
+	, dynamicLumScale(lumScale_ < 0)
 {
 	if (targetMinPq * 2 > targetMaxPq) {
 		// prevent EETF tapering to fail from a too low value of the taper power
