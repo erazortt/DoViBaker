@@ -41,24 +41,27 @@ double OETFhlg(double e)
   return a * std::log(12 * e - b) + c;
 }
 
-double OETFsdr(double l) {
+/*double OETFsdr(double l) {
   static constexpr double a = 1.099296827;
   static constexpr double b = 0.018053969;
   static constexpr double c = a - b - 1;
-
   if (l < b)
     return 4.5 * l;
   return a * std::pow(l, 0.45) - (a - 1);
 }
-
-double EOTFsdr(double g) {
+double OETFsdrInv(double g) {
   static constexpr double a = 1.099296827;
   static constexpr double b = 0.018053969;
   static constexpr double c = a - b - 1;
-
   if (g < c)
     return g/4.5;
   return std::pow((g + (a - 1))/a, 1.0/0.45);
+}*/
+double EOTFsdrInv(double l) {
+  return std::pow(l, 1/2.4);
+}
+double EOTFsdr(double g) {
+  return std::pow(g, 2.4);
 }
 
 static constexpr double unitHermiteSpline(double t, double y0, double m0, double y1, double m1) {
@@ -424,7 +427,7 @@ void selfTestHybridConversion() {
 }
 
 void showBestLutSizes() {
-  printf("For unnormalized PQ inputs only the following LUT sizes should be used:\n");
+  printf("For non-renormalized PQ inputs only the following LUT sizes should be used:\n");
   for (int s = 2; s < 139; s++) {
     if (s <= 69 && (s % 4) != 1) continue;
     if (s >= 70 && (s % 4) != 2) continue;
@@ -469,32 +472,14 @@ void showUsage(std::string& execname) {
   printf("%s pq2sdr709.cube -s 65 -i 0 -o 3\n", execname.c_str());
   printf("%s pq2sdr709_normalizedInput.cube -s 50 -i 1 -o 3\n", execname.c_str());
   printf("\n");
-  printf("examples for HLG to BT.709 SDR conversions:\n");
-  printf("%s hlg2sdr709.cube -s 65 -i 2 -o 3\n", execname.c_str());
+  printf("example for HLG to BT.709 SDR conversions:\n");
+  printf("%s hlg2sdr709.cube -s 50 -i 2 -o 3\n", execname.c_str());
+  printf("\n");
+  printf("example for BT.2020 SDR to BT.709 SDR conversions:\n");
+  printf("%s bt2020to709.cube -s 50 -i 3 -o 3\n", execname.c_str());
   printf("\n");
   showBestLutSizes();
 }
-
-/*bool hasArgument(
-  const std::vector<std::string>& args,
-  const std::string& option_name,
-  const std::string& option_alt_name) {
-  for (auto it = args.begin(), end = args.end(); it != end; ++it) {
-    if (*it == option_name || *it == option_alt_name)
-      return true;
-  }
-  return false;
-}
-std::string getArgumentValue(
-  const std::vector<std::string>& args,
-  const std::string& option_name,
-  const std::string& option_alt_name) {
-  for (auto it = args.begin(), end = args.end(); it != end; ++it) {
-    if (*it == option_name || *it == option_alt_name)
-      return *(it + 1);
-  }
-  return "";
-}*/
 
 bool hasArgument(
   std::vector<std::string>& args,
@@ -658,9 +643,12 @@ int main(int argc, char* argv[])
   }
   fsCube << "# out format: " << outFormatName << std::endl;
   if (outputFormat) {
-    fsCube << "# midtone gain: " << sdrGain << " (kS=" << sdrKneeStart << ")" << std::endl;
-    fsCube << "# highlight compression: " << sdrCompression << " (m1Factor=" << sdrKneeEndTangentFactor << ")" << std::endl;
+    if (inputFormat < 3) {
+      fsCube << "# midtone gain: " << sdrGain << " (kS=" << sdrKneeStart << ")" << std::endl;
+      fsCube << "# highlight compression: " << sdrCompression << " (m1Factor=" << sdrKneeEndTangentFactor << ")" << std::endl;
+    }
     if (outputFormat > 1) {
+      fsCube << "# chroma reduction factor: " << chromaReduction << std::endl;
       fsCube << "# color conversion: ";
       if (outputFormat > 2) {
         fsCube << "advanced mapping" << std::endl;
@@ -759,9 +747,9 @@ int main(int argc, char* argv[])
             if (gl < 0)gl = 0;
             if (bl < 0)bl = 0;
 
-            rg = OETFsdr(rl);
-            gg = OETFsdr(gl);
-            bg = OETFsdr(bl);
+            rg = EOTFsdrInv(rl);
+            gg = EOTFsdrInv(gl);
+            bg = EOTFsdrInv(bl);
           }
 
           if (rg > 1)rg = 1;
