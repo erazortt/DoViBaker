@@ -101,8 +101,8 @@ If your source is just PQ and doesn't have a DolbyVision substream, there are tw
 - use static tonemapping by explicitly defining `masterMaxNits` and `masterMinNits` to `DoViTonemap`
 - analyse the source using [StatsFileCreator.avs](#statsfilecreatoravs) and provide the created stats-file to [DoViStatsFileLoader](#dovistatsfileloader) for a dynamic tonemapping with `DoViTonemap`
 
-Shown below is the functional form of the tonemapping curve with the following parameters: masterMaxNits=10000, targetMaxNits=1000, masterMinNits=0, targetMinNits=0.1, lumscale=1.
-![Tonemapping function](EETF.png "Tonemapping function")
+Shown below is the functional form of the PQ tonemapping curve with the following fixed parameters: masterMaxNits=10000, targetMaxNits=1000, masterMinNits=0, lumscale=1.
+![PQ Tonemapping function](EETF.png "PQ Tonemapping function")
 
 ## Frame Properties
 The following frame properties will be consumed (if the related arguments `masterMaxNits`, `masterMinNits` and `lumScale` are set to `-1`):
@@ -143,6 +143,9 @@ In that case, the generated LUT will expect that the input PQ was re-normalized 
 
 ## SDR Looks
 The default settings for `sdr_gain` and `sdr_compression` try to emulate a typical SDR look in what concerns dynamic range. This is usually more toned-down (aka flatter) than a typical HDR. For an even even more toned-down look increase `sdr_compression`, or, inversly and if trying to retain as much HDR feeling as possible, increase `sdr_gain`. If the output seems too colorful, the chroma can be decreased by decreasing `chroma_reduction_factor`. Tweaking of these settings will need to be done for each stream individually, while the defaults should be a good starting point in all instances. 
+
+Shown below is the influence of gain and compression on the functional form of the HLG->SDR tonemapping. This curve will also be used for PQ->SDR, since this is implemented as PQ->HLG->SDR.
+![HLG->SDR Tonemapping function](HLG2SDR.png "HLG->SDR Tonemapping function")
 
 ## Workflow for conversions from DolbyVision PQ to HLG
 Generate the LUT by the following command:

@@ -529,8 +529,6 @@ int main(int argc, char* argv[])
 {
   //selfTestHybridConversion();
 
-  //cxxopts::Options options("DoViLutGen", "One line description of MyProgram");
-
   std::string execname = std::filesystem::path(*argv).filename().string();
   if (argc < 5) {
     showUsage(execname);
