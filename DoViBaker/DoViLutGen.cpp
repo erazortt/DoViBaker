@@ -205,7 +205,7 @@ void XYZfromLms(double& X, double& Y, double& Z, double l, double m, double s) {
 }
 
 void labFromLms(double& L, double& a, double& b, double l, double m, double s) {
-  // the original exponent of 3.0 produces a blue color line which curls into iself
+  // the original exponent of 3.0 produces a blue color line which curls into itself
   constexpr double exponent = 2.3605929376;
   l = std::pow(l, 1/exponent);
   m = std::pow(m, 1/exponent);
@@ -218,7 +218,7 @@ void lmsFromLab(double& l, double& m, double& s, double L, double a, double b) {
   l = 0.9999999985 * L + 0.3963377922 * a + 0.2158037581 * b;
   m = 1.000000009 * L - 0.1055613423 * a - 0.06385417477 * b;
   s = 1.000000055 * L - 0.08948418209 * a - 1.291485538 * b;
-  // the original exponent of 3.0 produces a blue color line which curls into iself
+  // the original exponent of 3.0 produces a blue color line which curls into itself
   constexpr double exponent = 2.3605929376;
   l = std::pow(l, exponent);
   m = std::pow(m, exponent);
@@ -364,10 +364,6 @@ double hybridColorMapping(double& ri, double& gi, double& bi) {
     // this should only be numerical flukes
     fracSrc = 1;
   }
-  if (fracDst > 1) {
-    // for the weightning below we need an upper bound of 1
-    fracDst = 1;
-  }
 
   double aLinScaled = aHullDst * fracSrc; //same as A/reduction;
   double bLinScaled = bHullDst * fracSrc; //same as B/reduction;
@@ -378,10 +374,12 @@ double hybridColorMapping(double& ri, double& gi, double& bi) {
     weight1 = fracSrc;
     weight2 = (1 - fracSrc);
     if (reductionFactor < 2) {
+      // the weight can be increased so that we remain nearer to the original color
       weight2 = ((fracSrc - 1) * ((reductionFactor - 2) * (reductionFactor - 1) * fracSrc - reductionFactor)) / reductionFactor;
     }
   }
   if (reductionFactor > 2) {
+    // the weight must be decreased such that we don't overshoot
     double weight2sup = (1 + (reductionFactor / 2 - 1) * fracSrc);
     weight2 /= weight2sup;
   }
@@ -546,6 +544,7 @@ int main(int argc, char* argv[])
   double chromaReduction = 1.0;
 
   if (!hasArgument(args, "-s", "--size")) {
+    printf("LUT size not given!\n\n");
     showUsage(execname);
     return 1;
   }
@@ -565,7 +564,17 @@ int main(int argc, char* argv[])
   if (hasArgument(args, "-r", "--reduction")) {
     chromaReduction = std::stof(getArgumentValue(args, "-r", "--reduction"));
   }
+  if (args.begin() == args.end()) {
+    printf("No output filename given!\n\n");
+    showUsage(execname);
+    return 2;
+  }
   lutFileName = getPositionalArgument(args);
+  if (args.size() > 0) {
+    printf("Unknown arguments given!\n\n");
+    showUsage(execname);
+    return 2;
+  }
 
   if (lutSize < 1 || lutSize > 200) {
     printf("LUT size not supported");
