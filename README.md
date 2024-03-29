@@ -60,7 +60,7 @@ The metadata typical for HDR10 streams can be added manually to the output strea
  * --master-display "G(13250,34500)B(7500,3000)R(34000,16000)WP(15635,16450)L(40000000,50)"
  * --max-cll "1442,329"
 
-The above values are just an example and the acual values must be taken from the source stream. The values for `L` of the `master-display` flag are given by the `_dovi_static_master_display_max_luminance` and `_dovi_static_master_display_min_luminance` frame property set by `DoViBaker` repectively multiplied by a factor of 10000. Not all DolbyVision substreams carry these values however, in which case you will need to read them from the Base Layer stream, for example using [MediaInfo](https://mediaarea.net/MediaInfo). The values above for `G`, `B`, `R` and `WP` are for the most usually used `Display P3` color gamut. 
+The above values are just an example and the acual values must be taken from the source stream. The values for `L` of the `master-display` flag are given by the frame property `_dovi_static_master_display_max_luminance` multiplied by 10000 and `_dovi_static_master_display_min_luminance` set by `DoViBaker`. Not all DolbyVision substreams carry these values however, in which case you will need to read them from the Base Layer stream, for example using [MediaInfo](https://mediaarea.net/MediaInfo). The values above for `G`, `B`, `R` and `WP` are for the most usually used `Display P3` color gamut. 
 The values for the `max-cll` flag are given by the `_dovi_static_max_content_light_level` and `_dovi_static_max_avg_content_light_level` respectively. Again, not all DolbyVision substreams carry those, in which case you will need to rely on the values from your Base Layer.
 
 ## Trims
@@ -83,9 +83,9 @@ The following frame properties will be set:
 - `_dovi_dynamic_max_content_light_level` the equivalend value of maximal nits of the current scene
 - `_dovi_static_max_pq` the max_pq value of the whole stream
 - `_dovi_static_max_content_light_level` the value of maximal nits of the whole stream
-- `_dovi_static_max_avg_content_light_level`
-- `_dovi_static_master_display_max_luminance`
-- `_dovi_static_master_display_min_luminance`
+- `_dovi_static_max_avg_content_light_level` the maximum average nits
+- `_dovi_static_master_display_max_luminance` the mastering display maximum luminance in nits
+- `_dovi_static_master_display_min_luminance` 10000 times the mastering display minimum luminance in nits
 
 You can get the current tonemapping value of max-content-light-level by reading the frame property `_dovi_dynamic_max_content_light_level`:
 ```
