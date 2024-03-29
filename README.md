@@ -55,8 +55,8 @@ DoViBaker(bl,el,rpu="RPU.bin")
 ## Output stream
 The output stream created by `DoViBaker` is PQ12 in a 16-bit RGB stream. That means it is a 16-bit RGB stream employing Perceptual Quantization as the transfer function, and with 12-bit effective color depth per component on the wide color gamut specified in BT.2100.
 
-## Metadata
-The metadata typical for HDR10 streams can be added manually during the encoding if needed. Using x265 this can be done with the following flags:
+## Static Metadata
+The metadata typical for HDR10 streams can be added manually to the output stream during the encoding if needed. Using x265 this can be done with the following flags:
  * --master-display "G(13250,34500)B(7500,3000)R(34000,16000)WP(15635,16450)L(40000000,50)"
  * --max-cll "1442,329"
 
