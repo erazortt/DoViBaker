@@ -13,7 +13,7 @@ While `DoViBaker` is the name of the main component, the package actually includ
 For an explanation of all the terminology used and the technical concepts behind, please consult the Red, Orange and Yellow Books of UHD Forms Guidelines: [https://ultrahdforum.org/guidelines/](https://ultrahdforum.org/guidelines/)
 
 # DoViBaker
-This avisynth plugin reads the Base Layer, Enhancement Layer and RPU data from a DolbyVision stream to create a clip with all the processing indicated by these substreams baked into a PQ12 stream.
+This avisynth plugin reads the Base Layer, Enhancement Layer and RPU data from a DolbyVision stream to create a clip with all the processing indicated by these substreams baked into a PQ12 output stream.
 
 ## General information
 This plugin uses the metadata from an RPU file or from the inside stream itself to compose the DolbyVision HDR picture out of the Base Layer (BL) and Enhancement Layer (EL). Display Management (DM) metadata will not be processed per default. It is however possible to further process the clip using DM data by explicitly enabling [Trims](#trims) or by the means of [DoViTonemap](#dovitonemap) or [DoViCubes](#dovicubes). 
