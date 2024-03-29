@@ -87,6 +87,8 @@ The following frame properties will be set:
 - `_dovi_static_master_display_max_luminance` the mastering display maximum luminance in nits
 - `_dovi_static_master_display_min_luminance` 10000 times the mastering display minimum luminance in nits
 
+The static values are non-zero only when available in the DolbyVision substream.
+
 You can get the current tonemapping value of max-content-light-level by reading the frame property `_dovi_dynamic_max_content_light_level`:
 ```
 ScriptClip("""
