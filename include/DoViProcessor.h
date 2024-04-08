@@ -44,6 +44,9 @@ public:
   inline uint16_t getDynamicMaxContentLightLevel() const { return dynamic_max_content_light_level; }
   inline uint16_t getStaticMaxPq() const { return static_max_pq; }
   inline uint16_t getStaticMaxContentLightLevel() const { return static_max_content_light_level; }
+  inline uint16_t getStaticMaxAvgContentLightLevel() const { return static_max_avg_content_light_level; }
+  inline uint16_t getStaticMasterDisplayMaxLuminance() const { return static_master_display_max_luminance; }
+  inline uint16_t getStaticMasterDisplayMinLuminance() const { return static_master_display_min_luminance; }
   const std::vector<uint16_t>& getAvailableTrimPqs() const { return availableTrimPqs; }
 
   static inline float EOTF(float ep);
@@ -120,6 +123,9 @@ private:
   uint16_t dynamic_max_content_light_level;
   uint16_t static_max_pq;
   uint16_t static_max_content_light_level;
+  uint16_t static_max_avg_content_light_level;
+  uint16_t static_master_display_max_luminance;
+  uint16_t static_master_display_min_luminance;
   int16_t ycc_to_rgb_coef[9];
   uint32_t ycc_to_rgb_offset[3];
 

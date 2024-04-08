@@ -588,10 +588,11 @@ PVideoFrame DoViBaker<quarterResolutionEl>::GetFrame(int n, IScriptEnvironment* 
 	env->propSetInt(env->getFramePropsRW(dst), "_dovi_dynamic_min_pq", doviProc->getDynamicMinPq(), 0);
 	env->propSetInt(env->getFramePropsRW(dst), "_dovi_dynamic_max_pq", doviProc->getDynamicMaxPq(), 0);
 	env->propSetInt(env->getFramePropsRW(dst), "_dovi_dynamic_max_content_light_level", doviProc->getDynamicMaxContentLightLevel(), 0);
-	if (doviProc->getStaticMaxPq() > 0) {
-		env->propSetInt(env->getFramePropsRW(dst), "_dovi_static_max_pq", doviProc->getStaticMaxPq(), 0);
-		env->propSetInt(env->getFramePropsRW(dst), "_dovi_static_max_content_light_level", doviProc->getStaticMaxContentLightLevel(), 0);
-	}
+	env->propSetInt(env->getFramePropsRW(dst), "_dovi_static_max_pq", doviProc->getStaticMaxPq(), 0);
+	env->propSetInt(env->getFramePropsRW(dst), "_dovi_static_max_content_light_level", doviProc->getStaticMaxContentLightLevel(), 0);
+	env->propSetInt(env->getFramePropsRW(dst), "_dovi_static_max_avg_content_light_level", doviProc->getStaticMaxAvgContentLightLevel(), 0);
+	env->propSetInt(env->getFramePropsRW(dst), "_dovi_static_master_display_max_luminance", doviProc->getStaticMasterDisplayMaxLuminance(), 0);
+	env->propSetInt(env->getFramePropsRW(dst), "_dovi_static_master_display_min_luminance", doviProc->getStaticMasterDisplayMinLuminance(), 0);
 
 	if (qnd) {
 		if (blClipChromaSubSampled && elClipChromaSubSampled)

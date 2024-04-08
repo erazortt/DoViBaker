@@ -10,10 +10,14 @@ DoViProcessor::DoViProcessor(const char* rpuPath, IScriptEnvironment* env, uint8
 	, rgbProof(false)
 	, nlqProof(false)
 	, desiredTrimPq(0)
-	, dynamic_max_content_light_level(1000)
 	, rpus(0x0)
 	, blContainerBitDepth(blContainerBits)
 	, elContainerBitDepth(elContainerBits)
+	, static_max_pq(0)
+	, static_max_content_light_level(0)
+	, static_max_avg_content_light_level(0)
+  , static_master_display_max_luminance(0)
+  , static_master_display_min_luminance(0)
 {
 	ycc_to_rgb_coef[0] = 8192;
 	ycc_to_rgb_coef[1] = 0;
@@ -193,16 +197,15 @@ bool DoViProcessor::intializeFrame(int frame, IScriptEnvironment* env, const uin
 
 		scene_refresh_flag = vdr_dm_data->scene_refresh_flag;
 		signal_full_range_flag = vdr_dm_data->signal_full_range_flag;
-		/*if (!signal_full_range_flag) {
-			showMessage("DoViBaker: Limited range output signals have not been tested, no idea if that works.", env);
-			return false;
-		}*/
 
 		dynamic_min_pq = vdr_dm_data->dm_data.level1->min_pq;
 		dynamic_max_pq = vdr_dm_data->dm_data.level1->max_pq;
 		dynamic_max_content_light_level = pq2nits(dynamic_max_pq) + 0.5f;
 		if (vdr_dm_data->dm_data.level6) {
 			static_max_content_light_level = vdr_dm_data->dm_data.level6->max_content_light_level;
+			static_max_avg_content_light_level = vdr_dm_data->dm_data.level6->max_frame_average_light_level;
+			static_master_display_max_luminance = vdr_dm_data->dm_data.level6->max_display_mastering_luminance;
+			static_master_display_min_luminance = vdr_dm_data->dm_data.level6->min_display_mastering_luminance;
 			static_max_pq = nits2pq(vdr_dm_data->dm_data.level6->max_content_light_level);
 		}
 
