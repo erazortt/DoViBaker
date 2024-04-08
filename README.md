@@ -10,8 +10,10 @@ While `DoViBaker` is the name of the main component, the package actually includ
 - [LumaScaleHelper.avs](#lumascalehelperavs): manually compare a PQ stream to a pre-existing SDR stream to extract the lumaScale which can be given to DoViTonemap
 - [BetterGrayscale.avsi](#bettergrayscaleavsi): necessary for LumaScaleHelper.avs
 
+For an explanation of all the terminology used and the technical concepts behind, please consult the Red, Orange and Yellow Books of UHD Forms Guidelines: [https://ultrahdforum.org/guidelines/](https://ultrahdforum.org/guidelines/)
+
 # DoViBaker
-This avisynth plugin reads the Base Layer, Enhancement Layer and RPU data from a profile 7 DolbyVision stream to create a clip with the DolbyVision data baked in.
+This avisynth plugin reads the Base Layer, Enhancement Layer and RPU data from a DolbyVision stream to create a clip with all the processing indicated by these substreams baked into a PQ12 output stream.
 
 ## General information
 This plugin uses the metadata from an RPU file or from the inside stream itself to compose the DolbyVision HDR picture out of the Base Layer (BL) and Enhancement Layer (EL). Display Management (DM) metadata will not be processed per default. It is however possible to further process the clip using DM data by explicitly enabling [Trims](#trims) or by the means of [DoViTonemap](#dovitonemap) or [DoViCubes](#dovicubes). 
@@ -50,6 +52,17 @@ el=DGSource("elclip.dgi")
 DoViBaker(bl,el,rpu="RPU.bin")
 ```
 
+## Output stream
+The output created by `DoViBaker` is PQ12 in a 16-bit RGB stream. That means it is a 16-bit RGB stream employing Perceptual Quantization as the transfer function, and with 12-bit effective color depth per component on the wide color gamut specified in BT.2100.
+
+## Static Metadata
+The metadata typical for HDR10 streams can be added manually to the output stream during the encoding if needed. Using x265 this can be done with the following flags:
+ * --master-display "G(13250,34500)B(7500,3000)R(34000,16000)WP(15635,16450)L(40000000,50)"
+ * --max-cll "1442,329"
+
+The above values are just an example and the acual values must be taken from the source stream. The values for `L` of the `master-display` flag are given by the frame property `_dovi_static_master_display_max_luminance` multiplied by 10000 and `_dovi_static_master_display_min_luminance` set by `DoViBaker`. Not all DolbyVision substreams carry these values however, in which case you will need to read them from the Base Layer stream, for example using [MediaInfo](https://mediaarea.net/MediaInfo). The values above for `G`, `B`, `R` and `WP` are for the most usually used `Display P3` color gamut. 
+The values for the `max-cll` flag are given by the `_dovi_static_max_content_light_level` and `_dovi_static_max_avg_content_light_level` respectively. Again, not all DolbyVision substreams carry those, in which case you will need to rely on the values from your Base Layer.
+
 ## Trims
 It is possible to apply the trims available in the DolbyVision substream. Select which trim to apply using the `trimPq` argument and set `targetMaxNits` and `targetMinNits` as necessary. Be warned however, only the typical CM v2.9 processing is implemented thus far, and most streams don't have very optimized parameters, producing suboptimal results. Thus this feature is experimental only!
 
@@ -70,6 +83,11 @@ The following frame properties will be set:
 - `_dovi_dynamic_max_content_light_level` the equivalend value of maximal nits of the current scene
 - `_dovi_static_max_pq` the max_pq value of the whole stream
 - `_dovi_static_max_content_light_level` the value of maximal nits of the whole stream
+- `_dovi_static_max_avg_content_light_level` the maximum average nits
+- `_dovi_static_master_display_max_luminance` the mastering display maximum luminance in nits
+- `_dovi_static_master_display_min_luminance` 10000 times the mastering display minimum luminance in nits
+
+The static values are non-zero only when available in the DolbyVision substream.
 
 You can get the current tonemapping value of max-content-light-level by reading the frame property `_dovi_dynamic_max_content_light_level`:
 ```
