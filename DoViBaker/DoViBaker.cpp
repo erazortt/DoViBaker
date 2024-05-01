@@ -6,10 +6,6 @@
 // Code
 //////////////////////////////
 
-// explicitly instantiate the template for the linker
-template class DoViBaker<true>;
-template class DoViBaker<false>;
-
 template<int quarterResolutionEl>
 DoViBaker<quarterResolutionEl>::DoViBaker(
 	PClip _blChild, 
@@ -61,6 +57,10 @@ DoViBaker<quarterResolutionEl>::DoViBaker(
 	// set the output pixel type
 	vi.pixel_type = VideoInfo::CS_RGBP16;
 }
+
+// explicitly instantiate the template for the linker
+template class DoViBaker<true>;
+template class DoViBaker<false>;
 
 template<int quarterResolutionEl>
 DoViBaker<quarterResolutionEl>::~DoViBaker()
