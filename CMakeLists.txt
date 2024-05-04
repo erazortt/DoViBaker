@@ -76,7 +76,14 @@ target_include_directories(timecube PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/timecube/graphengine/include
 )
 
-if (UNIX)
+if (MSVC)
+    set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/timecube/timecube/x86/lut_avx2.cpp PROPERTIES COMPILE_OPTIONS "/arch:AVX2")
+    set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/timecube/timecube/x86/lut_avx512.cpp PROPERTIES COMPILE_OPTIONS "/arch:AVX512")
+else()
+    set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/timecube/timecube/x86/lut_sse41.cpp PROPERTIES COMPILE_OPTIONS "-mfpmath=sse;-msse4.1")
+    set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/timecube/timecube/x86/lut_avx2.cpp PROPERTIES COMPILE_OPTIONS "-mavx2;-mfma")
+    set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/timecube/timecube/x86/lut_avx512.cpp PROPERTIES COMPILE_OPTIONS "-mavx512f;-mavx512bw;-mavx512dq;-mavx512vl;-mfma")
+    
     target_compile_options(timecube PRIVATE "-fPIC")
 endif()
 
