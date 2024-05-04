@@ -40,16 +40,58 @@ endif()
 
 target_compile_features(DoViBaker PRIVATE cxx_std_20)
 
-find_library(dovi dovi)
-find_library(timecube timecube)
+# graphengine
+add_library(graphengine STATIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/timecube/graphengine/graphengine/cpuinfo.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/timecube/graphengine/graphengine/graph.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/timecube/graphengine/graphengine/node.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/timecube/graphengine/graphengine/x86/cpuinfo_x86.cpp
+)
 
-target_link_libraries(DoViBaker
+target_include_directories(graphengine PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/timecube/graphengine/graphengine
+    ${CMAKE_CURRENT_SOURCE_DIR}/timecube/graphengine/graphengine/x86
+    ${CMAKE_CURRENT_SOURCE_DIR}/timecube/graphengine/include
+)
+
+if (UNIX)
+    target_compile_options(graphengine PRIVATE "-fPIC")
+endif()
+# end graphengine
+
+# timecube
+add_library(timecube STATIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/timecube/timecube/cube.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/timecube/timecube/lut.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/timecube/timecube/timecube.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/timecube/timecube/x86/lut_x86.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/timecube/timecube/x86/lut_sse41.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/timecube/timecube/x86/lut_avx2.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/timecube/timecube/x86/lut_avx512.cpp
+)
+
+target_include_directories(timecube PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/timecube/timecube
+    ${CMAKE_CURRENT_SOURCE_DIR}/timecube/timecube/x86
+    ${CMAKE_CURRENT_SOURCE_DIR}/timecube/graphengine/include
+)
+
+if (UNIX)
+    target_compile_options(timecube PRIVATE "-fPIC")
+endif()
+
+target_link_libraries(timecube PRIVATE graphengine)
+#end timecube
+
+find_library(dovi dovi)
+
+target_link_libraries(DoViBaker PRIVATE
     ${dovi}
-    ${timecube}
+    timecube
 )
 
 if (WIN32)
-    target_link_libraries(DoViBaker
+    target_link_libraries(DoViBaker PRIVATE
     ws2_32
     bcrypt
     userenv

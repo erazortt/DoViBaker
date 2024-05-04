@@ -1,5 +1,3 @@
-#include <array>
-
 #include "DoViBaker.h"
 
 //////////////////////////////
