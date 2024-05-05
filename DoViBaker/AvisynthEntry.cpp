@@ -230,10 +230,10 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScri
 
 void ypp2ycc(uint16_t* ycc, float y, float u, float v) {
   //YPrPb to YCrCb
-  static const uint16_t scale = 1 << DoViProcessor::outContainerBitDepth;
-  static const uint16_t bias = 16 << (DoViProcessor::outContainerBitDepth - 8);
-  static const uint16_t ltop = scale - (21 << (DoViProcessor::outContainerBitDepth - 8));
-  static const uint16_t ctop = scale - (16 << (DoViProcessor::outContainerBitDepth - 8));
+  static const uint32_t scale = 1 << DoViProcessor::outContainerBitDepth;
+  static const uint32_t bias = 16 << (DoViProcessor::outContainerBitDepth - 8);
+  static const uint32_t ltop = scale - (21 << (DoViProcessor::outContainerBitDepth - 8));
+  static const uint32_t ctop = scale - (16 << (DoViProcessor::outContainerBitDepth - 8));
 
   ycc[0] = y * (ltop - bias) + bias;
   ycc[1] = (u + 0.5) * (ctop - bias) + bias;
