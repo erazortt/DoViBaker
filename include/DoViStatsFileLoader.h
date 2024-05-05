@@ -2,6 +2,7 @@
 #include "avisynth.h"
 #include <vector>
 #include <string>
+#include <tuple>
 
 class DoViStatsFileLoader : public GenericVideoFilter
 {

@@ -1,4 +1,5 @@
 #include "DoViCubes.h"
+#include <climits>
 #include <filesystem>
 
 AVS_FORCEINLINE void* aligned_malloc(size_t size, size_t align)
