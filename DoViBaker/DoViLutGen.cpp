@@ -102,8 +102,8 @@ double matchHlg2SdrD(double x) {
   return 0;
 }
 
-// since the function above will run out of sdr signal space, we need to moderate it so that it does not clip
-// this flattening is done by a hermite spline (just like in hdr tonemapping)
+// since the function above will run out of sdr signal space at 267.6nits, we need to moderate it so it does not clip
+// the necessary flattening is done by a hermite spline (just like in hdr tonemapping)
 // the start point is defined by kS, p0 and m0 and the end point by kE, p1 and m1.
 double hlg2sdr(double x, double kS, double m1Factor) {
   if (x > kS) {
