@@ -85,7 +85,7 @@ static constexpr double hermiteSpline(double x, double x0, double y0, double m0,
   return p;
 }
 
-// this function maps the hlg signal the sdr signal until it runs out of sdr signal range at 267.6nits hlg
+// this function maps the hlg signal to the sdr signal until it runs out of sdr signal range at 267.6nits hlg
 // thus when the sdr is viewed it appears idential to the hlg as long as the hlg stays below these 267.6 nits
 double matchHlg2Sdr(double x) {
   if (x > 0.5) {
