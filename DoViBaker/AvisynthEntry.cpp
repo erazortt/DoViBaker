@@ -102,7 +102,7 @@ AVSValue __cdecl Create_RealDoViCubes(
 {
   if (!clip->GetVideoInfo().IsPlanarRGB())
   {
-    env->ThrowError("DoViTonemap: input must be planar RGB");
+    env->ThrowError("DoViCubes: input must be planar RGB");
   }
   
   std::stringstream ssCubeFiles(cubeFiles);
@@ -122,7 +122,7 @@ AVSValue __cdecl Create_RealDoViCubes(
   std::vector<std::pair<uint16_t, std::string>> cubeNitsPairs;
   if (cubesList.size() > 0) {
     if (cubesList.size() <= nitsList.size()) {
-      env->ThrowError("DoViBaker: List of LUTs must be one entry longer then the list of nits.");
+      env->ThrowError("DoViCubes: List of LUTs must be one entry longer then the list of nits.");
     }
     cubeNitsPairs.push_back(std::pair(0, cubesList[0]));
     for (int i = 0; i < nitsList.size(); i++) {
@@ -363,7 +363,6 @@ double Spline64Filter(double value) {
   return 0.0;
 }
 
-//#define DOVI_ANALYZER
 #ifdef DOVI_ANALYZER
 int main(int argc, char* argv[])
 {

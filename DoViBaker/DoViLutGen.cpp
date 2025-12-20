@@ -2,7 +2,6 @@
 #include <fstream>
 #include <algorithm>
 #include <vector>
-#include <format>
 #include <string>
 #include <filesystem>
 
@@ -86,13 +85,13 @@ static constexpr double hermiteSpline(double x, double x0, double y0, double m0,
   return p;
 }
 
-// this function maps the hlg signal above 203 nits to the sdr signal range until it runs out of sdr signal range at 267.6nits hlg
+// this function maps the hlg signal the sdr signal until it runs out of sdr signal range at 267.6nits hlg
 // thus when the sdr is viewed it appears idential to the hlg as long as the hlg stays below these 267.6 nits
 double matchHlg2Sdr(double x) {
   if (x > 0.5) {
     return 2.8188 * x * x - 2.7718 * x + 1.6812;
   }
-  // hlg and sdr are itentical below 203 nits
+  // hlg and sdr are itentical below 0.5 signal strength
   return 1;
 }
 // derivative of the matching functions
