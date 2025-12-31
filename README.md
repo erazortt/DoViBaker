@@ -7,7 +7,8 @@ While `DoViBaker` is the name of the main component, the package actually includ
 - [DoViStatsFileLoader](#dovistatsfileloader): loads the stats-file created by `StatsFileCreator.avs` enabling `DoViTonemap` or `DoViCubes` to apply dynamic processing on non-DolbyVision PQ streams
 - [StatsFileCreator.avs](#statsfilecreatoravs): analyzes a non-DolbyVision PQ stream and generates a stats-file which enables dynamic tonemapping
 - [DoViAnalyzer.exe](#dovianalyzerexe): analyzes a given RPU.bin file
-- [LumaScaleHelper.avs](#lumascalehelperavs): manually compare a PQ stream to a pre-existing SDR stream to extract the lumaScale which can be given to DoViTonemap
+- [LumaScaleComparison.avs](#lumascalecomparisonavs): visually compare a PQ stream to a pre-existing SDR stream to extract the lumaScale which can be given to DoViTonemap
+- [LumaScaleHelper.avs](#lumascalehelperavs): like [LumaScaleComparison.avs](#lumascalecomparisonavs) but slightly more automated
 - [BetterGrayscale.avsi](#bettergrayscaleavsi): necessary for LumaScaleHelper.avs
 
 For an explanation of all the terminology used and the technical concepts behind, please consult the Red, Orange and Yellow Books of UHD Forms Guidelines: [https://ultrahdforum.org/guidelines/](https://ultrahdforum.org/guidelines/)
@@ -288,13 +289,18 @@ Pay attention to 3-5 since these will indicate if the look of the clip will be d
 
 Additionally it is possible to generate a scenecutfile based on the information from the RPU file. This might be used as the optional scene cut file by [DoViStatsFileLoader](#dovistatsfileloader). Or it might be given to the encoder to improve the scene detection (using the parameter --qpfile for x265). In this case add " K" to the end of each line of the file.
 
+# LumaScaleComparison.avs
+Used to find `lumScale` for [DoViTonemap](#dovitonemap) visually. This is the factor by which to mutiply the brightness of the PQ stream such that its base brightness matches that of the SDR stream. Typical factors can be 1.0 all the way to up 5.0 in very extreme cases. Also this factor might fluctuate from scene to scene. In this case it is advisable to use one best fitting factor thoughout the whole stream in order to maintain the creator's intent. For low brightness targets it might however be necessary have the factor adjusted from scene to scene.
+
+Use [AvsPmod](https://forum.doom9.org/showthread.php?t=175823) to manually scan through the file.
+
 # LumaScaleHelper.avs
-Used to find `lumScale` for [DoViTonemap](#dovitonemap) manually. This is the factor by which to mutiply the brightness of the PQ stream such that its base brightness matches that of the SDR stream. Typical factors can be 1.0 all the way to up 5.0 in very extreme cases. Also this factor might fluctuate from scene to scene. In this case it is advisable to use one best fitting factor thoughout the whole stream in order to maintain the creator's intent. For low brightness targets it might however be necessary have the factor adjusted from scene to scene.
+Used to find `lumScale` for [DoViTonemap](#dovitonemap) manually. Like [LumScaleHelper.avs](#lumscalehelperavs) but slightly more automated, needs however perfectly matching frames between the two clips.
 
 Use [AvsPmod](https://forum.doom9.org/showthread.php?t=175823) to manually scan through the file.
 
 # BetterGrayscale.avsi
-Needed by [LumScaleHelper.avs](#lumscalehelperavs) for showing a more correct and better comparable grayscale of PQ and SDR sources.
+Needed by [LumaScaleComparison.avs](#lumscalecomparisonavs) and [LumScaleHelper.avs](#lumscalehelperavs) for showing a more correct and better comparable grayscale of PQ and SDR sources.
 
 # Remarks concerning compilation
 I had some issues linking against Timecube. I was constantly getting the following error:
