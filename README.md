@@ -308,5 +308,5 @@ I had some issues linking against Timecube. I was constantly getting the followi
 fatal error C1083: Cannot open compiler generated file: 'x64\Release\timecube.asm': No such file or directory
 ```
 
-It turnes out that this is related to the following setting: "Properties" (of the timecube project) -> "C/C++" -> "Output Files" -> "Assembler Output".
-Setting this to "No Listing" resolves the issue.
+It turnes out that this is related to the following setting: "Properties" (of the timecube project) -> "C/C++" -> "Optimization" -> "Whole Program Optimization".
+Setting this to "No" resolves the issue.
