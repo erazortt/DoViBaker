@@ -303,6 +303,7 @@ Use [AvsPmod](https://forum.doom9.org/showthread.php?t=175823) to manually scan 
 Needed by [LumaScaleComparison.avs](#lumscalecomparisonavs) and [LumScaleHelper.avs](#lumscalehelperavs) for showing a more correct and better comparable grayscale of PQ and SDR sources.
 
 # Remarks concerning compilation
+This source code uses git submodules, thus you should clone accordingly: git clone --recurse-submodules https://github.com/erazortt/DoViBaker.git
 To build under windows be sure to have installed MSVC 2026. You need to first build the following dependencies.
 
 Build libdovi:
