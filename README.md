@@ -303,10 +303,14 @@ Use [AvsPmod](https://forum.doom9.org/showthread.php?t=175823) to manually scan 
 Needed by [LumaScaleComparison.avs](#lumscalecomparisonavs) and [LumScaleHelper.avs](#lumscalehelperavs) for showing a more correct and better comparable grayscale of PQ and SDR sources.
 
 # Remarks concerning compilation
-I had some issues linking against Timecube. I was constantly getting the following error:
-```
-fatal error C1083: Cannot open compiler generated file: 'x64\Release\timecube.asm': No such file or directory
-```
+To build under windows be sure to have installed MSVC 2026. You need to first build the following dependencies.
 
-It turnes out that this is related to the following setting: "Properties" (of the timecube project) -> "C/C++" -> "Output Files" -> "Assembler Output".
-Setting this to "No Listing" resolves the issue.
+Build libdovi:
+ - download the windows installer of Rust from here [https://rust-lang.org/tools/install/](https://rust-lang.org/tools/install/). Do not use the linux subsystem installation!
+ - build libdovi by following the instructions in the subfolder dovi_tool\dolby_vision
+
+Build timecube:
+ - Open its solution and adjust in the "Properties" of the timecube project the following to settings:
+   + General -> Platform Toolset -> set to the same toolset as used for DoviBaker
+   + C/C++ -> Optimization -> Whole Program Optimization -> No
+ - build the timecube project
