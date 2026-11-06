@@ -310,7 +310,6 @@ Build libdovi:
  - build libdovi by following the instructions in the subfolder dovi_tool\dolby_vision
 
 Build timecube:
- - Open its solution and adjust in the "Properties" of the timecube project the following to settings:
+ - Open its solution and adjust in the "Properties" of the timecube project the following to setting:
    + General -> Platform Toolset -> set to the same toolset as used for DoviBaker
-   + C/C++ -> Optimization -> Whole Program Optimization -> No
  - build the timecube project

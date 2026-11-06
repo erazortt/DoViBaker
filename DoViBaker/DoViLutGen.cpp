@@ -40,27 +40,31 @@ double OETFhlg(double e)
   return a * std::log(12 * e - b) + c;
 }
 
-/*double OETFsdr(double l) {
+double OETFsdr(double lin) {
+  // sdr conversion scene referred linear to gamma
   static constexpr double a = 1.099296827;
   static constexpr double b = 0.018053969;
   static constexpr double c = a - b - 1;
-  if (l < b)
-    return 4.5 * l;
-  return a * std::pow(l, 0.45) - (a - 1);
+  if (lin < b)
+    return 4.5 * lin;
+  return a * std::pow(lin, 0.45) - (a - 1);
 }
-double OETFsdrInv(double g) {
+double OETFsdrInv(double gamma) {
+  // sdr conversion scene referred gamma to linear
   static constexpr double a = 1.099296827;
   static constexpr double b = 0.018053969;
   static constexpr double c = a - b - 1;
-  if (g < c)
-    return g/4.5;
-  return std::pow((g + (a - 1))/a, 1.0/0.45);
-}*/
-double EOTFsdrInv(double l) {
-  return std::pow(l, 1/2.4);
+  if (gamma < c)
+    return gamma /4.5;
+  return std::pow((gamma + (a - 1))/a, 1.0/0.45);
 }
-double EOTFsdr(double g) {
-  return std::pow(g, 2.4);
+double EOTFsdrInv(double lin) {
+  // sdr conversion display referred linear to gamma
+  return std::pow(lin, 1/2.4);
+}
+double EOTFsdr(double gamma) {
+  // sdr conversion display referred linear to gamma
+  return std::pow(gamma, 2.4);
 }
 
 static constexpr double unitHermiteSpline(double t, double y0, double m0, double y1, double m1) {
