@@ -442,10 +442,10 @@ void warnAboutLutSize() {
 
 void showUsage(std::string& execname) {
   printf("USAGE:\n");
-  printf("%s <string> -s|--size <string> [-n|--normalized] [-d|--sdr <int>] [-g|--gain <float>] [-c|--compression <float>] [-r|--reduction <float>]\n", execname.c_str());
+  printf("%s <filename> -s|--size <int> [-i|--input <int>] [-o|--output <int>] [-g|--gain <float>] [-c|--compression <float>] [-r|--reduction <float>]\n", execname.c_str());
   printf("\n");
   printf("ARGUMENTS:\n");
-  printf("<string>                   name of the to-be-generated LUT file\n");
+  printf("<filename>                 name of the to-be-generated LUT file\n");
   printf("-s, --size <int>           size along one dimension of the LUT\n");
   printf("-i, --input <int>          expected input format to convert from:\n");
   printf("                             0: BT.2100 PQ (default)\n");
