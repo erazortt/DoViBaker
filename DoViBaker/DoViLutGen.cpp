@@ -1,4 +1,6 @@
 #include "def.h"
+#include <cmath>
+#include <cstdio>
 #include <fstream>
 #include <algorithm>
 #include <vector>

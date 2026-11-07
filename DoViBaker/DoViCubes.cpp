@@ -1,26 +1,26 @@
 #include "DoViCubes.h"
 #include <climits>
+#include <cstdlib>
+#ifdef _WIN32
+#include <malloc.h>
+#endif
 #include <filesystem>
 
 AVS_FORCEINLINE void* aligned_malloc(size_t size, size_t align)
 {
-	void* result = [&]() {
-#ifdef _MSC_VER 
-		return _aligned_malloc(size, align);
-#else 
-		if (posix_memalign(&result, align, size))
-			return result = nullptr;
-		else
-			return result;
+#ifdef _WIN32 // MSVC and MinGW-w64 
+	return _aligned_malloc(size, align);
+#else
+	void* result = nullptr;
+	if (posix_memalign(&result, align, size))
+		return nullptr;
+	return result;
 #endif
-		}();
-
-		return result;
 }
 
 AVS_FORCEINLINE void aligned_free(void* ptr)
 {
-#ifdef _MSC_VER 
+#ifdef _WIN32 // MSVC and MinGW-w64 
 	_aligned_free(ptr);
 #else 
 	free(ptr);

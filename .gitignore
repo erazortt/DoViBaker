@@ -1,2 +1,11 @@
-.vs
-x64
+/.vs
+/x64
+/build
+/build-*/
+CMakeUserPresets.json
+CMakeCache.txt
+compile_commands.json
+.cache/
+*.obj
+*.ilk
+*.pdb

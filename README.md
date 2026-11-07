@@ -302,18 +302,137 @@ Use [AvsPmod](https://forum.doom9.org/showthread.php?t=175823) to manually scan 
 # BetterGrayscale.avsi
 Needed by [LumaScaleComparison.avs](#lumscalecomparisonavs) and [LumScaleHelper.avs](#lumscalehelperavs) for showing a more correct and better comparable grayscale of PQ and SDR sources.
 
-# Remarks concerning compilation
-This source code uses git submodules, thus you should clone accordingly: 
+# Compilation
+
+All four products are built in one go with CMake, including the two dependencies
+which live in the submodules. Since the source uses git submodules, clone it accordingly:
+
 ```
 git clone --recurse-submodules https://github.com/erazortt/DoViBaker.git
 ```
-To build under windows be sure to have installed MSVC 2026. You need to first build the following dependencies.
 
-Build libdovi:
- - download the windows installer of Rust from here [https://rust-lang.org/tools/install/](https://rust-lang.org/tools/install/). Do not use the linux subsystem installation!
- - build libdovi by following the instructions in the subfolder dovi_tool\dolby_vision
+An already cloned copy is completed by `git submodule update --init --recursive`.
 
-Build timecube:
- - Open its solution and adjust in the "Properties" of the timecube project the following to setting:
-   + General -> Platform Toolset -> set to the same toolset as used for DoviBaker
- - build the timecube project
+| Product | Target | File (Windows) | Contents |
+|---|---|---|---|
+| DoViBaker, DoViTonemap, DoViCubes, DoViStatsFileLoader | `DoViBaker` | `DoViBaker_x64.dll` | Avisynth plugin, needs `dolby_vision.dll` next to it |
+| AVSCube | `AVSCube` | `AVSCube_x64.dll` | Avisynth plugin which applies one LUT |
+| DoViAnalyzer.exe | `DoviAnalyzer` | `DoviAnalyzer.exe` | analyzes an `RPU.bin` |
+| DoViLutGen.exe | `DoViLutGen` | `DoViLutGen.exe` | creates the PQ/HLG/SDR LUTs |
+
+On Linux and macOS the plugins are named `dovibaker.<version>.so` and
+`avscube.<version>.so`, the tools keep their names.
+
+Check a fresh build with `ctest --test-dir build`: it lets DoViLutGen write a few
+small LUTs and lets DoViAnalyzer read the `regular_rpu.bin` of the `dovi_tool`
+submodule.
+
+Which product a source file belongs to is selected per target by the build system
+(`-DDOVI_TARGET=DOVI_PRODUCT_ANALYZER` and friends, see `include/def.h`). The
+`#define` switch in `include/def.h` is only read when the build system sets
+nothing, so **no file has to be edited to build a product**, and the four
+products no longer overwrite each other in one build directory.
+
+## Windows (MSVC)
+
+Needed once:
+- CMake (3.18 or newer, the one shipped with Visual Studio is fine)
+- Rust from [https://rust-lang.org/tools/install/](https://rust-lang.org/tools/install/),
+  used by CMake to build `libdovi` out of the `dovi_tool` submodule. Do not use the
+  windows subsystem installation!
+
+```
+cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+cmake --build build --config Release
+```
+
+The products are all in `build\bin\Release\`, together with `dolby_vision.dll`
+which the plugin and DoViAnalyzer need at runtime. Copy the two `.dll` files into
+the Avisynth plugin directory (for example `C:\Program Files\AviSynth\plugins`)
+and the two `.exe` tools anywhere you like. Opening `build\DoViBaker.sln` in the
+Visual Studio IDE gives the same four projects, with `DoViBaker` as start project.
+
+Instead of the two commands above the preset in `CMakePresets.json` can be used:
+`cmake --preset vs-x64` and `cmake --build --preset vs-x64`.
+
+### Options
+
+| Option | Default | Meaning |
+|---|---|---|
+| `DOVIBAKER_BUILD_ALL` | `ON` | build all four products |
+| `DOVIBAKER_BUILD_BAKER`, `_ANALYZER`, `_LUTGEN`, `_AVSCUBE` | value of `DOVIBAKER_BUILD_ALL` | build a single product |
+| `DOVIBAKER_BUILD_LIBDOVI` | `ON` | build libdovi from the submodule with cargo |
+| `DOVIBAKER_LIBDOVI_PREFIX` | empty | use an installed libdovi from this prefix instead |
+| `DOVIBAKER_LIBDOVI_RUST_TRIPLE` | detected | Rust triple to build libdovi for |
+| `DOVIBAKER_LIBDOVI_IMPLIB` | detected | import library to link, if cargo names it differently |
+| `DOVIBAKER_MSVC_STATIC_RUNTIME` | `ON` | link the MSVC runtime statically, so no VC redist is needed |
+| `DOVIBAKER_FAST_MATH` | `ON` on MSVC | `/fp:fast` (fast math) in the optimized builds |
+| `DOVIBAKER_INSTALL_SCRIPTS` | `OFF` | install the scripts from `scripts/` too |
+
+Only the LUT generator, as fast as possible:
+
+```
+cmake -S . -B build-lutgen -DDOVIBAKER_BUILD_ALL=OFF -DDOVIBAKER_BUILD_LUTGEN=ON
+```
+
+32 bit plugins for a 32 bit Avisynth: configure with `-A Win32` after
+`rustup target add i686-pc-windows-msvc`. The plugin files are then named
+`DoViBaker_x86.dll` and `AVSCube_x86.dll`.
+
+### libdovi
+
+`libdovi` is the C API of the `dovi_tool` submodule, and it is Rust. CMake builds
+it with
+
+```
+cargo rustc --release --locked --features capi --crate-type cdylib
+```
+
+into `build\_libdovi\<rust triple>\release\`, and the plugins link against the
+result. The library keeps the name of the crate, therefore the runtime file is
+`dolby_vision.dll` (`dovi.dll` is the name used by the packaged versions).
+
+Cargo builds the release profile only, so a Debug build of the plugins links
+against the release build of `libdovi`. To use a self installed libdovi instead:
+`cargo install cargo-c`, then `cargo cinstall --release` inside
+`dovi_tool\dolby_vision`, and configure with `-DDOVIBAKER_LIBDOVI_PREFIX=%USERPROFILE%\.cargo`.
+
+## Linux and macOS
+
+```
+cmake -S . -B build
+cmake --build build
+ctest --test-dir build --output-on-failure
+sudo cmake --install build       # plugins to <prefix>/lib/avisynth, tools to <prefix>/bin
+sudo cmake --build build --target uninstall
+```
+
+Needed: CMake, a C++20 compiler, `cargo`/`rustc`. The plugins export
+`avisynth_plugin_init3` on these platforms, which is what the POSIX build of
+Avisynth+ looks for.
+
+Cross compiling the Windows binaries from Linux uses
+`cmake/toolchains/x86_64-w64-mingw32.cmake` (needs mingw-w64 and
+`rustup target add x86_64-pc-windows-gnu`).
+
+## Legacy MSVC project
+
+`DoViBaker/DoViBaker.vcxproj` is kept for reference and builds the `DoViBaker`
+plugin only. It needs both dependencies built by hand: `libdovi` with cargo-c
+(see above) and the timecube project from `timecube/_msvc`, whose platform
+toolset has to be set to the same toolset as `DoViBaker`. The product to build is
+selected by uncommenting the respective `DOVI_TARGET` line in `include/def.h`,
+and the `Configuration Type` of the project has to be `Application` for the two
+tools and `DynamicLibrary` for the plugins. The CMake build does all of this
+automatically and is the recommended way.
+
+## Troubleshooting
+
+- `The timecube submodule is missing` / `The dovi_tool submodule is missing`:
+  `git submodule update --init --recursive`
+- `cargo/rustc not found`: install Rust, or build `libdovi` yourself and point
+  `DOVIBAKER_LIBDOVI_PREFIX` to it.
+- `cannot open import library dolby_vision.dll.lib`: your cargo setup writes the
+  import library somewhere else, set `DOVIBAKER_LIBDOVI_IMPLIB` to its path.
+- A plugin is loaded but its functions are unknown: Avisynth and plugin must have
+  the same bitness (x64 plugin for x64 Avisynth, `_x86` for the 32 bit one).

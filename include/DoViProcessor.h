@@ -16,6 +16,9 @@
 #include <cmath>
 #endif
 
+// powf/fminf/fmaxf are used unqualified, the C header declares them globally.
+#include <math.h>
+
 #pragma warning(push)
 #pragma warning(disable: 4512 4244 4100 693)
 #include "avisynth.h"

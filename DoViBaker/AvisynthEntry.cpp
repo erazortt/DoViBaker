@@ -1,10 +1,29 @@
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <sstream>
 
 #include "def.h"
+#include "DoviPlugin.h"
+
+#ifdef DOVI_BAKER
 #include "DoViBaker.h"
 #include "DoViCubes.h"
 #include "DoViTonemap.h"
 #include "DoViStatsFileLoader.h"
+#endif
+
+#ifdef DOVI_ANALYZER
+#include "DoViProcessor.h"
+#include "DoViEetf.h"
+#endif
+
+// Global used by the Avisynth+ headers to call into the host. Defined once per
+// product: here for DoViBaker/DoviAnalyzer, in AvsCube.cpp for AVSCube.
+const AVS_Linkage *AVS_linkage = nullptr;
+
+#ifdef DOVI_BAKER
 
 AVSValue __cdecl Create_RealDoViBaker(
   PClip blclip,
@@ -72,6 +91,9 @@ AVSValue __cdecl Create_RealDoViBaker(
   if (quarterResolutionEl == 1) {
     return new DoViBaker<true>(blclip, elclip, rpuPath, blClipChromaSubSampled, elClipChromaSubSampled, desiredTrimPq, targetMinNits, targetMaxNits, qnd, rgbProof, nlqProof, env);
   }
+  // not reachable: all other values were rejected above
+  env->ThrowError("DoViBaker: Enhancement Layer must either be same size or quarter size as Base Layer");
+  return 0x0;
 }
 
 AVSValue __cdecl Create_DoViBaker(AVSValue args, void* user_data, IScriptEnvironment* env)
@@ -213,9 +235,7 @@ AVSValue __cdecl Create_DoViTonemap(AVSValue args, void* user_data, IScriptEnvir
     &args, env);
 }
 
-#ifdef DOVI_BAKER
-const AVS_Linkage *AVS_linkage = nullptr;
-extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScriptEnvironment* env, const AVS_Linkage* const vectors)
+extern "C" DOVI_PLUGIN_EXPORT const char* __stdcall DOVI_PLUGIN_INIT(IScriptEnvironment* env, const AVS_Linkage* const vectors)
 {
   AVS_linkage = vectors;
 
@@ -227,6 +247,8 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScri
   return "Hey it is just a spectrogram!";
 }
 #endif //DOVI_BAKER
+
+#ifdef DOVI_ANALYZER
 
 void ypp2ycc(uint16_t* ycc, float y, float u, float v) {
   //YPrPb to YCrCb
@@ -363,7 +385,6 @@ double Spline64Filter(double value) {
   return 0.0;
 }
 
-#ifdef DOVI_ANALYZER
 int main(int argc, char* argv[])
 {
   bool selfTest = false;

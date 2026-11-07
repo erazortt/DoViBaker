@@ -1,0 +1,86 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 21,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "vs-x64",
+      "displayName": "Visual Studio, 64 bit (all products)",
+      "description": "cmake --preset vs-x64 && cmake --build --preset vs-x64. For another Visual Studio version, change the generator name.",
+      "inherits": "base",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64"
+    },
+    {
+      "name": "vs-win32",
+      "displayName": "Visual Studio, 32 bit (needs the i686 Rust target)",
+      "inherits": "base",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "Win32"
+    },
+    {
+      "name": "release",
+      "displayName": "Ninja, Release",
+      "inherits": "base",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "debug",
+      "displayName": "Ninja, Debug",
+      "inherits": "base",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "mingw",
+      "displayName": "Windows binaries cross compiled from Linux",
+      "description": "Needs mingw-w64 and: rustup target add x86_64-pc-windows-gnu",
+      "inherits": "base",
+      "generator": "Ninja",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/x86_64-w64-mingw32.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "vs-x64",
+      "configurePreset": "vs-x64",
+      "configuration": "Release"
+    },
+    {
+      "name": "vs-win32",
+      "configurePreset": "vs-win32",
+      "configuration": "Release"
+    },
+    {
+      "name": "release",
+      "configurePreset": "release"
+    },
+    {
+      "name": "debug",
+      "configurePreset": "debug"
+    },
+    {
+      "name": "mingw",
+      "configurePreset": "mingw"
+    }
+  ]
+}

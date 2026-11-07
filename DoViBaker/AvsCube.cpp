@@ -1,29 +1,31 @@
 #include "avisynth.h"
 #include <array>
+#include <climits>
+#include <cstdlib>
+#include <cstring>
 #include <filesystem>
-#include <io.h>
+#ifdef _WIN32
+#include <malloc.h>
+#endif
 #include <timecube/timecube.h>
 #include "def.h"
+#include "DoviPlugin.h"
 
 AVS_FORCEINLINE void* aligned_malloc(size_t size, size_t align)
 {
-	void* result = [&]() {
-#ifdef _MSC_VER 
-		return _aligned_malloc(size, align);
-#else 
-		if (posix_memalign(&result, align, size))
-			return result = nullptr;
-		else
-			return result;
+#ifdef _WIN32 // MSVC and MinGW-w64
+	return _aligned_malloc(size, align);
+#else
+	void* result = nullptr;
+	if (posix_memalign(&result, align, size))
+		return nullptr;
+	return result;
 #endif
-		}();
-
-		return result;
 }
 
 AVS_FORCEINLINE void aligned_free(void* ptr)
 {
-#ifdef _MSC_VER 
+#ifdef _WIN32 // MSVC and MinGW-w64 
 	_aligned_free(ptr);
 #else 
 	free(ptr);
@@ -69,10 +71,11 @@ public:
 		params.interp = TIMECUBE_INTERP_TETRA;
 		params.cpu = static_cast<timecube_cpu_type_e>(_cpu);
 
-		strcpy_s(cube_path, 1024, _cube_path);
+		std::strncpy(cube_path, _cube_path, sizeof(cube_path) - 1);
+		cube_path[sizeof(cube_path) - 1] = '\0';
 		cpu = _cpu;
 		fullrange = _fullrange;
-		if (_access(cube_path, 0))
+		if (!std::filesystem::exists(cube_path))
 			env->ThrowError("AVSCube: cannot open cube file");
 
 		std::unique_ptr<timecube_lut, TimecubeLutFree> cube{ timecube_lut_from_file(cube_path) };
@@ -84,7 +87,7 @@ public:
 			throw std::runtime_error{ "AVSCube: error creating LUT" };
 	}
 
-	AVSCube::~AVSCube(void)
+	~AVSCube(void)
 	{
 	}
 
@@ -143,8 +146,8 @@ AVSValue __cdecl Create_AVSCube(AVSValue args, void* user_data, IScriptEnvironme
 
 #ifdef AVS_CUBE
 const AVS_Linkage* AVS_linkage = 0;
-extern "C" __declspec(dllexport) const char* __stdcall
-AvisynthPluginInit3(IScriptEnvironment * env, AVS_Linkage * vectors)
+extern "C" DOVI_PLUGIN_EXPORT const char* __stdcall
+DOVI_PLUGIN_INIT(IScriptEnvironment * env, AVS_Linkage * vectors)
 {
 	AVS_linkage = vectors;
 	env->AddFunction("AVSCube", "c[cube]s[cpu]i[fullrange]b", Create_AVSCube, 0);
