@@ -109,18 +109,16 @@ if(BUILD_TESTING)
         add_test(NAME DoViLutGen.pq2hlg
             COMMAND DoViLutGen ${CMAKE_CURRENT_BINARY_DIR}/test_pq2hlg.cube
                     -s 5 -i 0 -o 0)
-        add_test(NAME DoViLutGen.pq2sdr709
-            COMMAND DoViLutGen ${CMAKE_CURRENT_BINARY_DIR}/test_pq2sdr709.cube
-                    -s 5 -i 0 -o 3)
+        # every BT.709 SDR output format: 2 and 4 convert scene referred, 3 and 5
+        # display referred, 2 and 3 map colors, 4 and 5 clip them
+        foreach(dovi_sdr_format IN ITEMS 2 3 4 5)
+            add_test(NAME DoViLutGen.pq2sdr709_format${dovi_sdr_format}
+                COMMAND DoViLutGen ${CMAKE_CURRENT_BINARY_DIR}/test_pq2sdr709_o${dovi_sdr_format}.cube
+                        -s 5 -i 0 -o ${dovi_sdr_format})
+        endforeach()
         add_test(NAME DoViLutGen.hlg2sdr709
             COMMAND DoViLutGen ${CMAKE_CURRENT_BINARY_DIR}/test_hlg2sdr709.cube
-                    -s 5 -i 2 -o 3)
-        add_test(NAME DoViLutGen.pq2sdr709_sceneReferred
-            COMMAND DoViLutGen ${CMAKE_CURRENT_BINARY_DIR}/test_pq2sdr709_scene.cube
-                    -s 5 -i 0 -o 5)
-        add_test(NAME DoViLutGen.pq2sdr709_sceneReferredHardClipping
-            COMMAND DoViLutGen ${CMAKE_CURRENT_BINARY_DIR}/test_pq2sdr709_scene_hard.cube
-                    -s 5 -i 0 -o 4)
+                    -s 5 -i 2 -o 2)
     endif()
 
     set(dovi_test_rpu ${CMAKE_SOURCE_DIR}/dovi_tool/assets/hevc_tests/regular_rpu.bin)
