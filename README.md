@@ -325,14 +325,17 @@ Needed by [LumaScaleComparison.avs](#lumscalecomparisonavs) and [LumScaleHelper.
 
 # Compilation
 
-All four products are built in one go with CMake, including the two dependencies
-which live in the submodules. Since the source uses git submodules, clone it accordingly:
+All products are built in one go with CMake, including the two dependencies which
+live in the submodules. Since the source uses git submodules, clone it accordingly:
 
 ```
 git clone --recurse-submodules https://github.com/erazortt/DoViBaker.git
 ```
 
-An already cloned copy is completed by `git submodule update --init --recursive`.
+An already cloned copy is completed by: 
+```
+git submodule update --init --recursive
+```
 
 | Product | Target | File (Windows) | Contents |
 |---|---|---|---|
