@@ -151,17 +151,38 @@ The meaning of the arguments:
 - `output format` this optional argument sets the destination format of the LUT:
   - `0` for BT.2100 HLG output (default)
   - `1` for BT.2020 SDR output
-  - `2` for BT.709 SDR output with hard clipping of the color gamut
-  - `3` for BT.709 SDR output with smart color mapping preventing clipping while maintaining the look as much as possbile
+  - `2` for BT.709 SDR output using display referred converison with hard clipping of the color gamut
+  - `3` for BT.709 SDR output using display referred converison with smart color mapping preventing clipping while maintaining the look as much as possbile
+  - `4` for BT.709 SDR output using scene referred converison with hard clipping of the color gamut
+  - `5` for BT.709 SDR output using scene referred converison with smart color mapping preventing clipping while maintaining the look as much as possbile
 - `sdr gain` this optional argument adjusts the SDR mapping function, by setting the amount of gain of light midtones. Value range is [0.0, 1.0], default is `0.0`.
 - `sdr compression` this optional argument adjusts the SDR mapping function, by setting the amount of compression of bright highlights. Value range is [0.0, 1.0], default is `0.0`.
 - `chroma reduction factor` this optional argument sets the factor by which the chroma is reduced. Default is `1.0`, meaning chroma is not reduced.
+
+Comment on the four SDR conversion domains of the BT.709 outputs:
+`2` and `3` convert display referred, they treat the SDR signal as the viewing gamma 2.4 signal of a finished picture, so the gamut conversion happens in the light which the viewer sees. `4` and `5` convert scene referred, they treat the SDR signal as the BT.709 OETF signal of a camera, so the gamut conversion happens in scene linear light. The two differ in saturation and brightness of the colors, which is most visible in saturated colors while greys stay the same. Both are valid, so generate the LUT both ways and keep what fits the stream. The header of the generated LUT records which domain was used.
 
 Comment on the special input option for PQ re-normalized to 1000 nits:
 In that case, the generated LUT will expect that the input PQ was re-normalized to 1000 nits max brightness, meaning that preceeding the LUT processing [DoViTonemap](#dovitonemap) has to used with the option `normalizeOutput` set to `true`. LUTs for re-normalized inputs can be of smaller size than normal LUTs while still providing better quality. A good size for such a LUT is `50` instead of the `65` needed for the default PQ input.
 
 ## SDR Looks
-The default settings for `sdr_gain` and `sdr_compression` try to emulate a typical SDR look in what concerns dynamic range. This is usually more toned-down (aka flatter) than a typical HDR. For an even even more toned-down look increase `sdr_compression`, or, inversly and if trying to retain as much HDR feeling as possible, increase `sdr_gain`. If the output seems too colorful, the chroma can be decreased by decreasing `chroma_reduction_factor`. Tweaking of these settings will need to be done for each stream individually, while the defaults should be a good starting point in all instances. 
+The default settings for `sdr_gain` and `sdr_compression` try to emulate a typical SDR look in what concerns dynamic range. Together with the scene referred conversion, this will lead to the typical SDR look, which is more toned-down (aka flatter) than a typical HDR. For an even even more toned-down look increase `sdr_compression`, or, inversly and if trying to retain as much HDR feeling as possible, increase `sdr_gain` and use display referred conversion.
+If the output seems too colorful, the chroma can be decreased by decreasing `chroma_reduction_factor`. Tweaking of these settings will need to be done for each stream individually, while the defaults should be a good starting point in all instances.
+
+The recommended conversion of PQ streams to SDR which looks as one would expect an SDR stream to look is the following:
+```
+DoViLutGen.exe pq2typicalSdr.cube -s 65 -i 0 -o 5
+```
+
+The suggested the conversion of PQ streams to SDR which retains a reasonable amount of HDR feeling:
+```
+DoViLutGen.exe pq2punchySdr.cube -s 65 -i 0 -o 3
+```
+
+The (not recommended) conversion of PQ streams to SDR which retains the HDR "punch" as much as possible:
+```
+DoViLutGen.exe pq2maxPunchSdr.cube -s 65 -i 0 -o 2 -g 1 -c 0
+```
 
 Shown below is the influence of gain and compression on the functional form of the HLG->SDR tonemapping. This curve is also used for PQ->SDR, since that is implemented as PQ->HLG->SDR. As can be seen, if SDR is viewed with a max brightness of 267.6 nits, the brigtness levels of signal values below 50% match to those of HLG. Above 50% signal level HLG increases faster in brightenss, reaching 1000 nits at 100% signal level.
 ![HLG->SDR Tonemapping function](HLG2SDR.png "HLG->SDR Tonemapping function")
@@ -184,7 +205,7 @@ Please be aware that in the example the parameter `lumaScale` was not given to `
 ## Workflow for conversions from non-DolbyVision PQ to BT.709 SDR
 Generate the LUT by the following command:
 ```
-DoViLutGen.exe pq2sdr709.cube -s 65 -i 0 -o 3
+DoViLutGen.exe pq2sdr709.cube -s 65 -i 0 -o 5
 ```
 At this stage you can experiment with the SDR looks settings `gain` and `compression`.
 
@@ -202,7 +223,7 @@ Just like in the HLG example above, the parameter `lumaScale` was not given to `
 ## Workflow for conversions from HLG to BT.709 SDR
 Generate the LUT by the following command:
 ```
-DoViLutGen.exe hlg2sdr709.cube -s 50 -i 2 -o 3
+DoViLutGen.exe hlg2sdr709.cube -s 50 -i 2 -o 5
 ```
 At this stage you can experiment with the SDR looks settings `gain` and `compression`.
 

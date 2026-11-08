@@ -115,6 +115,12 @@ if(BUILD_TESTING)
         add_test(NAME DoViLutGen.hlg2sdr709
             COMMAND DoViLutGen ${CMAKE_CURRENT_BINARY_DIR}/test_hlg2sdr709.cube
                     -s 5 -i 2 -o 3)
+        add_test(NAME DoViLutGen.pq2sdr709_sceneReferred
+            COMMAND DoViLutGen ${CMAKE_CURRENT_BINARY_DIR}/test_pq2sdr709_scene.cube
+                    -s 5 -i 0 -o 5)
+        add_test(NAME DoViLutGen.pq2sdr709_sceneReferredHardClipping
+            COMMAND DoViLutGen ${CMAKE_CURRENT_BINARY_DIR}/test_pq2sdr709_scene_hard.cube
+                    -s 5 -i 0 -o 4)
     endif()
 
     set(dovi_test_rpu ${CMAKE_SOURCE_DIR}/dovi_tool/assets/hevc_tests/regular_rpu.bin)

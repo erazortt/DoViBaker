@@ -57,7 +57,7 @@ double OETFsdrInv(double gamma) {
   static constexpr double b = 0.018053969;
   static constexpr double c = a - b - 1;
   if (gamma < c)
-    return gamma /4.5;
+    return gamma/4.5;
   return std::pow((gamma + (a - 1))/a, 1.0/0.45);
 }
 double EOTFsdrInv(double lin) {
@@ -461,8 +461,10 @@ void showUsage(std::string& execname) {
   printf("-o, --output <int>         output format to convert to:\n");
   printf("                             0: BT.2100 HLG (default)\n");
   printf("                             1: BT.2020 SDR\n");
-  printf("                             2: BT.709 SDR with hard color clipping\n");
-  printf("                             3: BT.709 SDR with advanced color mapping\n");
+  printf("                             2: BT.709 SDR using display referred converison with hard color clipping\n");
+  printf("                             3: BT.709 SDR using display referred converison with advanced color mapping\n");
+  printf("                             4: BT.709 SDR using scene referred converison with hard color clipping\n");
+  printf("                             5: BT.709 SDR using scene referred converison with advanced color mapping\n");
   printf("-g, --gain <float>         gain of light midtones in conversions to SDR (0.0)\n");
   printf("-c, --compression <float>  highlight compression in conversions to SDR (0.0)\n");
   printf("-r, --reduction <float>    chroma reduction factor in SDR conversions (1.0)\n");
@@ -474,6 +476,9 @@ void showUsage(std::string& execname) {
   printf("examples for PQ to BT.709 SDR conversions:\n");
   printf("%s pq2sdr709.cube -s 65 -i 0 -o 3\n", execname.c_str());
   printf("%s pq2sdr709_normalizedInput.cube -s 50 -i 1 -o 3\n", execname.c_str());
+  printf("the same conversions with a scene referred SDR conversion:\n");
+  printf("%s pq2sdr709_sceneReferred.cube -s 65 -i 0 -o 5\n", execname.c_str());
+  printf("%s pq2sdr709_sceneReferred_hardClipping.cube -s 65 -i 0 -o 4\n", execname.c_str());
   printf("\n");
   printf("example for HLG to BT.709 SDR conversions:\n");
   printf("%s hlg2sdr709.cube -s 50 -i 2 -o 3\n", execname.c_str());
@@ -585,6 +590,14 @@ int main(int argc, char* argv[])
     printf("LUT size not supported");
     return 2;
   }
+  if (inputFormat < 0 || inputFormat > 3) {
+    printf("Unsupported input format\n");
+    return 2;
+  }
+  if (outputFormat < 0 || outputFormat > 5) {
+    printf("Unsupported output format\n");
+    return 2;
+  }
   std::string inFormatName = "BT.2100 PQ";
   switch (inputFormat)
   {
@@ -602,6 +615,8 @@ int main(int argc, char* argv[])
   case 1: outFormatName = "BT.2020 SDR"; break;
   case 2: outFormatName = "BT.709 SDR"; break;
   case 3: outFormatName = "BT.709 SDR"; break;
+  case 4: outFormatName = "BT.709 SDR"; break;
+  case 5: outFormatName = "BT.709 SDR"; break;
   default:
     break;
   }
@@ -661,11 +676,18 @@ int main(int argc, char* argv[])
     if (outputFormat > 1) {
       fsCube << "# chroma reduction factor: " << chromaReduction << std::endl;
       fsCube << "# color conversion: ";
-      if (outputFormat > 2) {
+      if (outputFormat % 2) {
         fsCube << "advanced mapping" << std::endl;
       }
       else {
         fsCube << "hard clipping" << std::endl;
+      }
+      fsCube << "# sdr conversion: ";
+      if (outputFormat > 3) {
+        fsCube << "scene referred (BT.709 OETF)" << std::endl;
+      }
+      else {
+        fsCube << "display referred (gamma 2.4)" << std::endl;
       }
     }
     printf("Producing a LUT for %s -> %s conversions of size %i\n", inFormatName.c_str(), outFormatName.c_str(), lutSize);
@@ -742,13 +764,18 @@ int main(int argc, char* argv[])
           }
 
           if (outputFormat > 1) {
+            // 2 and 3 convert in the display referred domain (gamma 2.4),
+            // 4 and 5 in the scene referred domain (BT.709 OETF)
+            bool sceneReferred = (outputFormat > 3);
+
             // SDR conversion from gamma to linear scale
-            double rl = EOTFsdr(rg);
-            double gl = EOTFsdr(gg);
-            double bl = EOTFsdr(bg);
+            double rl = sceneReferred ? OETFsdrInv(rg) : EOTFsdr(rg);
+            double gl = sceneReferred ? OETFsdrInv(gg) : EOTFsdr(gg);
+            double bl = sceneReferred ? OETFsdrInv(bg) : EOTFsdr(bg);
             if (chromaReduction != 1.0)
               reduceChroma(rl, gl, bl, chromaReduction);
-            if(outputFormat > 2)
+            // the odd formats use the advanced mapping, the even ones clip hard
+            if(outputFormat % 2)
               hybridColorMapping(rl, gl, bl);
             else
               convert2020To709(rl, gl, bl);
@@ -760,9 +787,9 @@ int main(int argc, char* argv[])
             if (bl < 0)bl = 0;
 
             // SDR conversion from linear to gamma scale
-            rg = EOTFsdrInv(rl);
-            gg = EOTFsdrInv(gl);
-            bg = EOTFsdrInv(bl);
+            rg = sceneReferred ? OETFsdr(rl) : EOTFsdrInv(rl);
+            gg = sceneReferred ? OETFsdr(gl) : EOTFsdrInv(gl);
+            bg = sceneReferred ? OETFsdr(bl) : EOTFsdrInv(bl);
           }
 
           if (rg > 1)rg = 1;
