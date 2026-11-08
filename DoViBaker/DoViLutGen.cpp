@@ -43,7 +43,7 @@ double OETFhlg(double e)
 }
 
 double OETFsdr(double lin) {
-  // sdr conversion scene referred linear to gamma
+  // scene referred SDR conversion from linear to gamma
   static constexpr double a = 1.099296827;
   static constexpr double b = 0.018053969;
   static constexpr double c = a - b - 1;
@@ -52,7 +52,7 @@ double OETFsdr(double lin) {
   return a * std::pow(lin, 0.45) - (a - 1);
 }
 double OETFsdrInv(double gamma) {
-  // sdr conversion scene referred gamma to linear
+  // scene referred SDR conversion from gamma to linear
   static constexpr double a = 1.099296827;
   static constexpr double b = 0.018053969;
   static constexpr double c = a - b - 1;
@@ -61,11 +61,11 @@ double OETFsdrInv(double gamma) {
   return std::pow((gamma + (a - 1))/a, 1.0/0.45);
 }
 double EOTFsdrInv(double lin) {
-  // sdr conversion display referred linear to gamma
+  // display referred SDR conversion from linear to gamma
   return std::pow(lin, 1/2.4);
 }
 double EOTFsdr(double gamma) {
-  // sdr conversion display referred linear to gamma
+  // display referred SDR conversion from linear to gamma
   return std::pow(gamma, 2.4);
 }
 
@@ -91,13 +91,13 @@ static constexpr double hermiteSpline(double x, double x0, double y0, double m0,
   return p;
 }
 
-// this function maps the hlg signal to the sdr signal until it runs out of sdr signal range at 267.6nits hlg
-// thus when the sdr is viewed it appears idential to the hlg as long as the hlg stays below these 267.6 nits
+// this function maps the HLG signal to the SDR signal until it runs out of SDR signal range at 267.6nits HLG
+// thus when the SDR is viewed it appears idential to the HLG as long as the HLG stays below these 267.6 nits
 double matchHlg2Sdr(double x) {
   if (x > 0.5) {
     return 2.8188 * x * x - 2.7718 * x + 1.6812;
   }
-  // hlg and sdr are itentical below 0.5 signal strength
+  // HLG and SDR are itentical below 0.5 signal strength
   return 1;
 }
 // derivative of the matching functions
@@ -108,8 +108,8 @@ double matchHlg2SdrD(double x) {
   return 0;
 }
 
-// since the function above will run out of sdr signal space at 267.6nits, we need to moderate it so it does not clip
-// the necessary flattening is done by a hermite spline (just like in hdr tonemapping)
+// since the function above will run out of SDR signal space at 267.6nits, we need to moderate it so it does not clip
+// the necessary flattening is done by a hermite spline (just like in PQ HDR tonemapping)
 // the start point is defined by kS, p0 and m0 and the end point by kE, p1 and m1.
 double hlg2sdr(double x, double kS, double m1Factor) {
   if (x > kS) {
@@ -742,6 +742,7 @@ int main(int argc, char* argv[])
           }
 
           if (outputFormat > 1) {
+            // SDR conversion from gamma to linear scale
             double rl = EOTFsdr(rg);
             double gl = EOTFsdr(gg);
             double bl = EOTFsdr(bg);
@@ -758,6 +759,7 @@ int main(int argc, char* argv[])
             if (gl < 0)gl = 0;
             if (bl < 0)bl = 0;
 
+            // SDR conversion from linear to gamma scale
             rg = EOTFsdrInv(rl);
             gg = EOTFsdrInv(gl);
             bg = EOTFsdrInv(bl);
