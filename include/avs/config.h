@@ -48,8 +48,8 @@
 #   define X86_64
 #elif defined(_M_IX86) || defined(__i386__)
 #   define X86_32
-// VS2017 introduced _M_ARM64
 #elif defined(_M_ARM64) || defined(__aarch64__)
+// _M_ARM64: MSVC; __aarch64__: GCC and Clang
 #   define ARM64
 #elif defined(_M_ARM) || defined(__arm__)
 #   define ARM32
@@ -59,8 +59,14 @@
 #   define PPC32
 #elif defined(__riscv)
 #   define RISCV
+#elif defined(__loongarch__)
+#   define LOONGARCH
 #elif defined(__sparc_v9__)
 #   define SPARC
+#elif defined(__mips__)
+#   define MIPS
+#elif defined(__s390x__)
+#   define S390X
 #else
 #   error Unsupported CPU architecture.
 #endif
@@ -77,11 +83,9 @@
 #   define CLANG
 #if defined(_MSC_VER)
 #   define MSVC
-#   define AVS_FORCEINLINE __attribute__((always_inline))
-#else
-#   define AVS_FORCEINLINE __attribute__((always_inline)) inline
 #endif
-#elif   defined(_MSC_VER)
+#   define AVS_FORCEINLINE __attribute__((always_inline)) inline
+#elif defined(_MSC_VER)
 #   define MSVC
 #   define MSVC_PURE
 #   define AVS_FORCEINLINE __forceinline
@@ -116,6 +120,27 @@
 #   define AVS_POSIX
 #else
 #   error Operating system unsupported.
+#endif
+
+#if defined(AVS_WINDOWS)
+#  if defined(X86_32) || defined(X86_64)
+#    define AVS_WINDOWS_X86
+#  elif defined(ARM64) || defined(ARM32)
+#    define AVS_WINDOWS_ARM
+#  endif
+#endif
+
+#if defined(MSVC) && !defined(AVS_WINDOWS_X86) && !(defined(AVS_WINDOWS_ARM) && defined(ARM64))
+#    error Unsupported combination of compiler, operating system, and machine architecture.
+#endif
+
+/* A kinda portable definition of the C99 restrict keyword (or its unofficial C++ equivalent) */
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L /* Available in C99 */
+#define AVS_RESTRICT restrict
+#elif defined(__cplusplus) || defined(_MSC_VER) /* Almost all relevant C++ compilers support it so just assume it works */
+#define AVS_RESTRICT __restrict
+#else /* Not supported */
+#define AVS_RESTRICT
 #endif
 
 // useful warnings disabler macros for supported compilers
