@@ -151,7 +151,7 @@ void DoViBaker<quarterResolutionEl>::upsampleHorz(PVideoFrame& dst, const PVideo
 }
 
 /*
-* these commented out functions use processor functions which were replaced, see DoViProcessor.h
+* these commented out functions use processor functions which were replaced, see DoViBaker.h
 template<int quarterResolutionEl>
 void DoViBaker<quarterResolutionEl>::upsampleHorz(PVideoFrame& dst, const PVideoFrame& mez, int plane, IScriptEnvironment* env)
 {
@@ -204,9 +204,9 @@ void DoViBaker<quarterResolutionEl>::upscaleEl(PVideoFrame& dst, const PVideoFra
 	dstVi.width /= 2;
 	PVideoFrame mez = env->NewVideoFrame(dstVi);
 
-	upsampleVert<5,2>(mez, src, PLANAR_Y, { -2,-1, 0, 1, 2 }, &DoViProcessor::upsampleElYvertEven, &DoViProcessor::upsampleElYvertOdd, env);
-	upsampleVert<3,1>(mez, src, PLANAR_U, { -1, 0, 1 }, &DoViProcessor::upsampleElUVvertEven, &DoViProcessor::upsampleElUVvertOdd, env);
-	upsampleVert<3,1>(mez, src, PLANAR_V, { -1, 0, 1 }, &DoViProcessor::upsampleElUVvertEven, &DoViProcessor::upsampleElUVvertOdd, env);
+	upsampleVert<5,2>(mez, src, PLANAR_Y, { -2,-1, 0, 1, 2 }, &upsampleElYvertEven, &upsampleElYvertOdd, env);
+	upsampleVert<3,1>(mez, src, PLANAR_U, { -1, 0, 1 }, &upsampleElUVvertEven, &upsampleElUVvertOdd, env);
+	upsampleVert<3,1>(mez, src, PLANAR_V, { -1, 0, 1 }, &upsampleElUVvertEven, &upsampleElUVvertOdd, env);
 	
 	upsampleHorz(dst, mez, PLANAR_Y, env);
 	upsampleHorz(dst, mez, PLANAR_U, env);
@@ -219,8 +219,8 @@ void DoViBaker<quarterResolutionEl>::upsampleElChroma(PVideoFrame& dst, const PV
 	dstVi.width /= 2;
 	PVideoFrame mez = env->NewVideoFrame(dstVi);
 
-	upsampleVert<3, 1>(mez, src, PLANAR_U, { -1, 0, 1 }, &DoViProcessor::upsampleElUVvertEven, &DoViProcessor::upsampleElUVvertOdd, env);
-	upsampleVert<3, 1>(mez, src, PLANAR_V, { -1, 0, 1 }, &DoViProcessor::upsampleElUVvertEven, &DoViProcessor::upsampleElUVvertOdd, env);
+	upsampleVert<3, 1>(mez, src, PLANAR_U, { -1, 0, 1 }, &upsampleElUVvertEven, &upsampleElUVvertOdd, env);
+	upsampleVert<3, 1>(mez, src, PLANAR_V, { -1, 0, 1 }, &upsampleElUVvertEven, &upsampleElUVvertOdd, env);
 
 	upsampleHorz(dst, mez, PLANAR_U, env);
 	upsampleHorz(dst, mez, PLANAR_V, env);
@@ -233,8 +233,8 @@ void DoViBaker<quarterResolutionEl>::upsampleBlChroma(PVideoFrame& dst, const PV
 	dstVi.width /= 2;
 	PVideoFrame mez = env->NewVideoFrame(dstVi);
 	
-	upsampleVert<7,3>(mez, src, PLANAR_U, { -3,-2,-1, 0, 1, 2, 3 }, &DoViProcessor::upsampleBlVertEven, &DoViProcessor::upsampleBlVertOdd, env);
-	upsampleVert<7,3>(mez, src, PLANAR_V, { -3,-2,-1, 0, 1, 2, 3 }, &DoViProcessor::upsampleBlVertEven, &DoViProcessor::upsampleBlVertOdd, env);
+	upsampleVert<7,3>(mez, src, PLANAR_U, { -3,-2,-1, 0, 1, 2, 3 }, &upsampleBlVertEven, &upsampleBlVertOdd, env);
+	upsampleVert<7,3>(mez, src, PLANAR_V, { -3,-2,-1, 0, 1, 2, 3 }, &upsampleBlVertEven, &upsampleBlVertOdd, env);
 
 	upsampleHorz(dst, mez, PLANAR_U, env);
 	upsampleHorz(dst, mez, PLANAR_V, env);
@@ -247,13 +247,13 @@ void DoViBaker<quarterResolutionEl>::upscaleEl(PVideoFrame& dst, const PVideoFra
 	dstVi.width /= 2;
 	PVideoFrame mez = env->NewVideoFrame(dstVi);
 
-	upsampleVert<5, 2>(mez, src, PLANAR_Y, { -2,-1, 0, 1, 2 }, &DoViProcessor::upsampleLumaEven, &DoViProcessor::upsampleLumaOdd, env);
-	upsampleVert<4, 1>(mez, src, PLANAR_U, { -1, 0, 1, 2 }, &DoViProcessor::upsampleChromaEven, &DoViProcessor::upsampleChromaOdd, env);
-	upsampleVert<4, 1>(mez, src, PLANAR_V, { -1, 0, 1, 2 }, &DoViProcessor::upsampleChromaEven, &DoViProcessor::upsampleChromaOdd, env);
+	upsampleVert<5, 2>(mez, src, PLANAR_Y, { -2,-1, 0, 1, 2 }, &upsampleLumaEven, &upsampleLumaOdd, env);
+	upsampleVert<4, 1>(mez, src, PLANAR_U, { -1, 0, 1, 2 }, &upsampleChromaEven, &upsampleChromaOdd, env);
+	upsampleVert<4, 1>(mez, src, PLANAR_V, { -1, 0, 1, 2 }, &upsampleChromaEven, &upsampleChromaOdd, env);
 	
-	upsampleHorz<5, 2>(dst, mez, PLANAR_Y, { -2,-1, 0, 1, 2 }, &DoViProcessor::upsampleLumaEven, &DoViProcessor::upsampleLumaOdd, env);
-	upsampleHorz<4, 1>(dst, mez, PLANAR_U, { -1, 0, 1, 2 }, &DoViProcessor::upsampleChromaEven, &DoViProcessor::upsampleChromaOdd, env);
-	upsampleHorz<4, 1>(dst, mez, PLANAR_V, { -1, 0, 1, 2 }, &DoViProcessor::upsampleChromaEven, &DoViProcessor::upsampleChromaOdd, env);
+	upsampleHorz<5, 2>(dst, mez, PLANAR_Y, { -2,-1, 0, 1, 2 }, &upsampleLumaEven, &upsampleLumaOdd, env);
+	upsampleHorz<4, 1>(dst, mez, PLANAR_U, { -1, 0, 1, 2 }, &upsampleChromaEven, &upsampleChromaOdd, env);
+	upsampleHorz<4, 1>(dst, mez, PLANAR_V, { -1, 0, 1, 2 }, &upsampleChromaEven, &upsampleChromaOdd, env);
 }
 
 template<int quarterResolutionEl>
@@ -262,11 +262,11 @@ void DoViBaker<quarterResolutionEl>::upsampleChroma(PVideoFrame& dst, const PVid
 	dstVi.width /= 2;
 	PVideoFrame mez = env->NewVideoFrame(dstVi);
 
-	upsampleVert<4, 1>(mez, src, PLANAR_U, { -1, 0, 1, 2 }, &DoViProcessor::upsampleChromaEven, &DoViProcessor::upsampleChromaOdd, env);
-	upsampleVert<4, 1>(mez, src, PLANAR_V, { -1, 0, 1, 2 }, &DoViProcessor::upsampleChromaEven, &DoViProcessor::upsampleChromaOdd, env);
+	upsampleVert<4, 1>(mez, src, PLANAR_U, { -1, 0, 1, 2 }, &upsampleChromaEven, &upsampleChromaOdd, env);
+	upsampleVert<4, 1>(mez, src, PLANAR_V, { -1, 0, 1, 2 }, &upsampleChromaEven, &upsampleChromaOdd, env);
 
-	upsampleHorz<4, 1>(dst, mez, PLANAR_U, { -1, 0, 1, 2 }, &DoViProcessor::upsampleChromaEven, &DoViProcessor::upsampleChromaOdd, env);
-	upsampleHorz<4, 1>(dst, mez, PLANAR_V, { -1, 0, 1, 2 }, &DoViProcessor::upsampleChromaEven, &DoViProcessor::upsampleChromaOdd, env);
+	upsampleHorz<4, 1>(dst, mez, PLANAR_U, { -1, 0, 1, 2 }, &upsampleChromaEven, &upsampleChromaOdd, env);
+	upsampleHorz<4, 1>(dst, mez, PLANAR_V, { -1, 0, 1, 2 }, &upsampleChromaEven, &upsampleChromaOdd, env);
 }
 
 template<int quarterResolutionEl>
