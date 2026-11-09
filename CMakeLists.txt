@@ -12,6 +12,24 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(GNUInstallDirs)
 include(CTest)            # -> BUILD_TESTING, the smoke tests of the products
 include(DoviVersion)      # -> DOVIBAKER_VERSION
+
+# ---------------------------------------------------------------------------
+# How the products link the Rust libdovi. Declared here, before DoviSettings,
+# because the choice decides which C runtime the MSVC builds use.
+#   static - cargo builds a static library and its objects end up inside the
+#            plugins and tools. Nothing is shipped, searched for or loadable at
+#            runtime, so a plugin can never fail silently over a missing
+#            dolby_vision.dll. Needs the DLL CRT on MSVC (VC++ redist).
+#   shared - cargo builds a library (dolby_vision.dll / libdolby_vision.so)
+#            which travels with the plugins.
+# ---------------------------------------------------------------------------
+set(DOVIBAKER_LIBDOVI_LINK "static" CACHE STRING "Link libdovi: static or shared")
+set_property(CACHE DOVIBAKER_LIBDOVI_LINK PROPERTY STRINGS static shared)
+if(NOT DOVIBAKER_LIBDOVI_LINK MATCHES "^(static|shared)$")
+    message(FATAL_ERROR
+        "DOVIBAKER_LIBDOVI_LINK must be 'static' or 'shared', got '${DOVIBAKER_LIBDOVI_LINK}'")
+endif()
+
 include(DoviSettings)     # -> dovibaker::settings interface target
 
 # ---------------------------------------------------------------------------
@@ -19,7 +37,7 @@ include(DoviSettings)     # -> dovibaker::settings interface target
 # ---------------------------------------------------------------------------
 option(DOVIBAKER_BUILD_ALL "Build all products (plugins and tools)" ON)
 option(DOVIBAKER_BUILD_BAKER "Build the DoViBaker Avisynth plugin" ${DOVIBAKER_BUILD_ALL})
-option(DOVIBAKER_BUILD_ANALYZER "Build the DoviAnalyzer console tool" ${DOVIBAKER_BUILD_ALL})
+option(DOVIBAKER_BUILD_ANALYZER "Build the DoViAnalyzer console tool" ${DOVIBAKER_BUILD_ALL})
 option(DOVIBAKER_BUILD_LUTGEN "Build the DoViLutGen console tool" ${DOVIBAKER_BUILD_ALL})
 option(DOVIBAKER_BUILD_AVSCUBE "Build the AVSCube Avisynth plugin" ${DOVIBAKER_BUILD_ALL})
 

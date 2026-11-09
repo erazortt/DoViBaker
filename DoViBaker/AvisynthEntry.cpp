@@ -20,7 +20,7 @@
 #endif
 
 // Global used by the Avisynth+ headers to call into the host. Defined once per
-// product: here for DoViBaker/DoviAnalyzer, in AvsCube.cpp for AVSCube.
+// product: here for DoViBaker/DoViAnalyzer, in AvsCube.cpp for AVSCube.
 const AVS_Linkage *AVS_linkage = nullptr;
 
 #ifdef DOVI_BAKER

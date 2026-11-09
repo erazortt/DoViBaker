@@ -17,7 +17,10 @@ For an explanation of all the terminology used and the technical concepts behind
 This avisynth plugin reads the Base Layer, Enhancement Layer and RPU data from a DolbyVision stream, applies the processing and creates a static PQ output stream.
 
 ## General information
-This plugin uses the metadata from an RPU file or from the inside stream itself to compose the DolbyVision HDR picture out of the Base Layer (BL) and Enhancement Layer (EL). Display Management (DM) metadata will not be processed per default. It is however possible to further process the clip using DM data by explicitly enabling [Trims](#trims) or by the means of [DoViTonemap](#dovitonemap) or [DoViCubes](#dovicubes). 
+This plugin uses the metadata from an RPU file or from the inside stream itself to compose the DolbyVision HDR picture out of the Base Layer (BL) and Enhancement Layer (EL). Display Management (DM) metadata will not be processed per default. It is however possible to further process the clip using DM data by explicitly enabling [Trims](#trims) or by the means of [DoViTonemap](#dovitonemap) or [DoViCubes](#dovicubes).
+
+## Pre-Requirements
+On Windows it is necessray to have [Microsoft Visual C++ Redistributables](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist) installed. But actually this is also necessary for AviSynth itself, so you should have this already installed when AviSynth works.
 
 ## Feeding the plugin 
 To my knowledge there are currently three source libraries that can be used. It is advisable to choose one of them in a speed test on your machine.
@@ -339,9 +342,9 @@ git submodule update --init --recursive
 
 | Product | Target | File (Windows) | Contents |
 |---|---|---|---|
-| DoViBaker, DoViTonemap, DoViCubes, DoViStatsFileLoader | `DoViBaker` | `DoViBaker_x64.dll` | Avisynth plugin, needs `dolby_vision.dll` next to it |
+| DoViBaker, DoViTonemap, DoViCubes, DoViStatsFileLoader | `DoViBaker` | `DoViBaker_x64.dll` | Avisynth plugin |
 | AVSCube | `AVSCube` | `AVSCube_x64.dll` | Avisynth plugin which applies one LUT |
-| DoViAnalyzer.exe | `DoviAnalyzer` | `DoviAnalyzer.exe` | analyzes an `RPU.bin` |
+| DoViAnalyzer.exe | `DoViAnalyzer` | `DoViAnalyzer.exe` | analyzes an `RPU.bin` |
 | DoViLutGen.exe | `DoViLutGen` | `DoViLutGen.exe` | creates the PQ/HLG/SDR LUTs |
 
 On Linux and macOS the plugins are named `dovibaker.<version>.so` and
@@ -370,10 +373,14 @@ cmake -S . -B build -G "Visual Studio 17 2022" -A x64
 cmake --build build --config Release
 ```
 
-The products are all in `build\bin\Release\`, together with `dolby_vision.dll`
-which the plugin and DoViAnalyzer need at runtime. Copy the two `.dll` files into
-the Avisynth plugin directory (for example `C:\Program Files\AviSynth\plugins`)
-and the two `.exe` tools anywhere you like. Opening `build\DoViBaker.sln` in the
+The products are all in `build\bin\Release\`. Every file stands on its own: 
+copy the two plugin `.dll` files into the Avisynth plugin directory 
+(for example `C:\Program Files\AviSynth\plugins`) and the two `.exe` tools 
+anywhere you like, no second `.dll` has to travel with them.
+The Rust library is built against the CRT of the DLL, so the products use the
+dynamic MSVC runtime (`/MD`) and need the VC++ redist - which the Avisynth host
+pulls in anyway. `DOVIBAKER_LIBDOVI_LINK=shared` gives the old layout: a separate
+`dolby_vision.dll` and a `/MT` runtime. Opening `build\DoViBaker.sln` in the
 Visual Studio IDE gives the same four projects, with `DoViBaker` as start project.
 
 Instead of the two commands above the preset in `CMakePresets.json` can be used:
@@ -385,11 +392,12 @@ Instead of the two commands above the preset in `CMakePresets.json` can be used:
 |---|---|---|
 | `DOVIBAKER_BUILD_ALL` | `ON` | build all four products |
 | `DOVIBAKER_BUILD_BAKER`, `_ANALYZER`, `_LUTGEN`, `_AVSCUBE` | value of `DOVIBAKER_BUILD_ALL` | build a single product |
+| `DOVIBAKER_LIBDOVI_LINK` | `static` | `static` links libdovi into the products, `shared` builds a separate `dolby_vision.dll` / `libdolby_vision.so` |
 | `DOVIBAKER_BUILD_LIBDOVI` | `ON` | build libdovi from the submodule with cargo |
 | `DOVIBAKER_LIBDOVI_PREFIX` | empty | use an installed libdovi from this prefix instead |
 | `DOVIBAKER_LIBDOVI_RUST_TRIPLE` | detected | Rust triple to build libdovi for |
-| `DOVIBAKER_LIBDOVI_IMPLIB` | detected | import library to link, if cargo names it differently |
-| `DOVIBAKER_MSVC_STATIC_RUNTIME` | `ON` | link the MSVC runtime statically, so no VC redist is needed |
+| `DOVIBAKER_LIBDOVI_IMPLIB` | detected | import library to link, if cargo names it differently (shared mode only) |
+| `DOVIBAKER_MSVC_STATIC_RUNTIME` | `ON` | link the MSVC runtime statically (`/MT`, no VC redist needed); only honoured with `DOVIBAKER_LIBDOVI_LINK=shared` |
 | `DOVIBAKER_FAST_MATH` | `ON` on MSVC | `/fp:fast` (fast math) in the optimized builds |
 | `DOVIBAKER_INSTALL_SCRIPTS` | `OFF` | install the scripts from `scripts/` too |
 
@@ -406,20 +414,53 @@ cmake -S . -B build-lutgen -DDOVIBAKER_BUILD_ALL=OFF -DDOVIBAKER_BUILD_LUTGEN=ON
 ### libdovi
 
 `libdovi` is the C API of the `dovi_tool` submodule, and it is Rust. CMake builds
-it with
+it as a static library with
+
+```
+cargo rustc --release --locked --features capi --crate-type staticlib -- -Cstrip=symbols
+```
+
+into `build\_libdovi\<rust triple>\release\`, and the products link against the
+result. The archive keeps the name of the crate, so it is `libdolby_vision.a`
+(`dolby_vision.lib` with MSVC). Nothing is installed, copied next to the products
+or loaded at runtime, which means a plugin cannot fail to load over a missing
+`dolby_vision.dll` any more - that failure was silent, the loader stops before
+any code of the plugin runs, and AviSynth+ only reported *"no function named
+'DoViBaker'"*.
+
+Two details come with a Rust static library:
+
+- It does not carry the system libraries its `std` uses, the final link has to
+  name them, and the list is different for every target. CMake asks rustc
+  (`rustc --print native-static-libs`) and hands them to every product: on
+  Windows `ws2_32`, `bcrypt`, `userenv`, `shlwapi`, `ntdll`, `dbghelp`, on Linux
+  `m`, `dl`, `pthread`, `gcc_s` and friends.
+- The `dovi_*` entry points of the archive have default visibility, and
+  `-fvisibility=hidden` does not reach them, so every plugin which embeds libdovi
+  would export them and two of them in one Avisynth+ process would interpose each
+  other. On Linux and macOS CMake links with `-Wl,--exclude-libs,ALL`, which keeps
+  the symbols of the archive inside the plugin (measured: 24 exported `dovi_*`
+  symbols to 0, the plugin entry point untouched). Windows needs nothing, a PE
+  file exports only what is `__declspec(dllexport)`.
+
+With `DOVIBAKER_LIBDOVI_LINK=shared` CMake builds a library instead
 
 ```
 cargo rustc --release --locked --features capi --crate-type cdylib
 ```
 
-into `build\_libdovi\<rust triple>\release\`, and the plugins link against the
-result. The library keeps the name of the crate, therefore the runtime file is
-`dolby_vision.dll` (`dovi.dll` is the name used by the packaged versions).
+which is `dolby_vision.dll` (`dovi.dll` is the name used by the packaged
+versions), copied next to the products in the build tree and installed next to
+them; on Linux and macOS the plugins find it through their `$ORIGIN` run path.
+This mode keeps the `/MT` runtime on MSVC, and it is the mode to use when the
+VC++ redist is not wanted.
 
 Cargo builds the release profile only, so a Debug build of the plugins links
 against the release build of `libdovi`. To use a self installed libdovi instead:
 `cargo install cargo-c`, then `cargo cinstall --release` inside
 `dovi_tool\dolby_vision`, and configure with `-DDOVIBAKER_LIBDOVI_PREFIX=%USERPROFILE%\.cargo`.
+`cargo cinstall` installs the static and the shared library, and
+`DOVIBAKER_LIBDOVI_LINK` picks the one which is used.
 
 ## Linux and macOS
 
@@ -434,6 +475,12 @@ sudo cmake --build build --target uninstall
 Needed: CMake, a C++20 compiler, `cargo`/`rustc`. The plugins export
 `avisynth_plugin_init3` on these platforms, which is what the POSIX build of
 Avisynth+ looks for.
+
+The plugins are self contained (`libdovi` is linked in), so no `libdolby_vision.so`
+is installed and a plugin file copied to another machine works on its own.
+`--strip` at install time drops the symbol tables of the products, which is where
+the size of the Rust code shows up: the plugin is about 1.9 MB installed, 6.7 MB
+in the build tree.
 
 Cross compiling the Windows binaries from Linux uses
 `cmake/toolchains/x86_64-w64-mingw32.cmake` (needs mingw-w64 and
@@ -456,7 +503,30 @@ automatically and is the recommended way.
   `git submodule update --init --recursive`
 - `cargo/rustc not found`: install Rust, or build `libdovi` yourself and point
   `DOVIBAKER_LIBDOVI_PREFIX` to it.
-- `cannot open import library dolby_vision.dll.lib`: your cargo setup writes the
-  import library somewhere else, set `DOVIBAKER_LIBDOVI_IMPLIB` to its path.
+- `cannot open import library dolby_vision.dll.lib` (shared mode) / `cannot open
+  ... libdolby_vision.a` (static mode): cargo writes its artifacts to
+  `build\_libdovi\<rust triple>\release\`, and the file is only there after the
+  `dovi_cargo` step has run. If your cargo names the library differently, set
+  `DOVIBAKER_LIBDOVI_IMPLIB` (shared mode).
+- `undefined reference to 'WSASend'`, `'WSAGetLastError'`, `'recv'`: the system
+  libraries of Rust's `std` are missing from the link line. Linking inside CMake
+  cannot produce this, it asks rustc for the list
+  (`rustc --print native-static-libs`); a link built by hand needs
+  `-lws2_32 -lbcrypt -luserenv -lshlwapi -lntdll -ldbghelp` on Windows.
+- `LNK4098: defaultlib 'MSVCRT' conflicts with use of other libs`: the products
+  were built with `/MT` while libdovi is linked in statically, so the module
+  carries two C runtimes. Keep the default `/MD` (CMake forces it), or use
+  `DOVIBAKER_LIBDOVI_LINK=shared`.
+- `options -C embed-bitcode=no and -C lto are incompatible`: `DOVIBAKER_LIBDOVI_CARGO_ARGS`
+  passes its arguments to cargo, not to rustc, and rustc cannot build a
+  staticlib with LTO. Size knobs which do work are `-Cstrip=symbols` (used by
+  CMake) and `-Cpanic=abort`.
 - A plugin is loaded but its functions are unknown: Avisynth and plugin must have
-  the same bitness (x64 plugin for x64 Avisynth, `_x86` for the 32 bit one).
+  the same bitness (x64 plugin for x64 Avisynth, `_x86` for the 32 bit one). In
+  shared mode the second cause is a missing `dolby_vision.dll`: AviSynth+ skips a
+  plugin which the loader cannot map, without a word, and the script then reports
+  *"There is no function named 'DoViBaker'"*, while `DoViAnalyzer.exe` prints
+  nothing at all and leaves `-1073741515` (`0xC0000135`, `STATUS_DLL_NOT_FOUND`)
+  as its exit code. `LoadPlugin("...\DoViBaker_x64.dll")` shows the loader error,
+  and `dumpbin /dependents` shows the missing import. With the default
+  `DOVIBAKER_LIBDOVI_LINK=static` there is no library to miss.

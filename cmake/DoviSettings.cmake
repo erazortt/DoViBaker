@@ -2,7 +2,7 @@
 # the interface target dovibaker::settings.
 
 option(DOVIBAKER_MSVC_STATIC_RUNTIME
-    "Link the MSVC runtime statically (/MT), so the plugins need no VC redist" ON)
+    "Link the MSVC runtime statically (/MT); only honoured with DOVIBAKER_LIBDOVI_LINK=shared" ON)
 option(DOVIBAKER_FAST_MATH
     "Use fast (not fully standard conformant) floating point math in optimized builds" ${MSVC})
 
@@ -13,9 +13,24 @@ if(NOT MSVC)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
 
-if(MSVC AND DOVIBAKER_MSVC_STATIC_RUNTIME)
+# Rust builds its static library against the CRT of the DLL, and one module can
+# only carry one C runtime: linking those objects into a /MT module would mix
+# two CRTs in the same file. So the static libdovi forces the dynamic runtime,
+# which the plugins share with Avisynth+ (the VC++ redist is a dependency of the
+# host anyway).
+set(dovibaker_msvc_static_runtime ${DOVIBAKER_MSVC_STATIC_RUNTIME})
+if(MSVC AND DOVIBAKER_LIBDOVI_LINK STREQUAL "static" AND dovibaker_msvc_static_runtime)
+    set(dovibaker_msvc_static_runtime OFF)
+    message(STATUS "libdovi: linked statically, the MSVC runtime is /MD (the VC++"
+        " redist is required). DOVIBAKER_MSVC_STATIC_RUNTIME has no effect here,"
+        " set DOVIBAKER_LIBDOVI_LINK=shared to get /MT back.")
+endif()
+
+if(MSVC AND dovibaker_msvc_static_runtime)
     # Matches the historic MSVC project settings (Release: /MT, Debug: /MTd).
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+else()
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 endif()
 
 add_library(dovibaker_settings INTERFACE)

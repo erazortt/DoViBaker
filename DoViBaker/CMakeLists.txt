@@ -48,23 +48,23 @@ if(DOVIBAKER_BUILD_BAKER)
 endif()
 
 # ---------------------------------------------------------------------------
-# DoviAnalyzer: console tool, analyzes an RPU.bin file
+# DoViAnalyzer: console tool, analyzes an RPU.bin file
 # ---------------------------------------------------------------------------
 if(DOVIBAKER_BUILD_ANALYZER)
-    add_executable(DoviAnalyzer
+    add_executable(DoViAnalyzer
         AvisynthEntry.cpp
         DoViEetf.cpp
         DoViProcessor.cpp)
 
-    target_compile_definitions(DoviAnalyzer PRIVATE DOVI_TARGET=DOVI_PRODUCT_ANALYZER)
-    target_link_libraries(DoviAnalyzer PRIVATE
+    target_compile_definitions(DoViAnalyzer PRIVATE DOVI_TARGET=DOVI_PRODUCT_ANALYZER)
+    target_link_libraries(DoViAnalyzer PRIVATE
         dovibaker::settings
         dovi::dovi)
 
-    set_target_properties(DoviAnalyzer PROPERTIES FOLDER tools)
+    set_target_properties(DoViAnalyzer PROPERTIES FOLDER tools)
 
-    dovibaker_deploy_libdovi(DoviAnalyzer)
-    dovibaker_install_tool(DoviAnalyzer)
+    dovibaker_deploy_libdovi(DoViAnalyzer)
+    dovibaker_install_tool(DoViAnalyzer)
 endif()
 
 # ---------------------------------------------------------------------------
@@ -122,9 +122,9 @@ if(BUILD_TESTING)
     endif()
 
     set(dovi_test_rpu ${CMAKE_SOURCE_DIR}/dovi_tool/assets/hevc_tests/regular_rpu.bin)
-    if(TARGET DoviAnalyzer AND EXISTS ${dovi_test_rpu})
-        add_test(NAME DoviAnalyzer.rpu
-            COMMAND DoviAnalyzer ${dovi_test_rpu})
+    if(TARGET DoViAnalyzer AND EXISTS ${dovi_test_rpu})
+        add_test(NAME DoViAnalyzer.rpu
+            COMMAND DoViAnalyzer ${dovi_test_rpu})
     endif()
 endif()
 

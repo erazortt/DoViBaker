@@ -5,7 +5,7 @@
  * translation unit belongs to. The four products are:
  *
  *   DOVI_PRODUCT_BAKER     ->  DoViBaker   (Avisynth plugin: BL + EL + RPU -> PQ)
- *   DOVI_PRODUCT_ANALYZER  ->  DoviAnalyzer.exe (RPU.bin analyzer, console app)
+ *   DOVI_PRODUCT_ANALYZER  ->  DoViAnalyzer.exe (RPU.bin analyzer, console app)
  *   DOVI_PRODUCT_LUTGEN    ->  DoViLutGen.exe   (LUT generator, console app)
  *   DOVI_PRODUCT_AVSCUBE   ->  AVSCube     (Avisynth plugin: applies one LUT)
  *
