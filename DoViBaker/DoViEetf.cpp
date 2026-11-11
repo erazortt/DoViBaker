@@ -62,12 +62,7 @@ void DoViEetf<signalBitDepth>::generateEETF(
 		outWhite = targetMaxEp * (LUT_SIZE - 1) + 0.5f;
 	}
 
-	int inSignal = 0;
-	for (; inSignal < inMinSignal; inSignal++) {
-		// skip unnecessary processing where result is known
-		lut[inSignal] = outBlack;
-	}
-	for (; inSignal < inMaxSignal; inSignal++) {
+	for (int inSignal = 0; inSignal < LUT_SIZE; inSignal++) {
 		float ep = (inSignal - inBlack) / float(inWhite - inBlack);
 		float e = DoViProcessor::EOTF(ep) * lumScale;
 		ep = DoViProcessor::EOTFinv(e);
@@ -101,10 +96,6 @@ void DoViEetf<signalBitDepth>::generateEETF(
 		}
 		uint16_t outSignal = e4 * (LUT_SIZE - 1) + 0.5f;
 		lut[inSignal] = outSignal;
-	}
-	for (; inSignal < LUT_SIZE; inSignal++) {
-		// skip unnecessary processing where result is known
-		lut[inSignal] = outWhite;
 	}
 }
 
