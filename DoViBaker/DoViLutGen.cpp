@@ -704,7 +704,7 @@ int main(int argc, char* argv[])
   if (reNormalizedInput) {
     printf("The LUT will expect the PQ input to be re-normalized to 1000 nits\n");
     inputScale = 0.7518271;
-    fsCube << "# ATTENTION: This special LUT expects the PQ input to be re-normalized to 1000nits max brightness!" << std::endl;
+    fsCube << "# ATTENTION: This special LUT expects the PQ input to be re-normalized at 1000nits max brightness!" << std::endl;
     fsCube << "TITLE \"PQ renorm 1000nits to " << outFormatName << "\"" << std::endl;
   }
   else {
@@ -716,11 +716,11 @@ int main(int argc, char* argv[])
   for (int bi = 0; bi < lutSize; bi++) {
     double ebp = double(bi) / (lutSize - 1) * inputScale;
     double bd = EOTFpq(ebp) * 10000 / 1000;
-    bd = (bd > 1) ? 1 : bd;
+    bd = std::min(bd, 1.0);
     for (int gi = 0; gi < lutSize; gi++) {
       double egp = double(gi) / (lutSize - 1) * inputScale;
       double gd = EOTFpq(egp) * 10000 / 1000;
-      gd = (gd > 1) ? 1 : gd;
+      gd = std::min(gd, 1.0);
       for (int ri = 0; ri < lutSize; ri++) {
         //if (gi != ri)continue;
         //if (bi != lutSize - 1) continue;
@@ -729,24 +729,24 @@ int main(int argc, char* argv[])
         //if (ri != 23 || gi != 29 || bi != 36) continue;
         double erp = double(ri) / (lutSize - 1) * inputScale;
         double rd = EOTFpq(erp) * 10000 / 1000;
-        rd = (rd > 1) ? 1 : rd;
+        rd = std::min(rd, 1.0);
 
         double yd = 0.2627 * rd + 0.6780 * gd + 0.0593 * bd;
         double rs = OOTFhlgInv(rd, yd);
         double gs = OOTFhlgInv(gd, yd);
         double bs = OOTFhlgInv(bd, yd);
 
-        if (rs < 0)rs = 0;
-        if (gs < 0)gs = 0;
-        if (bs < 0)bs = 0;
+        rs = std::max(rs, 0.0);
+        gs = std::max(gs, 0.0);
+        bs = std::max(bs, 0.0);
 
         double rg = OETFhlg(rs);
         double gg = OETFhlg(gs);
         double bg = OETFhlg(bs);
 
-        if (rg > 1)rg = 1;
-        if (gg > 1)gg = 1;
-        if (bg > 1)bg = 1;
+        rg = std::min(rg, 1.0);
+        gg = std::min(gg, 1.0);
+        bg = std::min(bg, 1.0);
 
         if (inputFormat == 2) {
           rg = double(ri) / (lutSize - 1);
@@ -784,9 +784,9 @@ int main(int argc, char* argv[])
             
             //fsCube << ri << " " << gi << " " << bi << " " << rl << " " << gl << " " << bl << std::endl;
 
-            if (rl < 0)rl = 0;
-            if (gl < 0)gl = 0;
-            if (bl < 0)bl = 0;
+            rl = std::max(rl, 0.0);
+            gl = std::max(gl, 0.0);
+            bl = std::max(bl, 0.0);
 
             // SDR conversion from linear to gamma scale
             rg = sceneReferred ? OETFsdr(rl) : EOTFsdrInv(rl);
@@ -794,9 +794,9 @@ int main(int argc, char* argv[])
             bg = sceneReferred ? OETFsdr(bl) : EOTFsdrInv(bl);
           }
 
-          if (rg > 1)rg = 1;
-          if (gg > 1)gg = 1;
-          if (bg > 1)bg = 1;
+          rg = std::min(rg, 1.0);
+          gg = std::min(gg, 1.0);
+          bg = std::min(bg, 1.0);
         }
 
         //fsCube << std::format("{:.7f} {:.7f} {:.7f}",rg, gg, bg) << std::endl;
